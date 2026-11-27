@@ -4,7 +4,8 @@
 // written as bqbiol:is identifiers.org links as the converter writes them; on Glycolysis (CellDesigner) a protein takes a
 // UniProt page's link and an HGNC number, a simple molecule a ChEBI ID, written under bqbiol:is with CellDesigner's
 // namespaces (urn:miriam:uniprot, hgnc, obo.chebi). A paste of one already there adds nothing; a cross takes one out; the
-// box's hint names the item's databases; a reaction still shows References. Undo puts each file back byte for byte.
+// list before the box offers the item's databases, the first chosen, a plain value read as the one chosen (one of another
+// said with the database it fits; choosing it and Enter adds it); a reaction still shows References. Undo puts each file back byte for byte.
 // Nothing is saved (no token). No script error.
 //   node tests/identifiers.js [base address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
@@ -34,23 +35,25 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var click = async function (P) { await page.keyboard.press('Escape'); await page.mouse.click(10, 880); await page.mouse.click(P[0], P[1]); await page.waitForTimeout(700); };
   var rows = function () { return page.$$eval('.m2-ed-prefs', function (l) {
     var t = l[0]; if (!t || t.hidden || t.closest('[hidden]')) return null;
-    return { title: t.querySelector('.m2-ed-prefl th[colspan]').textContent, items: Array.from(t.querySelectorAll('.m2-ed-prefl tr')).slice(1).map(function (r) { return r.querySelector('th').textContent + ' ' + r.querySelector('.m2-ed-ppicname').textContent + (r.querySelector('.m2-ed-px') ? ' x' : ''); }),
+    return { title: t.querySelector('.m2-ed-prefl th[colspan]').firstChild.textContent, items: Array.from(t.querySelectorAll('.m2-ed-prefl tr')).slice(1).map(function (r) { return r.querySelector('th').textContent + ' ' + r.querySelector('.m2-ed-ppicname').textContent + (r.querySelector('.m2-ed-px') ? ' x' : ''); }),
       say: t.querySelector('.m2-ed-psay').hidden ? '' : t.querySelector('.m2-ed-psay').textContent, box: t.querySelector('.m2-ed-pin').value }; }); };
-  var paste = async function (v) { await page.fill('.m2-ed-pin', v); await page.press('.m2-ed-pin', 'Enter'); await page.waitForTimeout(1200); };
+  var plus = async function () { if (await page.$eval('.m2-ed-padd', function (r) { return r.hidden; })) { await page.click('.m2-ed-pplus'); await page.waitForTimeout(200); } };   // the row to add opened by the + by the heading
+  var paste = async function (v) { await plus(); await page.fill('.m2-ed-pin', v); await page.press('.m2-ed-pin', 'Enter'); await page.waitForTimeout(1200); };
   var cross = async function (k) { await page.click('.m2-ed-px[data-key="' + k + '"]'); await page.waitForTimeout(1200); };
   var undo = async function () { await page.mouse.click(10, 880); await page.keyboard.press('Control+z'); await page.waitForTimeout(1200); };
   var es = function () { return page.$$eval('#m2-img [data-e]', function (l) { return Array.from(new Set(l.map(function (x) { return x.getAttribute('data-e'); }))); }); };
   var glyphs = function (t, cls) { var re = new RegExp('<(?:\\w+:)?glyph\\b[^>]*class="' + cls + '"[^>]*>', 'g'); return (t.match(re) || []).map(function (g) { return /\bid="([^"]+)"/.exec(g)[1]; }); };
   var shown = function (id) { return page.$('#m2-img [data-n="' + id + '"]').then(function (h) { return !!h; }); };
   var first = async function (l) { for (var k = 0; k < l.length; k++) if (await shown(l[k])) return l[k]; return null; };
-  var hint = function () { return page.$eval('.m2-ed-pin', function (f) { return f.placeholder; }); };
+  // the database list before the box: its options, the one chosen, whether it is a choice at all
+  var hint = function () { return page.$eval('.m2-ed-pdb', function (f) { return Array.from(f.options).map(function (o) { return o.textContent; }).join(' or ') + ' (' + (f.disabled ? '-' : f.options[f.selectedIndex].textContent) + ')'; }); };
 
   // SBGN-ML: a simple chemical and a macromolecule
   await open('glycolysis-sbgn', 'compartment');
   var t0 = await now(), chem = await first(glyphs(t0, 'simple chemical')), mac = await first(glyphs(t0, 'macromolecule'));
   await click(await nodeAt(chem));
   var R = await rows(), had = R ? R.items.length : -1;
-  ok(chem + ': Identifiers shown, the hint naming ChEBI', R && R.title === 'Identifiers' && (await hint()) === 'ChEBI IDs or links', JSON.stringify(R) + ' ' + (await hint()));
+  ok(chem + ': Identifiers shown, the list ChEBI alone, no choice', R && R.title === 'Identifiers' && (await hint()) === 'ChEBI (-)', JSON.stringify(R) + ' ' + (await hint()));
   await paste('CHEBI:15346, https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:17234 Q15831');
   R = await rows();
   var t1 = await now();
@@ -65,13 +68,39 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   ok(chem + ': the cross takes one out', R.items.indexOf('ChEBI CHEBI:17234 x') < 0 && !/CHEBI:17234/.test(await now()), JSON.stringify(R));
   await click(await nodeAt(mac));
   R = await rows();
-  ok(mac + ': the box empty again, its hint UniProt or HGNC', R && R.box === '' && (await hint()) === 'UniProt or HGNC IDs or links', JSON.stringify(R));
+  ok(mac + ': the box empty again, its list UniProt or HGNC, UniProt chosen', R && R.box === '' && (await hint()) === 'UniProt or HGNC (UniProt)', JSON.stringify(R));
   had = R.items.length;
-  await paste('uniprot:P53396 HGNC:115');
+  var rowNow = function () { return page.$eval('.m2-ed-padd', function (r) { var f = r.querySelector('.m2-ed-pin'); return (r.hidden ? 'closed' : 'open') + (document.activeElement === f ? ' focus' : '') + ' ' + r.querySelector('.m2-ed-pdb').value; }); };
+  ok(mac + ': no row to add until +', (await rowNow()).indexOf('closed') === 0, await rowNow());
+  await page.click('.m2-ed-pplus'); await page.waitForTimeout(200);
+  ok(mac + ': + opens the row, the cursor in the box, UniProt chosen', (await rowNow()) === 'open focus uniprot', await rowNow());
+  await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+  ok(mac + ': Esc closes it', (await rowNow()).indexOf('closed') === 0, await rowNow());
+  await page.click('.m2-ed-pplus'); await page.waitForTimeout(200); await page.mouse.click(10, 880); await page.waitForTimeout(300);
+  await click(await nodeAt(mac));
+  ok(mac + ': a click away from the empty row closes it', (await rowNow()).indexOf('closed') === 0, await rowNow());
+  await paste('uniprot:P53396');
+  ok(mac + ': all read, the row closes', (await rowNow()).indexOf('closed') === 0, await rowNow());
+  await page.click('.m2-ed-pplus'); await page.waitForTimeout(200);
+  ok(mac + ': + again chooses HGNC, the first it has none of', (await rowNow()) === 'open focus hgnc', await rowNow());
+  await page.keyboard.press('Escape');
+  await paste('HGNC:115');
   R = await rows();
   var t2 = await now();
   ok(mac + ': UniProt and HGNC added', R && R.items.length === had + 2 && /identifiers\.org\/uniprot:P53396/.test(t2) && /identifiers\.org\/hgnc:115"/.test(t2), JSON.stringify(R));
-  for (var u = 0; u < 3; u++) await undo();
+  await paste('8816');
+  R = await rows();
+  ok(mac + ': a plain HGNC number with UniProt chosen not read, said to fit HGNC', R && /not read: 8816 \(UniProt is/.test(R.say) && /8816 reads as HGNC: choose HGNC/.test(R.say) && R.box === '8816' && (await now()) === t2, JSON.stringify(R));
+  await page.selectOption('.m2-ed-pdb', 'hgnc'); await page.waitForTimeout(300);
+  ok(mac + ': choosing HGNC puts the cursor back in the box', await page.$eval('.m2-ed-pin', function (f) { return document.activeElement === f; }));
+  await page.press('.m2-ed-pin', 'Enter'); await page.waitForTimeout(1200);
+  R = await rows();
+  ok(mac + ': Enter adds it as HGNC', R && /1 added/.test(R.say) && R.box === '' && /identifiers\.org\/hgnc:8816"/.test(await now()), JSON.stringify(R));
+  await plus(); await page.fill('.m2-ed-pin', 'P31749'); await page.focus('.m2-ed-pdb'); await page.waitForTimeout(600);
+  ok(mac + ': leaving the box for the list adds nothing', (await page.$eval('.m2-ed-pin', function (f) { return f.value; })) === 'P31749' && !/P31749/.test(await now()));
+  await page.selectOption('.m2-ed-pdb', 'uniprot'); await page.press('.m2-ed-pin', 'Enter'); await page.waitForTimeout(1200);
+  ok(mac + ': chosen back to UniProt, Enter adds it', /identifiers\.org\/uniprot:P31749/.test(await now()));
+  for (var u = 0; u < 6; u++) await undo();
   ok('SBGN-ML: undone, the file as it was', (await now()) === t0);
 
   // CellDesigner: a protein and a simple molecule; a reaction still shows References
@@ -82,9 +111,9 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var cdIds = function (t, id) { return page.evaluate(function (a) { return window.cd_make.idsOf(a[0], a[1]).links.filter(function (x) { return x.q === 'bqbiol:is'; }).map(function (x) { return x.link; }); }, [t, id]); };
   await click(await nodeAt(prot));
   R = await rows();
-  ok(prot + ': Identifiers shown for a protein', R && R.title === 'Identifiers' && (await hint()) === 'UniProt or HGNC IDs or links', JSON.stringify(R));
+  ok(prot + ': Identifiers shown for a protein, UniProt chosen', R && R.title === 'Identifiers' && (await hint()) === 'UniProt or HGNC (UniProt)', JSON.stringify(R));
   had = R ? R.items.length : 0;
-  await paste('https://www.uniprot.org/uniprotkb/Q15831/entry 11389');
+  await paste('https://www.uniprot.org/uniprotkb/Q15831/entry HGNC:11389');   // a prefix says its own database, whatever is chosen
   R = await rows();
   var L = await cdIds(await now(), prot);
   ok(prot + ': written under bqbiol:is as CellDesigner names them', L.indexOf('urn:miriam:uniprot:Q15831') >= 0 && L.indexOf('urn:miriam:hgnc:11389') >= 0 && R.items.length === had + 2, JSON.stringify(L) + ' ' + JSON.stringify(R));
@@ -101,7 +130,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var main = (await es()).filter(function (e) { return /\|a$/.test(e); })[0];
   await click(await lineAt(main));
   R = await rows();
-  ok('a reaction still shows References, its hint PubMed and DOI', R && R.title === 'References' && (await hint()) === 'PubMed IDs, DOIs or links', JSON.stringify(R));
+  ok('a reaction still shows References, its list PubMed or DOI, PubMed chosen', R && R.title === 'References' && (await hint()) === 'PubMed or DOI (PubMed)', JSON.stringify(R));
 
   ok('no script error', !errs.length, errs.join(' | '));
   await b.close();

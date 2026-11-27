@@ -2375,7 +2375,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     var inW, inH, field, pNow;
     function __run44() {   // run at start, in order (__start)
     props.innerHTML = '<p>Properties</p>' + table(ROWS, ' m2-ed-pnode') + table(EROWS, ' m2-ed-pedge') + table(RROWS, ' m2-ed-prx') + '<table class="m2-ed-ptab m2-ed-pcard" hidden></table>' +
-      '<table class="m2-ed-ptab m2-ed-prefs" hidden><tbody class="m2-ed-prefl"></tbody><tbody><tr><td colspan="2"><span class="m2-ed-ppic"><input type="text" class="m2-ed-pin" aria-label="PubMed IDs, DOIs or links to add" placeholder="PubMed IDs, DOIs or links" spellcheck="false" autocomplete="off"><button type="button" class="m2-ed-pgo">Add</button></span></td></tr>' +
+      '<table class="m2-ed-ptab m2-ed-prefs" hidden><tbody class="m2-ed-prefl"></tbody><tbody><tr class="m2-ed-padd" hidden><td colspan="2"><span class="m2-ed-ppic"><select class="m2-ed-pdb" aria-label="Database of the IDs typed"></select><input type="text" class="m2-ed-pin" aria-label="IDs or links to add" placeholder="IDs or links" spellcheck="false" autocomplete="off"><button type="button" class="m2-ed-pgo">Add</button></span></td></tr>' +
       '<tr class="m2-ed-psay" hidden><td colspan="2"></td></tr></tbody></table>' +
       '<button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button>' +
       '<button type="button" class="m2-ed-pall" title="Every glyph of this kind on the map (every process, or every logic gate) takes this one\u2019s size and antenna">Apply to all of this kind</button>' +
@@ -2579,7 +2579,11 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       mesh: { ok: /^[CD]\d{6,9}$/, plain: /^[CD]\d{6,9}$/i, say: 'MeSH is D or C and digits, as D012345' }
     };
     var pin = prefs.querySelector('.m2-ed-pin');
-    pin.addEventListener('keydown', function (e) { if (e.key === 'Escape') pin.value = ''; });   // left as it was (the panel's keys then blur it)
+    var enterAt = 0;
+    pin.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { pin.value = ''; refsClose(); }   // the row closed, nothing added (the panel's keys then blur it)
+      else if (e.key === 'Enter' && !e.isComposing) { enterAt = Date.now(); var R = annNow(); if (R && R.at === prefsFor) refsAdd(); }   // also when the box is as it was (a database chosen after a refusal)
+    });
     pin.addEventListener('paste', function (e) {   // lines pasted kept apart (a text field would join them)
       var t = e.clipboardData && e.clipboardData.getData('text');
       if (t == null || !/[\r\n]/.test(t)) return;
@@ -2588,15 +2592,36 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       pin.value = pin.value.slice(0, a) + v + pin.value.slice(b); pin.selectionStart = pin.selectionEnd = a + v.length;
     });
     pin.addEventListener('focus', function () { var R = annNow(); prefsFor = R ? R.at : null; });   // the item the box was opened for
-    pin.addEventListener('change', function () { var R = annNow(); if (R && R.at === prefsFor) refsAdd(); });   // left for another item: not added there
+    var pdb = prefs.querySelector('.m2-ed-pdb');
+    pin.addEventListener('change', function () {   // Enter, or the box left with a new value; not when left for the database's list (chosen first, then added)
+      var R = annNow(), at = R && R.at;
+      if (Date.now() - enterAt < 200) return;   // Enter has added it
+      setTimeout(function () { var R2 = annNow(); if (document.activeElement !== pdb && R2 && R2.at === at && at === prefsFor) refsAdd(); }, 0);
+    });
+    prefs.querySelector('.m2-ed-padd').addEventListener('focusout', function () {   // clicked away from an empty row: closed
+      setTimeout(function () { var row = prefs.querySelector('.m2-ed-padd'); if (!row.contains(document.activeElement) && !pin.value.trim()) refsClose(); }, 0);
+    });
+    pdb.addEventListener('focus', function () { var R = annNow(); prefsFor = R ? R.at : null; });
+    pdb.addEventListener('change', function () { pin.focus(); });   // back to the box: Enter adds what it holds as the database chosen
     prefs.querySelector('.m2-ed-pgo').addEventListener('click', refsAdd);
     prefs.addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest('.m2-ed-pplus')) { refsOpen(); return; }
       var x = e.target.closest && e.target.closest('.m2-ed-px'), R = annNow();
       if (!x || !R) return;
       prefsSay = null;
       if (!R.api.set(R.id, [], [x.dataset.key])) { prefsKey = null; refsShow(); }
     });
     }
+    // + by the heading: the row to add opens, its database the first of the item's it has none of (a reaction's always
+    // PubMed, as papers repeat), the cursor in the box; Esc, or leaving it empty, closes it; all read on Enter closes it
+    function refsOpen() {
+      var R = annNow(), row = prefs.querySelector('.m2-ed-padd'), pdb = prefs.querySelector('.m2-ed-pdb'), pin = prefs.querySelector('.m2-ed-pin');
+      if (!R) return;
+      var has = R.items.filter(function (x) { return x.own; }).map(function (x) { return x.db; });
+      pdb.value = (R.kind && R.dbs.filter(function (d) { return has.indexOf(d) < 0; })[0]) || R.dbs[0];
+      row.hidden = false; prefsFor = R.at; pin.focus();
+    }
+    function refsClose() { prefs.querySelector('.m2-ed-padd').hidden = true; }
     // the selection's references or identifiers, with what the box takes for it (dbs, in the order a plain value is read)
     function annNow() {
       var pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null, api = R && pf.refs, dbs = ['pubmed', 'doi'];
@@ -2614,9 +2639,11 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // AmiGO and QuickGO, MeSH's, identifiers.org), a prefix (PMID:, pubmed:, doi:, uniprot:, HGNC:, CHEBI:, GO:, mesh:,
     // urn:miriam:), a plain value read as the first of dbs it fits (a number on a reaction PubMed, 10. a DOI); checked by
     // each database's pattern (ANN_DB). bad: what was not read, a value of another database among them
-    function refsParse(text, dbs) {
+    // pick: the database chosen in the list before the box; a plain value is read as it alone (a link, a prefix or a
+    // DOI's 10. still says its own), one that fits another of dbs is said in out.fits
+    function refsParse(text, dbs, pick) {
       dbs = dbs || ['pubmed', 'doi'];
-      var out = { keys: [], bad: [] }, t = String(text).replace(/\b(PMID|pubmed|doi|uniprot|HGNC|CHEBI|GO|mesh)\s*:?\s+(?=\d|[A-Z]\d)/gi, '$1:');
+      var out = { keys: [], bad: [], fits: [] }, t = String(text).replace(/\b(PMID|pubmed|doi|uniprot|HGNC|CHEBI|GO|mesh)\s*:?\s+(?=\d|[A-Z]\d)/gi, '$1:');
       t.split(/\s+|,(?=\s|\d|$)|;(?=\s|$)/).forEach(function (x) {   // a DOI may hold a semicolon or a comma
         x = x.replace(/^[(\[<"']+|[)\]>"'.,]+$/g, '');
         if (!x) return;
@@ -2635,7 +2662,13 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         }
         else if ((m = /^(pmid|pubmed|doi|uniprot|hgnc|chebi|go|mesh):(.+)$/i.exec(x))) { db = m[1].toLowerCase().replace('pmid', 'pubmed'); v = m[2]; }
         else if (/^10\./.test(x)) { db = 'doi'; v = x; }
-        else dbs.some(function (d) { var D = ANN_DB[d]; if (d === 'pubmed' ? /^\d+$/.test(x) : D.plain && D.plain.test(x)) { db = d; v = x; return true; } return false; });
+        else {
+          var fit = function (d) { var D = ANN_DB[d]; return d === 'pubmed' ? /^\d+$/.test(x) : !!(D.plain && D.plain.test(x)); };
+          if (pick && dbs.indexOf(pick) >= 0) {
+            if (fit(pick)) { db = pick; v = x; }
+            else dbs.some(function (d) { if (d !== pick && fit(d)) { out.fits.push([x, d]); return true; } return false; });
+          } else dbs.some(function (d) { if (fit(d)) { db = d; v = x; return true; } return false; });
+        }
         if (db === 'chebi' || db === 'go') v = db.toUpperCase() + ':' + String(v).replace(/^(chebi|go):/i, '');
         else if (db === 'uniprot' || db === 'mesh') v = String(v).toUpperCase();
         else if (db === 'hgnc') v = String(v).replace(/^hgnc:/i, '');
@@ -2647,11 +2680,13 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function refsAdd() {
       var pin = prefs.querySelector('.m2-ed-pin'), v = pin.value.trim(), R = annNow();
       if (!v || !R) return;
-      var P = refsParse(v, R.dbs), had = R.items.map(function (x) { return x.key; }), add = P.keys.filter(function (k) { return had.indexOf(k) < 0; }), said = [];
+      var pick = prefs.querySelector('.m2-ed-pdb').value, P = refsParse(v, R.dbs, pick), had = R.items.map(function (x) { return x.key; }), add = P.keys.filter(function (k) { return had.indexOf(k) < 0; }), said = [];
       if (add.length) said.push(add.length + ' added');
       if (P.keys.length > add.length) said.push((P.keys.length - add.length) + ' already there');
-      if (P.bad.length) said.push('not read: ' + P.bad.join(' ') + ' (' + R.dbs.map(function (d) { return ANN_DB[d].say; }).join('; ') + ')');
-      pin.value = P.bad.join(' ');   // what was not read stays to be put right
+      if (P.bad.length) said.push('not read: ' + P.bad.join(' ') + ' (' + (ANN_DB[pick] ? ANN_DB[pick].say : R.dbs.map(function (d) { return ANN_DB[d].say; }).join('; ')) + ')' +
+        P.fits.map(function (f) { return '; ' + f[0] + ' reads as ' + REF_DB[f[1]] + ': choose ' + REF_DB[f[1]] + ' in the list'; }).join(''));
+      pin.value = P.bad.join(' ');   // what was not read stays to be put right, the row open
+      if (!P.bad.length) refsClose();
       prefsSay = [R.at, said.join('; ') + '.'];
       if (add.length && !R.api.set(R.id, add, [])) prefsSay = [R.at, 'Not written: the file did not take them.'];
       prefsKey = null; refsShow();
@@ -2662,15 +2697,17 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       if (!R) { prefsKey = null; return; }
       var pin = prefs.querySelector('.m2-ed-pin');
       if (R.at !== prefsRid) {   // another item: the box starts empty, saying what it takes
-        pin.value = ''; prefsRid = R.at;
-        var names = R.dbs.map(function (d) { return REF_DB[d]; }), what = R.kind ? names.join(' or ') + ' IDs or links' : 'PubMed IDs, DOIs or links';
-        pin.placeholder = what; pin.setAttribute('aria-label', what + ' to add');
+        pin.value = ''; prefsRid = R.at; refsClose();
+        var pdb = prefs.querySelector('.m2-ed-pdb');   // the item's databases, the first chosen (notes/annotation-editing.md, The database list)
+        pdb.innerHTML = R.dbs.map(function (d) { return '<option value="' + d + '">' + escHtml(REF_DB[d]) + '</option>'; }).join('');
+        pdb.value = R.dbs[0]; pdb.disabled = R.dbs.length < 2;
+        pin.placeholder = 'IDs or links'; pin.setAttribute('aria-label', 'IDs or links to add');
       }
       if (prefsSay && prefsSay[0] !== R.at) prefsSay = null;   // what the last Add said, for its own item only
       var key = R.at + '\u0000' + R.title + '\u0000' + R.items.map(function (x) { return x.key + '\u0001' + x.q + (x.own ? '' : '!'); }).join('\u0000') + '\u0000' + (prefsSay ? prefsSay[1] : '');
       if (key === prefsKey) return;
       prefsKey = key;
-      prefs.querySelector('.m2-ed-prefl').innerHTML = '<tr><th colspan="2">' + escHtml(R.title) + '</th></tr>' + R.items.map(function (x) {
+      prefs.querySelector('.m2-ed-prefl').innerHTML = '<tr><th colspan="2">' + escHtml(R.title) + '<button type="button" class="m2-ed-pplus" title="Add ' + (R.kind ? 'identifiers' : 'references') + '" aria-label="Add ' + (R.kind ? 'identifiers' : 'references') + '">+</button></th></tr>' + R.items.map(function (x) {
         var name = REF_DB[x.db] || x.db || 'Link', tip = name + ' ' + x.val + (x.own ? '' : ', ' + x.q + (x.about ? ': about the map as a model, kept as written' : ', kept as written'));
         return '<tr title="' + escAttr(tip) + '"><th>' + escHtml(name) + '</th><td><span class="m2-ed-ppic"><span class="m2-ed-ppicname">' + escHtml(x.val) + (x.about ? ' <span class="m2-ed-pabout">about the map</span>' : '') + '</span>' +
           (x.own ? '<button type="button" class="m2-ed-px" data-key="' + escAttr(x.key) + '" title="Remove ' + escAttr(name + ' ' + x.val) + '" aria-label="Remove">\u00d7</button>' : '') + '</span></td></tr>';

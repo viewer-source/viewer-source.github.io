@@ -14513,7 +14513,7 @@
   var field;
   var pNow;
   function __run442() {
-    props.innerHTML = "<p>Properties</p>" + table(ROWS, " m2-ed-pnode") + table(EROWS, " m2-ed-pedge") + table(RROWS, " m2-ed-prx") + '<table class="m2-ed-ptab m2-ed-pcard" hidden></table><table class="m2-ed-ptab m2-ed-prefs" hidden><tbody class="m2-ed-prefl"></tbody><tbody><tr><td colspan="2"><span class="m2-ed-ppic"><input type="text" class="m2-ed-pin" aria-label="PubMed IDs, DOIs or links to add" placeholder="PubMed IDs, DOIs or links" spellcheck="false" autocomplete="off"><button type="button" class="m2-ed-pgo">Add</button></span></td></tr><tr class="m2-ed-psay" hidden><td colspan="2"></td></tr></tbody></table><button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button><button type="button" class="m2-ed-pall" title="Every glyph of this kind on the map (every process, or every logic gate) takes this one\u2019s size and antenna">Apply to all of this kind</button><button type="button" class="m2-ed-pstd" title="The standard size and antenna of processes and logic gates, at the map\u2019s scale (Style, Standard sizes)">Standard size</button>';
+    props.innerHTML = "<p>Properties</p>" + table(ROWS, " m2-ed-pnode") + table(EROWS, " m2-ed-pedge") + table(RROWS, " m2-ed-prx") + '<table class="m2-ed-ptab m2-ed-pcard" hidden></table><table class="m2-ed-ptab m2-ed-prefs" hidden><tbody class="m2-ed-prefl"></tbody><tbody><tr class="m2-ed-padd" hidden><td colspan="2"><span class="m2-ed-ppic"><select class="m2-ed-pdb" aria-label="Database of the IDs typed"></select><input type="text" class="m2-ed-pin" aria-label="IDs or links to add" placeholder="IDs or links" spellcheck="false" autocomplete="off"><button type="button" class="m2-ed-pgo">Add</button></span></td></tr><tr class="m2-ed-psay" hidden><td colspan="2"></td></tr></tbody></table><button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button><button type="button" class="m2-ed-pall" title="Every glyph of this kind on the map (every process, or every logic gate) takes this one\u2019s size and antenna">Apply to all of this kind</button><button type="button" class="m2-ed-pstd" title="The standard size and antenna of processes and logic gates, at the map\u2019s scale (Style, Standard sizes)">Standard size</button>';
     pal.insertAdjacentElement("afterend", props);
     props.insertAdjacentElement("afterend", pmap);
     inW = props.querySelector("#m2-ed-w"), inH = props.querySelector("#m2-ed-h");
@@ -14816,8 +14816,16 @@
       mesh: { ok: /^[CD]\d{6,9}$/, plain: /^[CD]\d{6,9}$/i, say: "MeSH is D or C and digits, as D012345" }
     };
     var pin = prefs.querySelector(".m2-ed-pin");
+    var enterAt = 0;
     pin.addEventListener("keydown", function(e) {
-      if (e.key === "Escape") pin.value = "";
+      if (e.key === "Escape") {
+        pin.value = "";
+        refsClose();
+      } else if (e.key === "Enter" && !e.isComposing) {
+        enterAt = Date.now();
+        var R = annNow();
+        if (R && R.at === prefsFor) refsAdd();
+      }
     });
     pin.addEventListener("paste", function(e) {
       var t = e.clipboardData && e.clipboardData.getData("text");
@@ -14831,12 +14839,34 @@
       var R = annNow();
       prefsFor = R ? R.at : null;
     });
+    var pdb = prefs.querySelector(".m2-ed-pdb");
     pin.addEventListener("change", function() {
+      var R = annNow(), at2 = R && R.at;
+      if (Date.now() - enterAt < 200) return;
+      setTimeout(function() {
+        var R2 = annNow();
+        if (document.activeElement !== pdb && R2 && R2.at === at2 && at2 === prefsFor) refsAdd();
+      }, 0);
+    });
+    prefs.querySelector(".m2-ed-padd").addEventListener("focusout", function() {
+      setTimeout(function() {
+        var row = prefs.querySelector(".m2-ed-padd");
+        if (!row.contains(document.activeElement) && !pin.value.trim()) refsClose();
+      }, 0);
+    });
+    pdb.addEventListener("focus", function() {
       var R = annNow();
-      if (R && R.at === prefsFor) refsAdd();
+      prefsFor = R ? R.at : null;
+    });
+    pdb.addEventListener("change", function() {
+      pin.focus();
     });
     prefs.querySelector(".m2-ed-pgo").addEventListener("click", refsAdd);
     prefs.addEventListener("click", function(e) {
+      if (e.target.closest && e.target.closest(".m2-ed-pplus")) {
+        refsOpen();
+        return;
+      }
       var x = e.target.closest && e.target.closest(".m2-ed-px"), R = annNow();
       if (!x || !R) return;
       prefsSay = null;
@@ -14845,6 +14875,24 @@
         refsShow();
       }
     });
+  }
+  function refsOpen() {
+    var R = annNow(), row = prefs.querySelector(".m2-ed-padd"), pdb = prefs.querySelector(".m2-ed-pdb"), pin = prefs.querySelector(".m2-ed-pin");
+    if (!R) return;
+    var has = R.items.filter(function(x) {
+      return x.own;
+    }).map(function(x) {
+      return x.db;
+    });
+    pdb.value = R.kind && R.dbs.filter(function(d) {
+      return has.indexOf(d) < 0;
+    })[0] || R.dbs[0];
+    row.hidden = false;
+    prefsFor = R.at;
+    pin.focus();
+  }
+  function refsClose() {
+    prefs.querySelector(".m2-ed-padd").hidden = true;
   }
   function annNow() {
     var pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null, api2 = R && pf.refs, dbs = ["pubmed", "doi"];
@@ -14869,9 +14917,9 @@
     var c = r.key ? r.key.indexOf(":") : -1;
     return { key: r.key || r.link, db: c > 0 ? r.key.slice(0, c) : "", val: c > 0 ? r.key.slice(c + 1) : r.link, q: r.q, about: /^bqmodel:/.test(r.q) };
   }
-  function refsParse(text, dbs) {
+  function refsParse(text, dbs, pick) {
     dbs = dbs || ["pubmed", "doi"];
-    var out = { keys: [], bad: [] }, t = String(text).replace(/\b(PMID|pubmed|doi|uniprot|HGNC|CHEBI|GO|mesh)\s*:?\s+(?=\d|[A-Z]\d)/gi, "$1:");
+    var out = { keys: [], bad: [], fits: [] }, t = String(text).replace(/\b(PMID|pubmed|doi|uniprot|HGNC|CHEBI|GO|mesh)\s*:?\s+(?=\d|[A-Z]\d)/gi, "$1:");
     t.split(/\s+|,(?=\s|\d|$)|;(?=\s|$)/).forEach(function(x) {
       x = x.replace(/^[(\[<"']+|[)\]>"'.,]+$/g, "");
       if (!x) return;
@@ -14917,15 +14965,31 @@
       } else if (/^10\./.test(x)) {
         db2 = "doi";
         v = x;
-      } else dbs.some(function(d) {
-        var D2 = ANN_DB[d];
-        if (d === "pubmed" ? /^\d+$/.test(x) : D2.plain && D2.plain.test(x)) {
-          db2 = d;
-          v = x;
-          return true;
-        }
-        return false;
-      });
+      } else {
+        var fit = function(d) {
+          var D2 = ANN_DB[d];
+          return d === "pubmed" ? /^\d+$/.test(x) : !!(D2.plain && D2.plain.test(x));
+        };
+        if (pick && dbs.indexOf(pick) >= 0) {
+          if (fit(pick)) {
+            db2 = pick;
+            v = x;
+          } else dbs.some(function(d) {
+            if (d !== pick && fit(d)) {
+              out.fits.push([x, d]);
+              return true;
+            }
+            return false;
+          });
+        } else dbs.some(function(d) {
+          if (fit(d)) {
+            db2 = d;
+            v = x;
+            return true;
+          }
+          return false;
+        });
+      }
       if (db2 === "chebi" || db2 === "go") v = db2.toUpperCase() + ":" + String(v).replace(/^(chebi|go):/i, "");
       else if (db2 === "uniprot" || db2 === "mesh") v = String(v).toUpperCase();
       else if (db2 === "hgnc") v = String(v).replace(/^hgnc:/i, "");
@@ -14938,17 +15002,20 @@
   function refsAdd() {
     var pin = prefs.querySelector(".m2-ed-pin"), v = pin.value.trim(), R = annNow();
     if (!v || !R) return;
-    var P = refsParse(v, R.dbs), had = R.items.map(function(x) {
+    var pick = prefs.querySelector(".m2-ed-pdb").value, P = refsParse(v, R.dbs, pick), had = R.items.map(function(x) {
       return x.key;
     }), add = P.keys.filter(function(k) {
       return had.indexOf(k) < 0;
     }), said = [];
     if (add.length) said.push(add.length + " added");
     if (P.keys.length > add.length) said.push(P.keys.length - add.length + " already there");
-    if (P.bad.length) said.push("not read: " + P.bad.join(" ") + " (" + R.dbs.map(function(d) {
+    if (P.bad.length) said.push("not read: " + P.bad.join(" ") + " (" + (ANN_DB[pick] ? ANN_DB[pick].say : R.dbs.map(function(d) {
       return ANN_DB[d].say;
-    }).join("; ") + ")");
+    }).join("; ")) + ")" + P.fits.map(function(f) {
+      return "; " + f[0] + " reads as " + REF_DB[f[1]] + ": choose " + REF_DB[f[1]] + " in the list";
+    }).join(""));
     pin.value = P.bad.join(" ");
+    if (!P.bad.length) refsClose();
     prefsSay = [R.at, said.join("; ") + "."];
     if (add.length && !R.api.set(R.id, add, [])) prefsSay = [R.at, "Not written: the file did not take them."];
     prefsKey = null;
@@ -14965,11 +15032,15 @@
     if (R.at !== prefsRid) {
       pin.value = "";
       prefsRid = R.at;
-      var names = R.dbs.map(function(d) {
-        return REF_DB[d];
-      }), what = R.kind ? names.join(" or ") + " IDs or links" : "PubMed IDs, DOIs or links";
-      pin.placeholder = what;
-      pin.setAttribute("aria-label", what + " to add");
+      refsClose();
+      var pdb = prefs.querySelector(".m2-ed-pdb");
+      pdb.innerHTML = R.dbs.map(function(d) {
+        return '<option value="' + d + '">' + escHtml(REF_DB[d]) + "</option>";
+      }).join("");
+      pdb.value = R.dbs[0];
+      pdb.disabled = R.dbs.length < 2;
+      pin.placeholder = "IDs or links";
+      pin.setAttribute("aria-label", "IDs or links to add");
     }
     if (prefsSay && prefsSay[0] !== R.at) prefsSay = null;
     var key = R.at + "\0" + R.title + "\0" + R.items.map(function(x) {
@@ -14977,7 +15048,7 @@
     }).join("\0") + "\0" + (prefsSay ? prefsSay[1] : "");
     if (key === prefsKey) return;
     prefsKey = key;
-    prefs.querySelector(".m2-ed-prefl").innerHTML = '<tr><th colspan="2">' + escHtml(R.title) + "</th></tr>" + R.items.map(function(x) {
+    prefs.querySelector(".m2-ed-prefl").innerHTML = '<tr><th colspan="2">' + escHtml(R.title) + '<button type="button" class="m2-ed-pplus" title="Add ' + (R.kind ? "identifiers" : "references") + '" aria-label="Add ' + (R.kind ? "identifiers" : "references") + '">+</button></th></tr>' + R.items.map(function(x) {
       var name2 = REF_DB[x.db] || x.db || "Link", tip = name2 + " " + x.val + (x.own ? "" : ", " + x.q + (x.about ? ": about the map as a model, kept as written" : ", kept as written"));
       return '<tr title="' + escAttr(tip) + '"><th>' + escHtml(name2) + '</th><td><span class="m2-ed-ppic"><span class="m2-ed-ppicname">' + escHtml(x.val) + (x.about ? ' <span class="m2-ed-pabout">about the map</span>' : "") + "</span>" + (x.own ? '<button type="button" class="m2-ed-px" data-key="' + escAttr(x.key) + '" title="Remove ' + escAttr(name2 + " " + x.val) + '" aria-label="Remove">\xD7</button>' : "") + "</span></td></tr>";
     }).join("");

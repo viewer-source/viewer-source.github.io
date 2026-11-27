@@ -32,9 +32,10 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var click = async function (P) { await page.keyboard.press('Escape'); await page.mouse.click(10, 880); await page.mouse.click(P[0], P[1]); await page.waitForTimeout(700); };
   var rows = function () { return page.$$eval('.m2-ed-prefs', function (l) {
     var t = l[0]; if (!t || t.hidden || t.closest('[hidden]')) return null;
-    return { title: t.querySelector('.m2-ed-prefl th[colspan]').textContent, items: Array.from(t.querySelectorAll('.m2-ed-prefl tr')).slice(1).map(function (r) { return r.querySelector('th').textContent + ' ' + r.querySelector('.m2-ed-ppicname').textContent + (r.querySelector('.m2-ed-px') ? ' x' : ''); }),
+    return { title: t.querySelector('.m2-ed-prefl th[colspan]').firstChild.textContent, items: Array.from(t.querySelectorAll('.m2-ed-prefl tr')).slice(1).map(function (r) { return r.querySelector('th').textContent + ' ' + r.querySelector('.m2-ed-ppicname').textContent + (r.querySelector('.m2-ed-px') ? ' x' : ''); }),
       say: t.querySelector('.m2-ed-psay').hidden ? '' : t.querySelector('.m2-ed-psay').textContent, box: t.querySelector('.m2-ed-pin').value }; }); };
-  var paste = async function (v) { await page.fill('.m2-ed-pin', v); await page.press('.m2-ed-pin', 'Enter'); await page.waitForTimeout(1200); };
+  var plus = async function () { if (await page.$eval('.m2-ed-padd', function (r) { return r.hidden; })) { await page.click('.m2-ed-pplus'); await page.waitForTimeout(200); } };   // the row to add opened by the + by the heading
+  var paste = async function (v) { await plus(); await page.fill('.m2-ed-pin', v); await page.press('.m2-ed-pin', 'Enter'); await page.waitForTimeout(1200); };
   var cross = async function (k) { await page.click('.m2-ed-px[data-key="' + k + '"]'); await page.waitForTimeout(1200); };
   var undo = async function () { await page.mouse.click(10, 880); await page.keyboard.press('Control+z'); await page.waitForTimeout(1200); };
   var es = function () { return page.$$eval('#m2-img [data-e]', function (l) { return Array.from(new Set(l.map(function (x) { return x.getAttribute('data-e'); }))); }); };
@@ -49,6 +50,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   await click(await nodeAt(pid));
   var R = await rows();
   ok(pid + ': References shown, none yet', R && R.title === 'References' && !R.items.length, JSON.stringify(R));
+  await plus();
   await page.evaluate(function () { var f = document.querySelector('.m2-ed-pin'); f.focus(); var d = new DataTransfer(); d.setData('text', '19461003\n23332764'); f.dispatchEvent(new ClipboardEvent('paste', { clipboardData: d, bubbles: true, cancelable: true })); });
   ok('lines pasted kept apart in the box', (await page.$eval('.m2-ed-pin', function (f) { return f.value; })) === '19461003 23332764', await page.$eval('.m2-ed-pin', function (f) { return f.value; }));
   await paste(PASTE);
