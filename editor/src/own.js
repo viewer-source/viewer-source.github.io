@@ -1718,7 +1718,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       if (!(repo() && token())) return Promise.resolve();
       var ks = Object.keys(mine).filter(function (k) { return mine[k].from; });
       if (!ks.length) return Promise.resolve();
-      var both = [], failed = [];
+      var both = [], failed = [], back = 0;
       return folder().catch(function () { return null; }).then(function (f) {
         return ks.reduce(function (q, k) {
           return q.then(function () {
@@ -1728,7 +1728,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
             return (f ? origRead(f, r.file) : Promise.resolve(null)).then(function (c) {
               var cols = c ? JSON.stringify(c) : null, colsWas = fr.cols ? JSON.stringify(JSON.parse(fr.cols)) : null;
               var named = r.title === fr.title, grouped = (r.group || '') === fr.group, colsSame = !cols || cols === colsWas;
-              if (t === fr.saved && named && grouped && colsSame) { V.arrived[k] = fr.site; return dropCopy(k); }   // unchanged: the site's map in its place
+              if (t === fr.saved && named && grouped && colsSame) { V.arrived[k] = fr.site; back++; return dropCopy(k); }   // unchanged: the site's map in its place
               return (t === fr.saved ? Promise.resolve(fr.sha) : putOn(fr.path, t, fr.sha)).then(function (sha) {
                 if (sha === null) { delete r.from; both.push(r.title); return keep(); }   // changed on GitHub meanwhile: both kept, the copy sent as a map of its own
                 fr.saved = t; fr.sha = sha; r.at = Date.now();
@@ -1742,7 +1742,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
                     .then(function () { return grouped ? null : toSiteGroup(fr.site, r.group || '', 0).then(function () { fr.group = r.group || ''; return keep(); }); });
                 }).then(function () {   // all of it on GitHub: a map on its way, shown from this browser until the build has the save
                   var n = Object.assign({}, r, { site: fr.site, path: fr.path, sha: fr.sha || null, saved: t, siteTitle: fr.title });
-                  delete n.from;
+                  delete n.from; back++;
                   return minePut(n);
                 });
               });
@@ -1751,9 +1751,32 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         }, Promise.resolve());
       }).then(function () {
         V.refreshMine();
-        if (failed.length) warn('Not back on GitHub yet, kept in this browser and the folder: ' + failed.join(', ') + '. Tried again when you connect next.');
-        else if (both.length) warn('Changed both in the folder and on GitHub since the copy, so both kept: ' + both.join(', ') + '.');
+        if (both.length || failed.length) tellBack(back, both, failed);   // all back cleanly: nothing said
       });
+    }
+    // Connected to GitHub again after a folder: a change of setup, so what did not go back cleanly is said in a window
+    // (as Disconnect's, one OK), never only in the status line; silent when every copy went back
+    function tellBack(back, both, failed) {
+      var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+      var veil = document.createElement('div'), w = document.createElement('div'), was = document.activeElement;
+      veil.className = 'm2-me-veil'; w.className = 'm2-ask m2-back';
+      w.setAttribute('role', 'alertdialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-labelledby', 'm2-back-h');
+      w.innerHTML = '<h3 id="m2-back-h">Connected to GitHub again</h3>' +
+        (back ? '<p>' + back + (back === 1 ? ' map is' : ' maps are') + ' back on GitHub.</p>' : '') +
+        (both.length ? '<p>Changed both in the folder and on GitHub since the copy, so both versions are kept as two maps in the list: ' + both.map(esc).join(', ') + '. Keep the one you want and delete the other.</p>' : '') +
+        (failed.length ? '<p>Not back on GitHub yet: ' + failed.map(esc).join(', ') + '. Kept in this browser and in the folder; tried again when you connect next.</p>' : '') +
+        '<div class="m2-ask-row"><button type="button" class="m2-ask-no">OK</button></div>';
+      veil.appendChild(w); document.body.appendChild(veil);
+      var ok = w.querySelector('button');
+      var close = function () { veil.remove(); window.removeEventListener('keydown', key, true); if (was && was.isConnected && was.focus) was.focus(); };
+      var key = function (e) {   // the page behind takes no keys; Esc, Enter or Space on OK close it
+        e.stopImmediatePropagation();
+        if (e.key === 'Escape') { e.preventDefault(); close(); } else if (e.key === 'Tab') { e.preventDefault(); ok.focus(); }
+      };
+      ok.addEventListener('click', close);
+      veil.addEventListener('pointerdown', function (e) { if (e.target === veil) close(); });
+      window.addEventListener('keydown', key, true);
+      ok.focus();
     }
     // ---------- Delete map, Deleted, Restore, Delete forever ----------
     // (as a mailbox's or the Mac's Bin). Delete map, the last line of the list's

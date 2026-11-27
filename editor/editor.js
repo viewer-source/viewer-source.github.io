@@ -9894,7 +9894,7 @@
       return mine[k].from;
     });
     if (!ks.length) return Promise.resolve();
-    var both = [], failed = [];
+    var both = [], failed = [], back2 = 0;
     return folder().catch(function() {
       return null;
     }).then(function(f) {
@@ -9913,6 +9913,7 @@
             var named = r.title === fr.title, grouped = (r.group || "") === fr.group, colsSame = !cols || cols === colsWas;
             if (t === fr.saved && named && grouped && colsSame) {
               V.arrived[k] = fr.site;
+              back2++;
               return dropCopy(k);
             }
             return (t === fr.saved ? Promise.resolve(fr.sha) : putOn(fr.path, t, fr.sha)).then(function(sha) {
@@ -9951,6 +9952,7 @@
               }).then(function() {
                 var n = Object.assign({}, r, { site: fr.site, path: fr.path, sha: fr.sha || null, saved: t, siteTitle: fr.title });
                 delete n.from;
+                back2++;
                 return minePut(n);
               });
             });
@@ -9961,9 +9963,46 @@
       }, Promise.resolve());
     }).then(function() {
       V.refreshMine();
-      if (failed.length) warn("Not back on GitHub yet, kept in this browser and the folder: " + failed.join(", ") + ". Tried again when you connect next.");
-      else if (both.length) warn("Changed both in the folder and on GitHub since the copy, so both kept: " + both.join(", ") + ".");
+      if (both.length || failed.length) tellBack(back2, both, failed);
     });
+  }
+  function tellBack(back2, both, failed) {
+    var esc = function(t) {
+      return String(t).replace(/[&<>"]/g, function(c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+      });
+    };
+    var veil = document.createElement("div"), w = document.createElement("div"), was = document.activeElement;
+    veil.className = "m2-me-veil";
+    w.className = "m2-ask m2-back";
+    w.setAttribute("role", "alertdialog");
+    w.setAttribute("aria-modal", "true");
+    w.setAttribute("aria-labelledby", "m2-back-h");
+    w.innerHTML = '<h3 id="m2-back-h">Connected to GitHub again</h3>' + (back2 ? "<p>" + back2 + (back2 === 1 ? " map is" : " maps are") + " back on GitHub.</p>" : "") + (both.length ? "<p>Changed both in the folder and on GitHub since the copy, so both versions are kept as two maps in the list: " + both.map(esc).join(", ") + ". Keep the one you want and delete the other.</p>" : "") + (failed.length ? "<p>Not back on GitHub yet: " + failed.map(esc).join(", ") + ". Kept in this browser and in the folder; tried again when you connect next.</p>" : "") + '<div class="m2-ask-row"><button type="button" class="m2-ask-no">OK</button></div>';
+    veil.appendChild(w);
+    document.body.appendChild(veil);
+    var ok = w.querySelector("button");
+    var close = function() {
+      veil.remove();
+      window.removeEventListener("keydown", key, true);
+      if (was && was.isConnected && was.focus) was.focus();
+    };
+    var key = function(e) {
+      e.stopImmediatePropagation();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close();
+      } else if (e.key === "Tab") {
+        e.preventDefault();
+        ok.focus();
+      }
+    };
+    ok.addEventListener("click", close);
+    veil.addEventListener("pointerdown", function(e) {
+      if (e.target === veil) close();
+    });
+    window.addEventListener("keydown", key, true);
+    ok.focus();
   }
   var BIN_KEY;
   function __run202() {

@@ -20,7 +20,7 @@ var KEEP = ['colour-test', 'glycolysis-graphml', 'colour-glycolysis-sbgn', 'tag-
   }
   await page.addInitScript(function () { window.showDirectoryPicker = function () { return navigator.storage.getDirectory().then(function (r) { return r.getDirectoryHandle('maps', { create: true }); }); }; });
   page.on('pageerror', function (e) { errs.push(e.message); });
-  var files = {}, puts = [], refuse = null, site = null, built = {};
+  var files = {}, puts = [], refuse = null, refusePut = null, site = null, built = {};
   await page.route('**/index.json*', async function (route) {
     var res = await route.fetch(), list = JSON.parse(await res.text());
     list = list.filter(function (m) { return KEEP.indexOf(m.id) >= 0; }).map(function (m) { return built[m.id] ? Object.assign({}, m, { src: built[m.id], v: 'b' + built[m.id].slice(0, 6) }) : m; });
@@ -47,6 +47,7 @@ var KEEP = ['colour-test', 'glycolysis-graphml', 'colour-glycolysis-sbgn', 'tag-
     if (c && meth === 'PUT') {
       var p = decodeURIComponent(c[1]), d = JSON.parse(r.postData()), now = await fileOf(p);
       puts.push(p);
+      if (refusePut && p === refusePut) return json(500, { message: 'test: refused' });
       if (now != null && d.sha !== gitSha(now)) return json(409, { message: 'test: sha does not match' });
       files[p] = Buffer.from(d.content, 'base64').toString('utf8');
       return json(200, { content: { sha: gitSha(files[p]) } });
@@ -129,6 +130,7 @@ var KEEP = ['colour-test', 'glycolysis-graphml', 'colour-glycolysis-sbgn', 'tag-
   await page.evaluate(function () { localStorage.setItem('atlas-edit-token', 'test-token'); });
   await open(); await page.waitForTimeout(3000); await list();
   var mapPuts = puts.filter(function (p) { return !/\.md$/.test(p); });
+  ok('4. all back cleanly: no window', !(await page.$('.m2-back')));
   ok('4. connected again: only the changed map saved to GitHub', mapPuts.length === 1 && mapPuts[0] === changed.from.path && /changed in the folder/.test(files[changed.from.path]), String(puts));
   ok('4. the renamed copy: its page renamed on GitHub', /Renamed in the folder/.test(files['maps/tag-celldesigner.md'] || ''), files['maps/tag-celldesigner.md']);
   ok('4. the deleted copy: its site map in Deleted on GitHub', /deleted:/.test(files['maps/glycolysis-graphml.md'] || ''), files['maps/glycolysis-graphml.md']);
@@ -142,6 +144,34 @@ var KEEP = ['colour-test', 'glycolysis-graphml', 'colour-glycolysis-sbgn', 'tag-
   await page.evaluate(function () { document.dispatchEvent(new Event('visibilitychange')); }); await page.waitForTimeout(3000);
   after = await ids();
   ok('5. the builds of the saves: the site\'s maps in the copies\' places, each once', !twice(after).length && !after.some(function (x) { return /^mine-/.test(x); }) && after.indexOf('colour-test') >= 0 && after.indexOf('tag-celldesigner') >= 0 && !(await recs()).length, after.join(' '));
+  // a second time in the folder: one copy changed both there and on GitHub (both kept), one GitHub refuses (not back yet)
+  await askOff(); await page.click('.m2-ask-copy');
+  await page.waitForSelector('.m2-ask', { state: 'detached', timeout: 120000 }); await page.waitForTimeout(2500);
+  var rs2 = (await recs()).filter(function (r) { return r.from; });
+  var bothC = rs2.filter(function (r) { return r.from.site === 'colour-glycolysis-sbgn'; })[0], failC = rs2.filter(function (r) { return r.from.site === 'colour-test'; })[0];
+  ok('6. copied again', !!bothC && !!failC, JSON.stringify(rs2.map(function (r) { return r.from.site; })));
+  if (bothC && failC) {
+    await page.evaluate(async function (a) {
+      var d = await (await navigator.storage.getDirectory()).getDirectoryHandle('maps');
+      for (var name of a) { var h = await d.getFileHandle(name), t = await (await h.getFile()).text(), w = await h.createWritable(); await w.write(t + '\n<!-- changed in the folder again -->\n'); await w.close(); }
+    }, [bothC.file, failC.file]);
+    await open();
+    files[bothC.from.path] = files[bothC.from.path] + '\n<!-- changed on GitHub meanwhile -->\n';
+    refusePut = failC.from.path;
+    await page.evaluate(function () { localStorage.setItem('atlas-edit-token', 'test-token'); });
+    await open();
+    await page.waitForSelector('.m2-back', { timeout: 30000 }).catch(function () {});
+    var said2 = await page.$eval('.m2-back', function (e) { return e.textContent; }).catch(function () { return ''; });
+    ok('7. connected again: a window says it', /Connected to GitHub again/.test(said2), said2);
+    ok('7. names the map kept twice', /both versions are kept/.test(said2) && said2.indexOf(bothC.title) >= 0, said2);
+    ok('7. names the map not back yet', /Not back on GitHub yet/.test(said2) && said2.indexOf(failC.title) >= 0, said2);
+    ok('7. OK focused', (await page.evaluate(function () { return document.activeElement.textContent; })) === 'OK');
+    await page.keyboard.press('Escape');
+    ok('7. Esc closes it', !(await page.$('.m2-back')));
+    await list(); var tt7 = await titles();
+    ok('7. the map changed in both places listed twice, as the window says', tt7.filter(function (x) { return x.indexOf(bothC.title) === 0; }).length === 2, tt7.join(' / '));
+    refusePut = null;
+  }
   ok('no script errors', !errs.length, errs.slice(0, 3).join(' | '));
   await b.close();
   console.log(bad ? bad + ' WRONG' : 'all ok');
