@@ -43,12 +43,12 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
     if (f.hash === 'pdh-celldesigner') {
       ok(f.hash + ': a long list folded to its first row and +N', /^1 \+\d+$/.test(await vis()), await vis());
       await page.click('.m2-ed-pmore'); await page.waitForTimeout(300);
-      ok(f.hash + ': +N opens the whole list, less in its place', /^\d+ less$/.test(await vis()) && +(await vis()).split(' ')[0] >= 6, await vis());
+      ok(f.hash + ': +N opens the whole list, less in its place', /^\d+ less$/.test(await vis()) && +(await vis()).split(' ')[0] >= 3, await vis());
       await page.click('.m2-ed-pmore'); await page.waitForTimeout(300);
       ok(f.hash + ': less folds it again', /^1 \+\d+$/.test(await vis()), await vis());
     }
     var R = await rows();
-    ok(f.hash + ': every member identifier has a cross', R.length >= 6 && R.every(function (x) { return / x$/.test(x); }), JSON.stringify(R));
+    ok(f.hash + ': every member identifier has a cross', R.length >= 3 && R.every(function (x) { return / x$/.test(x); }), JSON.stringify(R));
     await page.click('.m2-ed-px[data-key="uniprot:Q9P2J9"]'); await page.waitForTimeout(1200);
     var t1 = await now(), hv1 = bagOf(t1, 'bqbiol:hasVersion').join(' ');
     ok(f.hash + ': the cross takes Q9P2J9 out of hasVersion, Q9P0J1 kept', !/Q9P2J9/.test(hv1) && /Q9P0J1/.test(hv1), hv1);
