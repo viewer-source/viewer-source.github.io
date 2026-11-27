@@ -106,6 +106,11 @@ function py(args) { return cp.spawnSync('python3', ['-I', path.join(forge, 'scri
   var old = tb.replace(/(name="Background images"[^>]*visible=")true"/, '$1false"').replace('</celldesigner:listOfLayers>', '<celldesigner:layer id="9" name="Mine" locked="false" visible="false"/>\n</celldesigner:listOfLayers>');
   var ev = M.packEntries([{ path: 'bgv.xml', text: old }], {}, {}, []).entries[0].data;
   ok('the background layer goes out visible, a reader\'s hidden layer stays hidden', /name="Background images"[^>]*visible="true"/.test(ev) && /name="Mine"[^>]*visible="false"/.test(ev) && /visible="false"/.test(old), ev.slice(ev.indexOf('<celldesigner:listOfLayers'), ev.indexOf('<celldesigner:listOfLayers') + 300));
+  // the editor's background layer goes in under the network (a negative id: MINERVA draws a layer at the z its id gives);
+  // one with an image of no negative Z-Index, and a reader's own layer, keep their ids
+  ok('the background layer goes in under the network, other layers keep their ids', /<celldesigner:layer id="-1" name="Background images"/.test(ev) && /id="9" name="Mine"/.test(ev) && /<celldesigner:layer id="[1-9]\d*" name="Background images"/.test(tb));
+  var tz = tb.replace('Z-Index: -1', 'Z-Index: 3'), ez = M.packEntries([{ path: 'bgz.xml', text: tz }], {}, {}, []).entries[0].data;
+  ok('a background image over the network (Z-Index 3) keeps the layer\'s id', /Z-Index: 3/.test(tz) && !/layer id="-/.test(ez));
   console.log(bad ? bad + ' WRONG' : 'all ok');
   process.exit(bad ? 1 : 0);
 });

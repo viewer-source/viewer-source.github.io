@@ -329,10 +329,25 @@
     function bgVisible(text) {
       return text.replace(/<celldesigner:layer\b[^>]*\sname="Background (?:images|pictures)"[^>]*>/g, function (h) { return h.replace(/\svisible="false"/, ' visible="true"'); });
     }
+    // the editor's own background layer given a negative id in the zip's copy when every image on it has a negative
+    // Z-Index and it holds nothing else: MINERVA draws each layer on a plane of its own at the z its id gives, over the
+    // whole network (at 0) for a positive id, whatever the images' own Z-Index; other layers are left as the file has them
+    function bgUnder(text) {
+      var n = 0;
+      return text.replace(/(<celldesigner:layer\b[^>]*?\sid=")([^"]*)("[^>]*>)([\s\S]*?<\/celldesigner:layer>)/g, function (all, a, id, b, body) {
+        if (!/\sname="Background (?:images|pictures)"/.test(all.slice(0, all.indexOf('>')))) return all;
+        var items = body.match(/<celldesigner:layerSpeciesAlias\b[\s\S]*?<\/celldesigner:layerSpeciesAlias>/g) || [];
+        var under = items.length && !/<celldesigner:listOf(?:Squares|FreeLines)>\s*<celldesigner:/.test(body) && items.every(function (t) {
+          var ln = /<celldesigner:layerNotes>([\s\S]*?)<\/celldesigner:layerNotes>/.exec(t), z = ln && zOf(ln[1]);
+          return ln && glyphOf(ln[1]) && z != null && z < 0;
+        });
+        return under ? a + (-(++n)) + b + body : all;
+      });
+    }
     function packEntries(maps, pics, kept, missing) {
       var z = [], gone = [], entries = [];
       maps.forEach(function (m) {
-        var r = reckonZ(bgVisible(m.text));
+        var r = reckonZ(bgUnder(bgVisible(m.text)));
         if (r.changed) z.push(bareName(m.path));
         entries.push({ name: m.path, data: r.text });
       });
@@ -344,4 +359,4 @@
       });
       return { entries: entries, z: z, gone: gone };
     }
-    export { bytesSha, crc32, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntries, packPlan, picturesOn, pngSize, reckonZ, renameGlyph, settleGlyphs, svgPixels, unzip, zip };
+    export { bytesSha, crc32, fitPixels, glyphsNamed, keptGlyphs, minervaProject, bgUnder, packEntries, packPlan, picturesOn, pngSize, reckonZ, renameGlyph, settleGlyphs, svgPixels, unzip, zip };

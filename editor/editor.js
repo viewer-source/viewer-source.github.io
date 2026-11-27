@@ -6896,10 +6896,22 @@
       return h.replace(/\svisible="false"/, ' visible="true"');
     });
   }
+  function bgUnder(text) {
+    var n = 0;
+    return text.replace(/(<celldesigner:layer\b[^>]*?\sid=")([^"]*)("[^>]*>)([\s\S]*?<\/celldesigner:layer>)/g, function(all, a, id, b, body) {
+      if (!/\sname="Background (?:images|pictures)"/.test(all.slice(0, all.indexOf(">")))) return all;
+      var items = body.match(/<celldesigner:layerSpeciesAlias\b[\s\S]*?<\/celldesigner:layerSpeciesAlias>/g) || [];
+      var under2 = items.length && !/<celldesigner:listOf(?:Squares|FreeLines)>\s*<celldesigner:/.test(body) && items.every(function(t) {
+        var ln = /<celldesigner:layerNotes>([\s\S]*?)<\/celldesigner:layerNotes>/.exec(t), z = ln && zOf(ln[1]);
+        return ln && glyphOf(ln[1]) && z != null && z < 0;
+      });
+      return under2 ? a + -++n + b + body : all;
+    });
+  }
   function packEntries(maps, pics, kept, missing) {
     var z = [], gone = [], entries = [];
     maps.forEach(function(m) {
-      var r = reckonZ(bgVisible(m.text));
+      var r = reckonZ(bgUnder(bgVisible(m.text)));
       if (r.changed) z.push(bareName(m.path));
       entries.push({ name: m.path, data: r.text });
     });
