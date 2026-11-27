@@ -390,8 +390,25 @@
     return false;
   }
   function visualEnd(outer, port, n) {   // the visual end on the node's shape outline, state variables included (visual_end in rules.md); a port on the outline counts as inside, so a far-side port is reached where the line first meets the shape
-    var q = clip(outer, port, n.polys.filter(function (poly) { return inside(port, poly) || onOutline(port, poly); }), true);
+    var on = n.polys.filter(function (poly) { return inside(port, poly) || onOutline(port, poly); });
+    var q = on.length ? clip(outer, port, on, true) : cornerEnd(outer, port, n);
     return n.aux.length ? clip(outer, q, n.aux, true) : q;
+  }
+  function inBox(p, polys, eps) {   // p within the box round the node's outlines (a multimer's two together)
+    var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    polys.forEach(function (poly) { poly.forEach(function (q) { x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[0]); y1 = Math.max(y1, q[1]); }); });
+    return p[0] >= x0 - eps && p[0] <= x1 + eps && p[1] >= y0 - eps && p[1] <= y1 + eps;
+  }
+  function cornerEnd(outer, port, n) {   // corner_end in rules.md: a port off the shape but inside its box carried on to the outline; outside the box, as given
+    if (!n.polys.length || !inBox(port, n.polys, 0.5)) return port;
+    var met = clip(outer, port, n.polys, true);   // the line crossing the shape on its way: where it first meets it, as a far-side port
+    if (met !== port) return met;
+    var dx = port[0] - outer[0], dy = port[1] - outer[1], L = Math.hypot(dx, dy), g = n.geo, reach = g[2] + g[3] + 12;
+    if (L > 0) {   // on along the line's own way, so it stays straight
+      var far = [port[0] + dx / L * reach, port[1] + dy / L * reach], q = clip(port, far, n.polys, true);
+      if (q !== far && inBox(q, n.polys, 0.5)) return q;
+    }
+    return clip(port, [g[0] + g[2] / 2, g[1] + g[3] / 2], n.polys, true);   // else towards the centre
   }
   function iconSvg(res, lab, x, y, w, h, where, aux) {
     var gn = res ? iter(res, Y, ['GenericNode', 'ShapeNode'])[0] || null : null;

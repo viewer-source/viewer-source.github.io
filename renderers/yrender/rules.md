@@ -27,7 +27,8 @@ Rules read from yEd's own exports of the website maps:
    inhibition bar cut at the outline, or with its port on it, is moved back along its line until 2 px
    of white part it from the outline, also when it comes in at a slant (a head touching the outline
    reads badly, and a bar on it almost disappears; 1 px is not enough for the circle);
-   a port 1 px or more outside the shape, as hand-made gaps, as given. The file is never changed, only the drawing
+   a port 1 px or more outside the node's box, as hand-made gaps, as given; a port inside the box but off a rounded or
+   cut outline (a box corner) carried on to the outline (corner_end). The file is never changed, only the drawing
  - an arc goes behind its own nodes (a bend or an antenna's tip inside a node would draw the line across
    it, to its middle): it starts where it first leaves its source and stops where it last enters its target;
    a stick whose tip lies inside a node joined by an arc at that port stops on that node's outline, and that arc runs along
@@ -147,6 +148,19 @@ p within eps of the outline poly (a port written on the outline, which the flatt
 ## visual_end
 
 the visual end: where the line from outer to port first meets the node's shape outline, its shape with its state variables and units of information (the line stops at a state variable on its way, never crossing it to the shape behind); a port on the outline counts as inside, so a port on the far side of the shape is reached where the line first meets it, never across the node
+
+## corner_end
+
+a port off the node's shape but inside its box (the box round all its outlines, a multimer's two together; 0.5 of
+slack): the line is carried on to the outline, as a corner port belongs on the border. A box corner lies outside a
+rounded, cut or slanted outline, and yEd, the converter and typed numbers put ports there; drawn as given, the line
+stopped short with a gap (COX-1 in Aspirin, the source port 40, -16.72 in its rounded top right corner; the
+Glycolysis maps' arrowheads short of a metabolite's round end). Where the line crosses the shape on its way, it ends
+where it first meets it, as a far-side port. Otherwise it goes on along its own way from the port to the outline, so it
+stays straight; when that way misses the shape within the box, towards the node's centre (Newt draws every line at an
+entity so, aimed at its centre and cut at its outline). A port outside the box stays a hand-made gap, as before.
+Measured on the site's data when it was made: 90 lines in 39 drawings moved, 68 by less than 3 px, the most 9.5 px, each a
+corner gap closed.
 
 ## icon_svg
 
