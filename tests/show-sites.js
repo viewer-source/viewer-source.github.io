@@ -125,7 +125,7 @@ var SBSITE = 'external-newt-unstable-atm-mediated-phosphorylation-of-repair-prot
     ok('unticked: P alone, editing goes on', sh.indexOf('P@S139') < 0 && sh.indexOf('P') >= 0 && !!(await page.evaluate(function () { return window.m2EditNow(); })));
     var st = function (t) { return (t.match(/<state\b[^>]*>/g) || []).join('\n'); };
     var fb = await page.evaluate(function () { return window.m2EditNow().text; });
-    ok('unticked: the file written as seen, the site in its glyph\'s PTM note, none on a state variable', !/variable="S139"/.test(fb) && /PTM:[^<\n]*@S139/.test(fb));
+    ok('unticked: the file written as seen, the site a link on its glyph, none on a state variable', !/variable="S139"/.test(fb) && /urn:sbgn:site:[^"]*@S139/.test(fb));
     // the field: the state variable's own text, the site with it
     var at = await page.evaluate(function () {
       var g = [].slice.call(document.querySelectorAll('#m2-img .sv-value')).filter(function (e) { return e.getClientRects().length; })[0];

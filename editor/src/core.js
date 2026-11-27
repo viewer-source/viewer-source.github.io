@@ -2865,7 +2865,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // the map being edited as it is now, for the viewer's menu (the download is what is on the screen;
     // else Download CellDesigner XML gives the site's file without the moves just made)
     function __run38() {   // run at start, in order (__start)
-    window.m2EditSites = function () {   // Show sites changed while an SBGN-ML map is edited: the file written as now seen (sbOut), saved
+    window.m2EditSites = function () {   // Show sites changed while a map is edited: the selection's marks as now drawn; an SBGN-ML map's file written as now seen (sbOut), saved
+      if (on) paint();
       if (!on || !site || !shared.F.sitesOut || !shared.F.sitesOut()) return;   // a format that writes sites as seen (SBGN-ML), its writer loaded
       if (src() === (site.saved || site.base)) return;   // as it is saved already
       shared.dirty = true; changed();

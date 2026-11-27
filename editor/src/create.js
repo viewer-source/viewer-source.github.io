@@ -1384,9 +1384,20 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         var q = l.localName === 'NodeLabel' && res[l.getAttribute('iconData')];
         if (!q) return;
         n[q[0]] = (n[q[0]] || 0) + 1;
-        out.push([q[1], [b[0] + num(l, 'x') + num(l, 'width') / 2, b[1] + num(l, 'y') + num(l, 'height') / 2], [num(l, 'width'), num(l, 'height')], q[0], n[q[0]] - 1]);
+        var w = num(l, 'width'), h = num(l, 'height');
+        if (q[0] === SV) w = svSeen(q[1], w, h);
+        out.push([q[1], [b[0] + num(l, 'x') + num(l, 'width') / 2, b[1] + num(l, 'y') + num(l, 'height') / 2], [w, h], q[0], n[q[0]] - 1]);
       });
       return out;
+    }
+    // the width a state variable is drawn at: with sites hidden, value@site shows the value alone in a box sized for it,
+    // centred where the whole one is (yrender icon_svg), so it is selected, hit and spaced as drawn
+    function svSeen(txt, w, h) {
+      var ls = txt.split('\n');
+      while (ls.length > 1 && !ls[ls.length - 1].trim()) ls.pop();
+      if (V.sites || ls.length > 1 || ls[0].indexOf('@') < 0) return w;
+      var n = ls[0].split('@')[0].length, kk = h / 18;
+      return Math.min(w, n <= 2 ? 18 * kk : Math.ceil(n * 5.4 * kk + 12 * kk));
     }
     function nameOf(i) {
       var r = realizerOf(nodes2[i].el), l = r && Array.prototype.filter.call(r.children, function (c) { return c.localName === 'NodeLabel' && !c.getAttribute('iconData'); })[0];
