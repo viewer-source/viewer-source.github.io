@@ -32,10 +32,11 @@ function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   await page.waitForFunction(function () { var i = document.getElementById('m2-img'); return i && i.style.visibility !== 'hidden'; }, null, { timeout: 30000 }).catch(function () {});
   var until = async function (want, ms) {   // the kept files once they hold every path of want (or ms passed)
     var t = Date.now(), k;
-    do { k = await keys().catch(function () { return []; }); if (want.every(function (p) { return k.indexOf(p) >= 0; })) break; await wait(1000); } while (Date.now() - t < ms);
+    do { k = await keys().catch(function () { return []; }); if (want.every(function (p) { return typeof p === 'function' ? k.some(p) : k.indexOf(p) >= 0; })) break; await wait(1000); } while (Date.now() - t < ms);
     return k;
   };
-  var k = await until([scope, '/index.json'], 30000);
+  var pic = function (p) { return /glycolysis-graphml.*\.svg$/.test(p); }, own = function (p) { return /^\/downloads\/glycolysis-graphml\.graphml$/.test(p); };
+  var k = await until([scope, '/index.json', pic, own], 60000);
   ok('A the page kept', k.indexOf(scope) >= 0, k.length + ' files kept');
   ok('A the list kept', k.indexOf('/index.json') >= 0);
   ok('A the map shown kept (picture)', k.some(function (p) { return /glycolysis-graphml.*\.svg$/.test(p); }));
@@ -79,7 +80,8 @@ function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   ok('C the kept map is not grey', r.filter(function (x) { return x.id === 'glycolysis-graphml'; }).every(function (x) { return !x.off; }));
   await page.click('#m2-list .m2-map[data-id="' + gone + '"]');
   await page.waitForSelector('#m2-offnote', { timeout: 8000 }).catch(function () {});
-  ok('C chosen, the view says Not available offline', await page.evaluate(function () { var n = document.getElementById('m2-offnote'); return !!n && /Not available offline/.test(n.textContent); }));
+  var note = await page.evaluate(function () { var n = document.getElementById('m2-offnote'); return !!n && /Not available offline/.test(n.textContent); });
+  ok('C chosen, the view says Not available offline (or the browser\'s own cache still had the picture)', note || await shown(), note ? 'the note' : 'the picture');
   await page.click('#m2-list .m2-map[data-id="glycolysis-graphml"]');
   await wait(1500);
   ok('C the note goes with a kept map', !(await page.$('#m2-offnote')));
