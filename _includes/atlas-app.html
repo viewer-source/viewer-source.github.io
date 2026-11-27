@@ -766,7 +766,7 @@ page, so its styles keep the base they were made on).
   /* a map pin, as in MINERVA, with its tip on the clicked node; it keeps its size at every zoom */
   /* the lines a click lights (lit, drawLit): a soft marker band under them, the map's own lines kept over it (multiply) */
   #m2-hl { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; mix-blend-mode: multiply; display: none; }
-  #m2-hl path { fill: none; stroke: #8db4f0; stroke-opacity: .7; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  #m2-hl path { fill: none; stroke: #8db4f0; stroke-opacity: .7; stroke-linecap: round; stroke-linejoin: round; }
   #m2-hl circle { fill: #8db4f0; fill-opacity: .7; }
   .m2-editing #m2-hl { display: none !important; }
   #m2-pin { position: absolute; left: 0; top: 0; width: 24px; height: 32px; margin: -32px 0 0 -12px; pointer-events: none; display: none; filter: drop-shadow(0 1px 1px #0005); }
@@ -3048,8 +3048,9 @@ page, so its styles keep the base they were made on).
     });
     return best;
   }
-  // the band under what is lit, in the picture's pixels, placed and sized as the picture: 6 screen pixels wide,
-  // a process's glyph a disc of 9
+  // the band under what is lit, in the picture's pixels, placed and sized as the picture: 6 screen pixels wide, or
+  // 5 map units once zoomed in (five times a line's usual width), so it keeps showing round a line drawn thicker; a
+  // process's glyph a disc of 9 screen pixels, or 0.6 of the glyph's side once zoomed in, so it stays round the glyph
   var litHtml = null;   // what the band holds, made once per lit; a move or zoom only places it
   function drawLit() {
     if (!lit || !current || document.querySelector('.m2-editing')) { hl.style.display = 'none'; hl.innerHTML = ''; litHtml = null; return; }
@@ -3060,12 +3061,14 @@ page, so its styles keep the base they were made on).
     hl.style.display = 'block';
     if (litHtml !== lit) {
       var on = lit.line ? [lit.line] : lines.filter(function (l) { return l.r === lit.proc.r; }), html = '';
-      on.forEach(function (l) { html += '<path d="' + l.d + '" stroke-width="6"/>'; });
+      on.forEach(function (l) { html += '<path d="' + l.d + '"/>'; });
       if (lit.proc) { var b = lit.proc.box; html += '<circle cx="' + (b[0] + b[2] / 2) + '" cy="' + (b[1] + b[3] / 2) + '"/>'; }
       hl.innerHTML = html; litHtml = lit;
     }
+    var bw = Math.max(6 * k / z, 5 * k);
+    hl.querySelectorAll('path').forEach(function (p) { p.setAttribute('stroke-width', bw); });
     var c = hl.querySelector('circle');
-    if (c) c.setAttribute('r', 9 * k / z);
+    if (c) { var pb = lit.proc.box; c.setAttribute('r', Math.max(9 * k / z, 0.6 * Math.max(pb[2], pb[3]))); }
   }
   function pick(vx, vy) {
     if (!nodes) return;
