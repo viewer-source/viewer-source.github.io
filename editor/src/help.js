@@ -47,7 +47,7 @@ import { box, on } from './core.js';
           ['Add reactant or Add product, onto a reaction\u2019s line', 'joins a line to a reaction already there', 'CellDesigner'],
           ['A logic gate sign: click its inputs, then the reaction', 'places the gate where CellDesigner would', 'CellDesigner'],
           ['Image in Properties, or a PNG or SVG dropped on a compartment or species', 'MINERVA\u2019s image, drawn in the box as MINERVA draws it; Fit box to image on the right click', 'CellDesigner'],
-          ['Right click on empty map space, Add background image', 'a image under the whole map, as MINERVA draws it; moved and resized from the same menu', 'CellDesigner'],
+          ['Right click on empty map space, Add background image, or a PNG or SVG dropped there', 'an image under the whole map, as MINERVA draws it; a click on it where nothing else is selects it, then a drag moves it, its handles resize it (Shift keeps its proportions), Delete removes it; also listed under Background in the panel', 'CellDesigner'],
           ['Set as default, in Properties', 'the next ones of that kind made this size and look', 'all'],
           ['Colours, Original', 'puts back the map\u2019s own colours after another choice', 'all']]]
       ];

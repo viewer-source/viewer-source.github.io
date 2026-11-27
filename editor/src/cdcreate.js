@@ -1,10 +1,10 @@
 import { shared, V } from './state.js';
-import { holds, roomy, asSpace, at, boxOf, changed, commit, cutShape, edgeAt, edges2, editing, f1, fmt, gridSet, grown, handleMarks, hit, keyFlush, kindWindow, landMarks, lateItem, line, map, near, nodes2, on, paint, parse, ports, procPlaces, quiet, rclick, setBoxes, shapeD, subItem, sx, sy, toGrid, warn, x0, y0 } from './core.js';
+import { holds, roomy, asSpace, at, boxOf, ownMenus, changed, commit, cutShape, edgeAt, edges2, editing, f1, fmt, gridSet, grown, handleMarks, hit, keyFlush, kindWindow, landMarks, lateItem, line, map, near, nodes2, on, paint, parse, ports, procPlaces, quiet, rclick, setBoxes, shapeD, subItem, sx, sy, toGrid, warn, x0, y0 } from './core.js';
 import { bx, liveOff, sizeOff } from './live.js';
 import { cdJs, cdMk, cdNow, cdPicKeep, cdPicUrl, cdRebuild, nodePlaces } from './celldesigner.js';
 import { nodeCentre } from './geometry.js';
 import NT from '../../renderers/converter/notation.js';   // the notation's kinds and rules table, as on the SBGN maps (create.js ruleSays)
-import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, hex, iconKeep, iconSpread, innermost, joinPack, keepLook, keepMapChoice, link, linkEnd, looksKept, mapCols, nameAt, origAll, pNow, pal, palBlocks, palDid, palDrop, palId, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, placedAt, propRows, styleRow, svAt, svDelete, svIcons, textsOf, tool, typeIn } from './create.js';
+import { field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, hex, iconKeep, iconSpread, innermost, joinPack, keepLook, keepMapChoice, link, linkEnd, looksKept, mapCols, nameAt, origAll, pNow, pal, palBlocks, palDid, palDrop, palId, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, placedAt, propRows, styleRow, svAt, svDelete, svIcons, textsOf, tool, typeIn } from './create.js';
 
     // ---------- the CellDesigner palette (editor/src/cdcreate.js) ----------
     // The CellDesigner palette, writing the CellDesigner file directly: on a CellDesigner map with Settings, Editing on Full, the Edit
@@ -102,7 +102,7 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
       hy.hidden = false;
       if (hyc.checked !== !strict) hyc.checked = !strict;
       cdInfo(hy, true);
-      styleRow(); cdColsRow();
+      styleRow(); cdColsRow(); cdBgRows();   // the map's choices, then its background images (Background)
       var k = 'cd' + (strict ? 'S' : '');
       if (shared.palShown === k) return;
       shared.palShown = k;
@@ -729,8 +729,9 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
       if ((shared.selN.length || (shared.selE.length && !shared.selP.length)) && cdDelete(shared.selN, shared.selE)) { e.preventDefault(); e.stopImmediatePropagation(); }   // an area's bend points go with their lines, as the menu's Delete
     }, true);
     }
-    function cdDeleteItem() {   // the right-click menu's Delete over a state variable, a unit of information, a node or a line
+    function cdDeleteItem() {   // the right-click menu's Delete over a state variable, a unit of information, a node, a line or the background selected
       if (!rclick) return null;
+      if (cdBgOwn(rclick)) return function () { cdBgDelete(); };
       var sq = svAt(rclick);
       if (sq) return function () { shared.svSel = { id: nodes2[sq[0]].id, j: sq[1] }; svDelete(); };
       var h = hit(rclick);
@@ -742,6 +743,7 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
     // the right-click menu over a species, a line or a gate: its other kinds within the palette's
     function cdItems() {
       if (!rclick) return null;
+      if (cdBgOwn(rclick)) return cdBgOwnItems();   // the background selected, where nothing else is: its own items
       var sq = svAt(rclick);
       if (sq) return cdSvOwnItems(sq);   // a state variable or unit of information: its own menu
       var h = hit(rclick), out = [];
@@ -1566,7 +1568,7 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
     cdPicker.addEventListener('change', function () { var f = cdPicker.files[0], go = cdPickFor; cdPickFor = null; cdPicker.value = ''; if (f && go) go(f); });
     document.body.appendChild(cdPicker);
     // a PNG or SVG dropped on the map in edit mode: on the compartment or species under it (before the list's drop, which
-    // would take it for a map); one at a time; on empty space it says where backgrounds are added
+    // would take it for a map); one at a time; on empty map space a background image, round the whole drawing
     document.addEventListener('drop', function (e) {
       var fs = e.dataTransfer ? Array.prototype.slice.call(e.dataTransfer.files || []) : [];
       if (!fs.length || !cdPal() || !on || V.current !== map || !V.view.contains(e.target)) return;
@@ -1574,12 +1576,24 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
       e.preventDefault(); e.stopPropagation();
       var h = hit(at(e)), i = h && h.n != null && h.p == null ? h.n : -1;
       if (fs.length > 1) { warn('One image at a time: drop a single PNG or SVG on a compartment or a species.'); return; }
-      if (i < 0 || !cdPicAble(i)) { warn('A image goes on a compartment or a species (a complex’s member takes none). A background image is added by a right click on empty map space.'); return; }
+      if (!h && !edgeAt(at(e), true)) { cdBgAdd(fs[0]); return; }   // on empty map space: a background image under the whole map
+      if (i < 0 || !cdPicAble(i)) { warn('An image goes on a compartment or a species (a complex’s member takes none), or under the whole map when dropped on empty map space.'); return; }
       cdPicSet([nodes2[i].id], fs[0]);
     }, true);
-    // a background being moved or resized (Move and resize background): its handles until Esc or a press elsewhere
-    window.addEventListener('pointerdown', cdBgDown, true);   // on the window, so it comes before the editor's own press on the map (core.js), whatever is under it
-    document.addEventListener('keydown', function (e) { if (cdBg && e.key === 'Escape') { cdBg = null; paint(); } });
+    // a background as an object (cdBgDown): selected by a click where nothing else is, moved and resized while selected;
+    // on the window, so it comes before the editor's own press and release on the map (core.js)
+    window.addEventListener('pointerdown', cdBgDown, true);
+    window.addEventListener('pointerup', cdBgUp, true);
+    window.addEventListener('keydown', function (e) {   // Delete or Backspace removes it (one undo step), before the editor's own keys
+      if (!cdBg || !cdPal() || !on || V.current !== map || V.typing() || /input|textarea|select/i.test(document.activeElement.tagName) || document.querySelector('.m2-cx')) return;
+      if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); e.stopImmediatePropagation(); cdBgDelete(); }
+    }, true);
+    var cdEscFor;   // a menu or list open when Esc came: that Esc is theirs (they close first, the selection stays)
+    window.addEventListener('keydown', function (e) { if (e.key === 'Escape') cdEscFor = !!document.querySelector('.m2-cx'); }, true);
+    document.addEventListener('keydown', function (e) {   // Esc lets it go, once a menu, list or window open has taken its own Esc
+      if (cdBg && e.key === 'Escape' && !e.defaultPrevented && !cdEscFor) { cdBg = null; paint(); }
+    });
+    ownMenus.push(cdBgOwn);   // a right click on the background selected, where nothing else is: its own menu, not the map's
     }
     // ---------- MINERVA's pictures (notes/minerva-pack-plan.md, step 3) ----------
     // A picture on a compartment or a species (a complex too; a complex's member none: MINERVA reads only top-level
@@ -1588,10 +1602,10 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
     // first where the maps are kept (own.js picKeep, through celldesigner.js cdPicKeep), then its note written
     // (cd_make.picture), one undo step; refused (not PNG or SVG, GitHub refusing it): said, nothing written. Fit box to
     // picture gives the box the picture's proportions, its centre and width kept, one undo step.
-    // Backgrounds, layer texts holding a picture (cd_make.background), from the right-click on empty map space: Add
-    // background picture... (its box round the whole drawing), and for each: Replace..., Move and resize (its outline and
-    // handles: a drag inside moves it, on a handle resizes it, each release one undo step; Esc or a press elsewhere ends),
-    // Fit background to picture, Remove. A background is never picked by a click, so the network under it is edited as before
+    // Backgrounds, layer texts holding a picture (cd_make.background), objects of their own (cdBgDown, below): added by
+    // the right click on empty map space (Add background image...), a drop there or the left panel's Background (its box
+    // round the whole drawing), selected by a click where nothing else is or in that panel, then moved, resized, replaced,
+    // fitted to their picture or deleted. Never picked by a press on the network over them
     var cdPicker, cdPickFor, cdBg;
     // after a picture's keep (seconds with GitHub): the same map still in edit mode, else nothing written and said so (the
     // picture stays kept, unnamed by any map)
@@ -1650,31 +1664,47 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
       return same.filter(function (g) { return g.box && g.box.every(function (v, k) { return Math.abs(v - ref.box[k]) < 0.005; }); })[0] || (same.length === 1 ? same[0] : null);
     }
     function cdBgDo(ref, f) { return cdApply(function (t) { var g = cdBgFind(ref); return g ? f(t, g.n) : t; }, []); }   // one undo step on that background, if it is still there
-    // the backgrounds' items on empty map space (celldesigner.js F.mapItems, core.js m2EditMapItems)
-    function cdBgItems() {
-      if (!cdPal()) return null;
-      var bs = cdBgs(), out = [['Add background image…', function () { cdPicChoose(cdBgAdd); }]];
-      bs.forEach(function (g) {
-        var nm = bs.length > 1 ? ' (' + g.name.replace(/^glyphs\//, '') + ')' : '', ref = { name: g.name, box: g.box.slice() };
-        out.push(['Replace background image' + nm + '…', function () { cdPicChoose(function (f) { cdBgReplace(ref, f); }); }],
-          ['Move and resize background' + nm, function () { cdBg = { ref: ref, box: ref.box.slice() }; paint(); }],
-          ['Fit background to image' + nm, function () { cdBgFit(ref); }],
-          ['Remove background image' + nm, function () { cdBg = null; cdBgDo(ref, cdMk.backgroundRemove); }]);
-      });
-      return out;
+    // a background as an object (notes/minerva-pack-plan.md, Backgrounds as objects): cdBg the one selected, { ref, box,
+    // drag }. A click on empty map space (no node, line, bend point or compartment border there) while nothing is
+    // selected selects the topmost background under it; a press elsewhere, or anything else selected, lets it go. While
+    // selected: a drag inside it where nothing else is moves it, a handle resizes it (Shift on a corner keeps its
+    // proportions), each release one undo step; Delete removes it; Esc lets it go; the right click there gives its own
+    // items (Replace image..., Fit box to image, Delete). A press on a node or line over it goes to that node or line
+    function cdBgIn(b, P) { return !!b && P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3]; }
+    function cdBgFree(P) { return !hit(P) && !edgeAt(P, true) && !svAt(P); }   // nothing of the network there
+    function cdBgAt(P) {   // the topmost background under P (drawn in the file's order, the last on top), as a ref, or null
+      var bs = cdBgs().filter(function (g) { return cdBgIn(g.box, P); }), g = bs[bs.length - 1];
+      return g ? { name: g.name, box: g.box.slice() } : null;
     }
-    function cdBgAdd(f) {
+    function cdBgSelect(ref) {   // that background selected, anything else let go
+      shared.selN = []; shared.selE = []; shared.selP = []; shared.part = null; shared.svSel = null;
+      cdBg = ref ? { ref: ref, box: ref.box.slice(), at: shared.cd && shared.cd.now } : null;   // at: the text it was selected on (an add's own text may come after)
+      paint();
+    }
+    function cdBgOwn(P) { return !!(cdBg && cdPal() && on && V.current === map && P && cdBgIn(cdBg.box, P) && cdBgFree(P)); }   // a right click on the selected one, off the network
+    function cdBgDelete() { var ref = cdBg && cdBg.ref; cdBg = null; if (ref) cdBgDo(ref, cdMk.backgroundRemove); else paint(); }
+    function cdBgOwnItems() {
+      var ref = cdBg.ref;
+      return [['Replace image…', function () { cdPicChoose(function (f) { cdBgReplace(ref, f); }); }], ['Fit box to image', function () { cdBgFit(ref); }]];   // Delete after them (cdDeleteItem)
+    }
+    // empty map space's item of its own (celldesigner.js F.mapItems, core.js m2EditMapItems): Add background image...
+    function cdBgItems() { return cdPal() ? [['Add background image…', function () { cdPicChoose(cdBgAdd); }]] : null; }
+    function cdBgAdd(f) {   // kept, then put round the whole drawing and selected
       var m0 = map, bs = nodes2.map(function (n, i) { return boxOf(i); }).filter(Boolean);
-      var box = bs.length ? bs.reduce(function (a, b) { var x = Math.min(a[0], b[0]), y = Math.min(a[1], b[1]); return [x, y, Math.max(a[0] + a[2], b[0] + b[2]) - x, Math.max(a[1] + a[3], b[1] + b[3]) - y]; }) : [0, 0, 800, 600];   // round the whole drawing
+      var box = (bs.length ? bs.reduce(function (a, b) { var x = Math.min(a[0], b[0]), y = Math.min(a[1], b[1]); return [x, y, Math.max(a[0] + a[2], b[0] + b[2]) - x, Math.max(a[1] + a[3], b[1] + b[3]) - y]; }) : [0, 0, 800, 600]).map(function (v) { return Math.round(v * 100) / 100; });   // round the whole drawing
       return cdPicKeep(f).then(function (r) {
         if (!cdStill(m0)) return;
-        cdApply(function (t) { return cdMk.background(t, r.note, box.map(function (v) { return Math.round(v * 100) / 100; })).text; }, []);
+        if (cdApply(function (t) { return cdMk.background(t, r.note, box).text; }, []) !== false) cdBgSelect({ name: r.note, box: box });
       }, function (e) { warn('Background image not added: ' + String(e && e.message ? e.message : e).replace(/\.?$/, '.')); });
     }
     function cdBgReplace(ref, f) {
       var m0 = map;
-      return cdPicKeep(f).then(function (r) { if (cdStill(m0)) cdBgDo(ref, function (t, n) { return cdMk.backgroundSet(t, n, { name: r.note }); }); },
-        function (e) { warn('Background image not replaced: ' + String(e && e.message ? e.message : e).replace(/\.?$/, '.')); });
+      return cdPicKeep(f).then(function (r) {
+        if (!cdStill(m0)) return;
+        cdBgDo(ref, function (t, n) { return cdMk.backgroundSet(t, n, { name: r.note }); });
+        if (cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join()) cdBg.ref = { name: r.note, box: ref.box.slice() };   // still selected
+        paint();
+      }, function (e) { warn('Background image not replaced: ' + String(e && e.message ? e.message : e).replace(/\.?$/, '.')); });
     }
     function cdBgFit(ref) {
       var g = cdBgFind(ref), src = g && cdPicUrl(g.name), m0 = map;
@@ -1685,31 +1715,40 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
         var nb = cdFitBox(g2.box, d).map(function (v) { return Math.round(v * 100) / 100; });
         cdBgDo(ref, function (t, n) { return cdMk.backgroundSet(t, n, { box: nb }); });
         if (cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join()) { cdBg.ref = { name: ref.name, box: nb }; cdBg.box = nb.slice(); }
+        paint();
       });
     }
-    // its outline and eight handles while being moved or resized (cdOverMarks); gone when it is no longer on the map (an
-    // undo of its adding, a remove); after an undo of a move, followed to the box it has again when it is the only one of
-    // its picture
+    // its outline and eight handles while selected (cdOverMarks); let go when it is no longer on the map (an undo of its
+    // adding, a remove); after an undo of a move, followed to the box it has again when it is the only one of its picture
     function cdBgMarks(out) {
       if (!cdBg) return;
       if (!cdBg.drag) {
         var g = cdPal() && on && V.current === map ? cdBgFind(cdBg.ref) : null;
+        if (!g && cdBg.at === (shared.cd && shared.cd.now) && cdPal() && on && V.current === map) g = cdBg.ref;   // just added: the text naming it not read yet
+        else if (g) cdBg.at = null;   // read: from now on followed by the text alone (an undo of its adding lets it go)
         if (!g) { cdBg = null; return; }
         cdBg.ref = { name: g.name, box: g.box.slice() }; cdBg.box = g.box.slice();
       }
       var b = cdBg.box;
       out.push('<rect class="m2-ed-ghost" x="' + sx(b[0]) + '" y="' + sy(b[1]) + '" width="' + b[2] * V.z + '" height="' + b[3] * V.z + '"/>' + handleMarks(b, 'm2-ed-handle'));
     }
+    var cdTap;   // a press that may be a click selecting a background: { x, y, P } in screen and map units
     function cdBgDown(e) {
-      if (!cdBg || e.button !== 0 || !V.view.contains(e.target) || !editing(e)) return;
-      var P = at(e), b = cdBg.box, tol = Math.max(5, 8 / V.z), o = 3.3;
+      cdTap = null;
+      if (e.button !== 0 || !cdPal() || !V.view.contains(e.target) || !editing(e) || tool || link) return;
+      var P = at(e);
+      if (!cdBg) {
+        if (!e.shiftKey && !shared.selN.length && !shared.selE.length && !shared.selP.length && !shared.svSel && cdBgFree(P) && cdBgAt(P)) cdTap = { x: e.clientX, y: e.clientY, P: P };   // taken on release (cdBgUp), so a drag still moves the map or draws an area
+        return;
+      }
+      var b = cdBg.box, tol = Math.max(5, 8 / V.z), o = 3.3;
       var xs = [b[0] - o, b[0] + b[2] / 2, b[0] + b[2] + o], ys = [b[1] - o, b[1] + b[3] / 2, b[1] + b[3] + o], hx = -1, hy = -1;
       xs.forEach(function (x, k) { if (Math.abs(P[0] - x) <= tol) hx = k; });
       ys.forEach(function (y, k) { if (Math.abs(P[1] - y) <= tol) hy = k; });
-      var onHandle = hx >= 0 && hy >= 0 && !(hx === 1 && hy === 1), inside = P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3];
-      if (!onHandle && !inside) { cdBg = null; paint(); return; }   // a press elsewhere: done, the press goes on as usual
+      var onHandle = hx >= 0 && hy >= 0 && !(hx === 1 && hy === 1), inside = cdBgIn(b, P) && cdBgFree(P);
+      if (!onHandle && !inside) { cdBg = null; paint(); return; }   // a press on the network or off it: let go, the press goes on as usual
       e.preventDefault(); e.stopImmediatePropagation();
-      var b0 = b.slice(), ref = cdBg.ref, el = V.view;
+      var b0 = b.slice(), ref = cdBg.ref, el = V.view, corner = onHandle && hx !== 1 && hy !== 1;
       cdBg.drag = true;
       try { el.setPointerCapture(e.pointerId); } catch (er) {}
       var move = function (ev) {
@@ -1718,6 +1757,12 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
         else {
           if (hx === 0) { nb[0] = Math.min(b0[0] + dx, b0[0] + b0[2] - 1); nb[2] = b0[0] + b0[2] - nb[0]; } else if (hx === 2) nb[2] = Math.max(1, b0[2] + dx);
           if (hy === 0) { nb[1] = Math.min(b0[1] + dy, b0[1] + b0[3] - 1); nb[3] = b0[1] + b0[3] - nb[1]; } else if (hy === 2) nb[3] = Math.max(1, b0[3] + dy);
+          if (corner && ev.shiftKey) {   // its proportions kept: the larger change of the two, the opposite corner still
+            var k = Math.max(nb[2] / b0[2], nb[3] / b0[3]);
+            nb[2] = b0[2] * k; nb[3] = b0[3] * k;
+            if (hx === 0) nb[0] = b0[0] + b0[2] - nb[2];
+            if (hy === 0) nb[1] = b0[1] + b0[3] - nb[3];
+          }
         }
         if (cdBg) { cdBg.box = nb; paint(); }
       };
@@ -1730,6 +1775,42 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
         else paint();
       };
       el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    }
+    function cdBgUp(e) {   // a click (no move) where a press found a background and nothing else: that background selected
+      var t = cdTap; cdTap = null;
+      if (!t || e.button !== 0 || Math.hypot(e.clientX - t.x, e.clientY - t.y) >= 5 || !cdPal() || !on || V.current !== map) return;
+      var ref = cdBgAt(t.P);
+      if (ref) setTimeout(function () { cdBgSelect(ref); }, 0);   // after the editor's own click on empty space, which clears the selection
+    }
+    // Background in the left panel (under Style and Colours, while nothing is selected): one row per background, the
+    // topmost first, its preview, its file's name and Remove; a click on a row selects that background on the map (the row
+    // then shaded light grey); last a row with Upload (the Image row's word for an image from the computer). Rows made again only when the map's text, the one selected
+    // or a preview changes (cdFill runs with every paint)
+    var cdBgRowsAt;
+    function cdBgRows() {
+      var tb = pmap.firstChild, bs = cdBgs().slice().reverse(), sel = cdBg && cdBgFind(cdBg.ref);
+      var key = [shared.cd && shared.cd.now, sel ? sel.n : -1].concat(bs.map(function (g) { return g.n + ':' + g.name + ':' + !!cdPicUrl(g.name); })).join('|');
+      if (cdBgRowsAt && cdBgRowsAt.key === key && cdBgRowsAt.tb === tb && tb.querySelector('tr.m2-ed-pbg')) return;
+      cdBgRowsAt = { key: key, tb: tb };
+      Array.prototype.forEach.call(tb.querySelectorAll('tr.m2-ed-pbg'), function (r) { r.remove(); });
+      var row = function (head, inner) {
+        var r = document.createElement('tr'); r.className = 'm2-ed-pbg';
+        r.innerHTML = '<th>' + head + '</th><td><span class="m2-ed-ppic">' + inner + '</span></td>';
+        tb.appendChild(r); return r;
+      };
+      bs.forEach(function (g, j) {
+        var ref = { name: g.name, box: g.box.slice() }, src = cdPicUrl(g.name), nm = g.name.replace(/^glyphs\//, '');
+        var r = row(j ? '' : 'Background', '<img alt=""' + (src ? '' : ' hidden') + '><span class="m2-ed-ppicname"></span><button type="button" class="m2-ed-ppicoff">Remove</button>');
+        r.dataset.k = 'bg' + g.n; r.title = 'A background image under the whole map; a click selects it on the map';
+        if (src) r.querySelector('img').setAttribute('src', src);
+        var ns = r.querySelector('.m2-ed-ppicname'); ns.textContent = nm; ns.title = g.name;
+        if (sel && sel.n === g.n) r.classList.add('m2-ed-pbgsel');
+        r.addEventListener('click', function (e) { if (!e.target.closest('button')) cdBgSelect(ref); });
+        r.querySelector('button').addEventListener('click', function (e) { e.currentTarget.blur(); if (cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join()) cdBg = null; cdBgDo(ref, cdMk.backgroundRemove); });
+      });
+      var a = row(bs.length ? '' : 'Background', '<button type="button" class="m2-ed-pbgadd">Upload</button>');
+      a.dataset.k = 'bgadd'; a.title = 'A PNG or SVG under the whole map, as MINERVA draws its backgrounds';
+      a.querySelector('button').addEventListener('click', function (e) { e.currentTarget.blur(); cdPicChoose(cdBgAdd); });
     }
     function cdDouble(k, x, ids) {
       if (!isFinite(x)) return false;

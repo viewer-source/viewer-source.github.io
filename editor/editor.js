@@ -3461,6 +3461,7 @@
     cdInfo(hy, true);
     styleRow();
     cdColsRow();
+    cdBgRows();
     var k = "cd" + (strict ? "S" : "");
     if (shared.palShown === k) return;
     shared.palShown = k;
@@ -4369,6 +4370,9 @@
   }
   function cdDeleteItem() {
     if (!rclick) return null;
+    if (cdBgOwn(rclick)) return function() {
+      cdBgDelete();
+    };
     var sq2 = svAt(rclick);
     if (sq2) return function() {
       shared.svSel = { id: nodes2[sq2[0]].id, j: sq2[1] };
@@ -4393,6 +4397,7 @@
   }
   function cdItems() {
     if (!rclick) return null;
+    if (cdBgOwn(rclick)) return cdBgOwnItems();
     var sq2 = svAt(rclick);
     if (sq2) return cdSvOwnItems(sq2);
     var h = hit(rclick), out = [];
@@ -5735,19 +5740,37 @@
         warn("One image at a time: drop a single PNG or SVG on a compartment or a species.");
         return;
       }
+      if (!h && !edgeAt(at(e), true)) {
+        cdBgAdd(fs[0]);
+        return;
+      }
       if (i < 0 || !cdPicAble(i)) {
-        warn("A image goes on a compartment or a species (a complex\u2019s member takes none). A background image is added by a right click on empty map space.");
+        warn("An image goes on a compartment or a species (a complex\u2019s member takes none), or under the whole map when dropped on empty map space.");
         return;
       }
       cdPicSet([nodes2[i].id], fs[0]);
     }, true);
     window.addEventListener("pointerdown", cdBgDown, true);
+    window.addEventListener("pointerup", cdBgUp, true);
+    window.addEventListener("keydown", function(e) {
+      if (!cdBg || !cdPal() || !on || V.current !== map || V.typing() || /input|textarea|select/i.test(document.activeElement.tagName) || document.querySelector(".m2-cx")) return;
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        cdBgDelete();
+      }
+    }, true);
+    var cdEscFor;
+    window.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") cdEscFor = !!document.querySelector(".m2-cx");
+    }, true);
     document.addEventListener("keydown", function(e) {
-      if (cdBg && e.key === "Escape") {
+      if (cdBg && e.key === "Escape" && !e.defaultPrevented && !cdEscFor) {
         cdBg = null;
         paint();
       }
     });
+    ownMenus.push(cdBgOwn);
   }
   var cdPicker;
   var cdPickFor;
@@ -5886,65 +5909,82 @@
       return g ? f(t, g.n) : t;
     }, []);
   }
-  function cdBgItems() {
-    if (!cdPal()) return null;
-    var bs = cdBgs(), out = [["Add background image\u2026", function() {
-      cdPicChoose(cdBgAdd);
+  function cdBgIn(b, P) {
+    return !!b && P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3];
+  }
+  function cdBgFree(P) {
+    return !hit(P) && !edgeAt(P, true) && !svAt(P);
+  }
+  function cdBgAt(P) {
+    var bs = cdBgs().filter(function(g2) {
+      return cdBgIn(g2.box, P);
+    }), g = bs[bs.length - 1];
+    return g ? { name: g.name, box: g.box.slice() } : null;
+  }
+  function cdBgSelect(ref) {
+    shared.selN = [];
+    shared.selE = [];
+    shared.selP = [];
+    shared.part = null;
+    shared.svSel = null;
+    cdBg = ref ? { ref, box: ref.box.slice(), at: shared.cd && shared.cd.now } : null;
+    paint();
+  }
+  function cdBgOwn(P) {
+    return !!(cdBg && cdPal() && on && V.current === map && P && cdBgIn(cdBg.box, P) && cdBgFree(P));
+  }
+  function cdBgDelete() {
+    var ref = cdBg && cdBg.ref;
+    cdBg = null;
+    if (ref) cdBgDo(ref, cdMk.backgroundRemove);
+    else paint();
+  }
+  function cdBgOwnItems() {
+    var ref = cdBg.ref;
+    return [["Replace image\u2026", function() {
+      cdPicChoose(function(f) {
+        cdBgReplace(ref, f);
+      });
+    }], ["Fit box to image", function() {
+      cdBgFit(ref);
     }]];
-    bs.forEach(function(g) {
-      var nm = bs.length > 1 ? " (" + g.name.replace(/^glyphs\//, "") + ")" : "", ref = { name: g.name, box: g.box.slice() };
-      out.push(
-        ["Replace background image" + nm + "\u2026", function() {
-          cdPicChoose(function(f) {
-            cdBgReplace(ref, f);
-          });
-        }],
-        ["Move and resize background" + nm, function() {
-          cdBg = { ref, box: ref.box.slice() };
-          paint();
-        }],
-        ["Fit background to image" + nm, function() {
-          cdBgFit(ref);
-        }],
-        ["Remove background image" + nm, function() {
-          cdBg = null;
-          cdBgDo(ref, cdMk.backgroundRemove);
-        }]
-      );
-    });
-    return out;
+  }
+  function cdBgItems() {
+    return cdPal() ? [["Add background image\u2026", function() {
+      cdPicChoose(cdBgAdd);
+    }]] : null;
   }
   function cdBgAdd(f) {
     var m0 = map, bs = nodes2.map(function(n, i) {
       return boxOf(i);
     }).filter(Boolean);
-    var box2 = bs.length ? bs.reduce(function(a, b) {
+    var box2 = (bs.length ? bs.reduce(function(a, b) {
       var x = Math.min(a[0], b[0]), y = Math.min(a[1], b[1]);
       return [x, y, Math.max(a[0] + a[2], b[0] + b[2]) - x, Math.max(a[1] + a[3], b[1] + b[3]) - y];
-    }) : [0, 0, 800, 600];
+    }) : [0, 0, 800, 600]).map(function(v) {
+      return Math.round(v * 100) / 100;
+    });
     return cdPicKeep(f).then(function(r) {
       if (!cdStill(m0)) return;
-      cdApply(function(t) {
-        return cdMk.background(t, r.note, box2.map(function(v) {
-          return Math.round(v * 100) / 100;
-        })).text;
-      }, []);
+      if (cdApply(function(t) {
+        return cdMk.background(t, r.note, box2).text;
+      }, []) !== false) cdBgSelect({ name: r.note, box: box2 });
     }, function(e) {
       warn("Background image not added: " + String(e && e.message ? e.message : e).replace(/\.?$/, "."));
     });
   }
   function cdBgReplace(ref, f) {
     var m0 = map;
-    return cdPicKeep(f).then(
-      function(r) {
-        if (cdStill(m0)) cdBgDo(ref, function(t, n) {
-          return cdMk.backgroundSet(t, n, { name: r.note });
-        });
-      },
-      function(e) {
-        warn("Background image not replaced: " + String(e && e.message ? e.message : e).replace(/\.?$/, "."));
-      }
-    );
+    return cdPicKeep(f).then(function(r) {
+      if (!cdStill(m0)) return;
+      cdBgDo(ref, function(t, n) {
+        return cdMk.backgroundSet(t, n, { name: r.note });
+      });
+      if (cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join()) cdBg.ref = { name: r.note, box: ref.box.slice() };
+      paint();
+    }, function(e) {
+      warn("Background image not replaced: " + String(e && e.message ? e.message : e).replace(/\.?$/, "."));
+    });
   }
   function cdBgFit(ref) {
     var g = cdBgFind(ref), src2 = g && cdPicUrl(g.name), m0 = map;
@@ -5965,12 +6005,15 @@
         cdBg.ref = { name: ref.name, box: nb };
         cdBg.box = nb.slice();
       }
+      paint();
     });
   }
   function cdBgMarks(out) {
     if (!cdBg) return;
     if (!cdBg.drag) {
       var g = cdPal() && on && V.current === map ? cdBgFind(cdBg.ref) : null;
+      if (!g && cdBg.at === (shared.cd && shared.cd.now) && cdPal() && on && V.current === map) g = cdBg.ref;
+      else if (g) cdBg.at = null;
       if (!g) {
         cdBg = null;
         return;
@@ -5981,9 +6024,16 @@
     var b = cdBg.box;
     out.push('<rect class="m2-ed-ghost" x="' + sx(b[0]) + '" y="' + sy(b[1]) + '" width="' + b[2] * V.z + '" height="' + b[3] * V.z + '"/>' + handleMarks(b, "m2-ed-handle"));
   }
+  var cdTap;
   function cdBgDown(e) {
-    if (!cdBg || e.button !== 0 || !V.view.contains(e.target) || !editing(e)) return;
-    var P = at(e), b = cdBg.box, tol = Math.max(5, 8 / V.z), o = 3.3;
+    cdTap = null;
+    if (e.button !== 0 || !cdPal() || !V.view.contains(e.target) || !editing(e) || tool || link) return;
+    var P = at(e);
+    if (!cdBg) {
+      if (!e.shiftKey && !shared.selN.length && !shared.selE.length && !shared.selP.length && !shared.svSel && cdBgFree(P) && cdBgAt(P)) cdTap = { x: e.clientX, y: e.clientY, P };
+      return;
+    }
+    var b = cdBg.box, tol = Math.max(5, 8 / V.z), o = 3.3;
     var xs = [b[0] - o, b[0] + b[2] / 2, b[0] + b[2] + o], ys = [b[1] - o, b[1] + b[3] / 2, b[1] + b[3] + o], hx = -1, hy = -1;
     xs.forEach(function(x, k) {
       if (Math.abs(P[0] - x) <= tol) hx = k;
@@ -5991,7 +6041,7 @@
     ys.forEach(function(y, k) {
       if (Math.abs(P[1] - y) <= tol) hy = k;
     });
-    var onHandle = hx >= 0 && hy >= 0 && !(hx === 1 && hy === 1), inside2 = P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3];
+    var onHandle = hx >= 0 && hy >= 0 && !(hx === 1 && hy === 1), inside2 = cdBgIn(b, P) && cdBgFree(P);
     if (!onHandle && !inside2) {
       cdBg = null;
       paint();
@@ -5999,7 +6049,7 @@
     }
     e.preventDefault();
     e.stopImmediatePropagation();
-    var b0 = b.slice(), ref = cdBg.ref, el = V.view;
+    var b0 = b.slice(), ref = cdBg.ref, el = V.view, corner = onHandle && hx !== 1 && hy !== 1;
     cdBg.drag = true;
     try {
       el.setPointerCapture(e.pointerId);
@@ -6019,6 +6069,13 @@
           nb[1] = Math.min(b0[1] + dy, b0[1] + b0[3] - 1);
           nb[3] = b0[1] + b0[3] - nb[1];
         } else if (hy === 2) nb[3] = Math.max(1, b0[3] + dy);
+        if (corner && ev.shiftKey) {
+          var k = Math.max(nb[2] / b0[2], nb[3] / b0[3]);
+          nb[2] = b0[2] * k;
+          nb[3] = b0[3] * k;
+          if (hx === 0) nb[0] = b0[0] + b0[2] - nb[2];
+          if (hy === 0) nb[1] = b0[1] + b0[3] - nb[3];
+        }
       }
       if (cdBg) {
         cdBg.box = nb;
@@ -6046,6 +6103,60 @@
     el.addEventListener("pointermove", move2);
     el.addEventListener("pointerup", up);
     el.addEventListener("pointercancel", up);
+  }
+  function cdBgUp(e) {
+    var t = cdTap;
+    cdTap = null;
+    if (!t || e.button !== 0 || Math.hypot(e.clientX - t.x, e.clientY - t.y) >= 5 || !cdPal() || !on || V.current !== map) return;
+    var ref = cdBgAt(t.P);
+    if (ref) setTimeout(function() {
+      cdBgSelect(ref);
+    }, 0);
+  }
+  var cdBgRowsAt;
+  function cdBgRows() {
+    var tb = pmap.firstChild, bs = cdBgs().slice().reverse(), sel = cdBg && cdBgFind(cdBg.ref);
+    var key = [shared.cd && shared.cd.now, sel ? sel.n : -1].concat(bs.map(function(g) {
+      return g.n + ":" + g.name + ":" + !!cdPicUrl(g.name);
+    })).join("|");
+    if (cdBgRowsAt && cdBgRowsAt.key === key && cdBgRowsAt.tb === tb && tb.querySelector("tr.m2-ed-pbg")) return;
+    cdBgRowsAt = { key, tb };
+    Array.prototype.forEach.call(tb.querySelectorAll("tr.m2-ed-pbg"), function(r) {
+      r.remove();
+    });
+    var row = function(head, inner) {
+      var r = document.createElement("tr");
+      r.className = "m2-ed-pbg";
+      r.innerHTML = "<th>" + head + '</th><td><span class="m2-ed-ppic">' + inner + "</span></td>";
+      tb.appendChild(r);
+      return r;
+    };
+    bs.forEach(function(g, j) {
+      var ref = { name: g.name, box: g.box.slice() }, src2 = cdPicUrl(g.name), nm = g.name.replace(/^glyphs\//, "");
+      var r = row(j ? "" : "Background", '<img alt=""' + (src2 ? "" : " hidden") + '><span class="m2-ed-ppicname"></span><button type="button" class="m2-ed-ppicoff">Remove</button>');
+      r.dataset.k = "bg" + g.n;
+      r.title = "A background image under the whole map; a click selects it on the map";
+      if (src2) r.querySelector("img").setAttribute("src", src2);
+      var ns = r.querySelector(".m2-ed-ppicname");
+      ns.textContent = nm;
+      ns.title = g.name;
+      if (sel && sel.n === g.n) r.classList.add("m2-ed-pbgsel");
+      r.addEventListener("click", function(e) {
+        if (!e.target.closest("button")) cdBgSelect(ref);
+      });
+      r.querySelector("button").addEventListener("click", function(e) {
+        e.currentTarget.blur();
+        if (cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join()) cdBg = null;
+        cdBgDo(ref, cdMk.backgroundRemove);
+      });
+    });
+    var a = row(bs.length ? "" : "Background", '<button type="button" class="m2-ed-pbgadd">Upload</button>');
+    a.dataset.k = "bgadd";
+    a.title = "A PNG or SVG under the whole map, as MINERVA draws its backgrounds";
+    a.querySelector("button").addEventListener("click", function(e) {
+      e.currentTarget.blur();
+      cdPicChoose(cdBgAdd);
+    });
   }
   function cdDouble(k, x, ids) {
     if (!isFinite(x)) return false;
@@ -11060,6 +11171,9 @@
     pn.style.display = "";
     styleRow();
     sbColsRow();
+    Array.prototype.forEach.call(pmap.querySelectorAll("tr.m2-ed-pbg"), function(r) {
+      r.remove();
+    });
     Array.prototype.forEach.call(pal.querySelectorAll("[data-lang]"), function(b) {
       b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
     });
@@ -15018,7 +15132,7 @@
         ["Add reactant or Add product, onto a reaction\u2019s line", "joins a line to a reaction already there", "CellDesigner"],
         ["A logic gate sign: click its inputs, then the reaction", "places the gate where CellDesigner would", "CellDesigner"],
         ["Image in Properties, or a PNG or SVG dropped on a compartment or species", "MINERVA\u2019s image, drawn in the box as MINERVA draws it; Fit box to image on the right click", "CellDesigner"],
-        ["Right click on empty map space, Add background image", "a image under the whole map, as MINERVA draws it; moved and resized from the same menu", "CellDesigner"],
+        ["Right click on empty map space, Add background image, or a PNG or SVG dropped there", "an image under the whole map, as MINERVA draws it; a click on it where nothing else is selects it, then a drag moves it, its handles resize it (Shift keeps its proportions), Delete removes it; also listed under Background in the panel", "CellDesigner"],
         ["Set as default, in Properties", "the next ones of that kind made this size and look", "all"],
         ["Colours, Original", "puts back the map\u2019s own colours after another choice", "all"]
       ]]

@@ -474,6 +474,9 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-ppic img[hidden], #m2-editwin .m2-ed-ppic button[hidden] { display: none; }
   #m2-editwin .m2-ed-ppicname { flex: 1 1 auto; width: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--m2-ed-value); }
   #m2-editwin .m2-ed-ppic button { flex: none; width: auto; margin: 0; padding: 1px 6px; font-size: 12px; }
+  /* Background's rows (cdcreate.js cdBgRows): a click selects that background; the one selected shaded light grey, as a button */
+  #m2-editwin tr.m2-ed-pbg[data-k^="bg"]:not([data-k="bgadd"]) { cursor: default; }
+  #m2-editwin tr.m2-ed-pbg.m2-ed-pbgsel > th, #m2-editwin tr.m2-ed-pbg.m2-ed-pbgsel > td { background: var(--m2-soft); }
   #m2-editwin .m2-ed-prefs th[colspan] { padding-top: 8px; }   /* References: a heading as Cardinality's, one row per reference, the paste box under them */
   #m2-editwin .m2-ed-prefs .m2-ed-ppic input[type="text"] { flex: 1 1 auto; width: 0; }   /* the box shares its row with Add, inside the panel */
   #m2-editwin .m2-ed-prefs .m2-ed-px { padding: 1px 5px; }
