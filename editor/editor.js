@@ -6437,6 +6437,179 @@
     };
   }
 
+  // editor/src/outbox.js
+  var dbP;
+  var opsP;
+  var box;
+  var loaded;
+  function db() {
+    if (!dbP) dbP = new Promise(function(res, rej) {
+      var idb = window.indexedDB;
+      if (!idb) return rej(new Error("this browser keeps no data for the page"));
+      var r = idb.open("atlas-outbox", 1);
+      r.onupgradeneeded = function() {
+        if (!r.result.objectStoreNames.contains("saves")) r.result.createObjectStore("saves");
+      };
+      r.onsuccess = function() {
+        var d = r.result;
+        d.onversionchange = function() {
+          d.close();
+          dbP = null;
+        };
+        res(d);
+      };
+      r.onerror = function() {
+        dbP = null;
+        rej(r.error);
+      };
+      r.onblocked = function() {
+        dbP = null;
+        rej(new Error("another tab of this site holds the stored changes"));
+      };
+    });
+    return dbP;
+  }
+  function opsDb() {
+    if (!opsP) opsP = new Promise(function(res, rej) {
+      var idb = window.indexedDB;
+      if (!idb) return rej(new Error("this browser keeps no data for the page"));
+      var r = idb.open("atlas-ops", 1);
+      r.onupgradeneeded = function() {
+        if (!r.result.objectStoreNames.contains("ops")) r.result.createObjectStore("ops", { keyPath: "seq", autoIncrement: true });
+      };
+      r.onsuccess = function() {
+        var d = r.result;
+        d.onversionchange = function() {
+          d.close();
+          opsP = null;
+        };
+        res(d);
+      };
+      r.onerror = function() {
+        opsP = null;
+        rej(r.error);
+      };
+      r.onblocked = function() {
+        opsP = null;
+        rej(new Error("another tab of this site holds the stored changes"));
+      };
+    });
+    return opsP;
+  }
+  function tx(mode, f, store) {
+    return (store === "ops" ? opsDb() : db()).then(function(d) {
+      return new Promise(function(res, rej) {
+        var t = d.transaction(store || "saves", mode), q = f(t.objectStore(store || "saves"));
+        t.oncomplete = function() {
+          res(q && q.result);
+        };
+        t.onerror = t.onabort = function() {
+          rej(t.error);
+        };
+      });
+    });
+  }
+  function outboxLoad(again) {
+    if (!box) box = {};
+    if (!loaded || again) loaded = tx("readonly", function(st) {
+      return st.getAll();
+    }).then(function(all) {
+      var seen = {};
+      (all || []).forEach(function(r) {
+        if (r && r.key) {
+          seen[r.key] = 1;
+          if (!box[r.key] || (r.at || 0) >= (box[r.key].at || 0)) box[r.key] = r;
+        }
+      });
+      if (again) Object.keys(box).forEach(function(k) {
+        if (!seen[k] && box[k].kept) delete box[k];
+      });
+    }, function() {
+    }).then(function() {
+      return box;
+    });
+    return loaded;
+  }
+  function outboxKeep(rec) {
+    if (!box) box = {};
+    rec.at = Date.now();
+    box[rec.key] = rec;
+    return tx("readwrite", function(st) {
+      return st.put(rec, rec.key);
+    }).then(function() {
+      rec.kept = true;
+    });
+  }
+  function outboxFresh(key) {
+    return tx("readonly", function(st) {
+      return st.get(key);
+    }).then(function(r) {
+      if (!box) box = {};
+      if (r) {
+        r.kept = true;
+        if (!box[key] || (r.at || 0) >= (box[key].at || 0)) box[key] = r;
+      } else if (box[key] && box[key].kept) delete box[key];
+      return box[key] || null;
+    });
+  }
+  function outboxDone(key, text) {
+    var r = box && box[key];
+    if (r && text != null && r.text !== text) return Promise.resolve(false);
+    if (r) delete box[key];
+    return tx("readwrite", function(st) {
+      var q = st.get(key);
+      q.onsuccess = function() {
+        if (q.result && (text == null || q.result.text === text)) st.delete(key);
+      };
+      return q;
+    }).then(function() {
+      return true;
+    }, function() {
+      return true;
+    });
+  }
+  function outboxGet(key) {
+    return box && box[key] || null;
+  }
+  function outboxAll() {
+    return box ? Object.keys(box).map(function(k) {
+      return box[k];
+    }) : [];
+  }
+  function opsKeep(op) {
+    op.at = Date.now();
+    return tx("readwrite", function(st) {
+      return st.add(op);
+    }, "ops").then(function(seq) {
+      op.seq = seq;
+      return op;
+    });
+  }
+  function opsAll(key) {
+    return tx("readonly", function(st) {
+      return st.getAll();
+    }, "ops").then(function(all) {
+      return (all || []).filter(function(o) {
+        return o && o.key === key;
+      }).sort(function(a, b) {
+        return a.seq - b.seq;
+      });
+    });
+  }
+  function opsHas(seq) {
+    return tx("readonly", function(st) {
+      return st.get(seq);
+    }, "ops").then(function(o) {
+      return !!o;
+    });
+  }
+  function opsDone(seq) {
+    return tx("readwrite", function(st) {
+      return st.delete(seq);
+    }, "ops").catch(function() {
+    });
+  }
+
   // editor/src/minerva.js
   function u16(b, i) {
     return b[i] | b[i + 1] << 8;
@@ -7237,7 +7410,7 @@
       V.saveClosed();
     }
     V.refreshMine();
-    return pages.length ? siteGroupTo(pages, v, ex).catch(function(e) {
+    return pages.length ? opSend("group", { ids: pages, g: v, ex: ex || null }, pages).catch(function(e) {
       alert(was + " was not renamed on the site: " + (e && e.message ? e.message : e) + ". The new name is kept in this browser only.");
     }) : Promise.resolve();
   }
@@ -7563,12 +7736,7 @@
   }
   function toSiteGroup(id, g, k, top) {
     var at2 = top ? siteFirst(g) - top + (k | 0) : siteOrder(g) + (k | 0);
-    return siteFront(id, function(f) {
-      pageWas[id] = { order: f.get("order") };
-      f.set("group", JSON.stringify(g.replace(/["\\]/g, "")));
-      f.set("order", String(at2));
-      f.drop("example");
-    }, "Map moved in the viewer");
+    return siteFront(id, { set: { group: JSON.stringify(g.replace(/["\\]/g, "")), order: String(at2) }, drop: ["example"], was: ["order"] }, "Map moved in the viewer");
   }
   function put(id, g, before) {
     if (g && V.closed[g]) {
@@ -8378,11 +8546,8 @@
   }
   function toSiteName(id, was, v) {
     var q = JSON.stringify(v.replace(/["\\]/g, ""));
-    return siteFront(id, function(f) {
-      if (f.get("topic") === null) throw new Error("its page has no topic line");
-      if (f.get("title") === f.get("topic")) f.set("title", q);
-      f.set("topic", q);
-    }, "Map renamed in the viewer");
+    var n = renamed[id];
+    return siteFront(id, { need: "topic", follow: true, set: { topic: q }, show: n ? { was: n.was, to: n.to } : { was, to: v } }, "Map renamed in the viewer");
   }
   function textHash(t) {
     var h = 2166136261;
@@ -8434,7 +8599,7 @@
   function addPaint() {
     var box3 = document.getElementById("m2-list");
     if (!box3) return;
-    Array.prototype.forEach.call(box3.querySelectorAll(".m2-wait, .m2-pend-n"), function(x) {
+    Array.prototype.forEach.call(box3.querySelectorAll(".m2-item.m2-wait, .m2-pend-n"), function(x) {
       x.remove();
     });
     Array.prototype.forEach.call(box3.querySelectorAll(".m2-empty[hidden]"), function(x) {
@@ -9635,6 +9800,7 @@
   function toGh(s) {
     if (!mine[s.id]) return Promise.resolve();
     return upOne(s.id).then(function(n) {
+      delete mineStuck[s.id];
       if (!n || !n.path) return;
       if (site !== s || !on || !(repo() && token())) {
         if (n.text !== n.saved) upAll();
@@ -9651,7 +9817,11 @@
         changed();
       }
     }, function(e) {
-      if (site === s) warn("Not on GitHub: " + String(e && e.message ? e.message : e).replace(/\.$/, "") + ". This map is kept in this browser only; it is sent again after the next change.");
+      var why = whyFailed(e);
+      if (why !== "other") {
+        mineStuck[s.id] = 1;
+        sendFailed(why);
+      } else if (site === s) warn("Not on GitHub: " + String(e && e.message ? e.message : e).replace(/\.$/, "") + ". This map is kept in this browser only; it is sent again after the next change.");
     });
   }
   var upRun;
@@ -9661,9 +9831,19 @@
   function upAll() {
     if (!(repo() && token())) return Promise.resolve();
     if (upRun) return upRun;
-    var went = [], failed = [], fail = function(r) {
+    var went = [], failed = [], stuck2 = null, fail = function(r) {
       return function(e) {
-        failed.push(r.title + " (" + (e && e.message ? e.message : e) + ")");
+        var why = whyFailed(e);
+        if (why !== "other") {
+          mineStuck[r.id] = 1;
+          stuck2 = why;
+        } else failed.push(r.title + " (" + (e && e.message ? e.message : e) + ")");
+      };
+    };
+    var sent = function(r) {
+      return function() {
+        delete mineStuck[r.id];
+        went.push(r.title);
       };
     };
     var listIn = function(n) {
@@ -9681,18 +9861,18 @@
           var r = mine[id];
           if (!r || r.hidden || r.from || on && site && site.id === id) return;
           if (!r.site) return upOne(id).then(function(n) {
-            if (n) went.push(n.title);
+            if (n) sent(r)();
           }, fail(r));
-          if (r.path && r.saved != null && r.text !== r.saved) return putMine(r).then(function() {
-            went.push(r.title);
-          }, fail(r));
+          if (r.path && r.saved != null && r.text !== r.saved) return putMine(r).then(sent(r), fail(r));
+          delete mineStuck[id];
         });
       }, Promise.resolve());
     }).then(function() {
       upRun = null;
       if (went.length || failed.length) V.refreshMine();
+      if (stuck2) sendFailed(stuck2);
       if (failed.length) warn("Not on GitHub, kept in this browser only: " + failed.join(", ") + ".");
-      else if (went.length) note();
+      else if (went.length && !stuck2) note();
     });
   }
   function putMine(r) {
@@ -9708,7 +9888,7 @@
       if (q.ok) return q.json().then(function(d) {
         return learn(d.content.sha);
       });
-      if (q.status !== 409 && q.status !== 422) throw new Error("GitHub " + q.status);
+      if (q.status !== 409 && q.status !== 422) throw ghErr(q.status);
       return Promise.all([
         api("/contents/" + r.path + "?ref=main").then(function(x) {
           return x.json();
@@ -9919,7 +10099,7 @@
       if (q.ok) return q.json().then(function(d) {
         return d.content.sha;
       });
-      if (q.status !== 409 && q.status !== 422) throw new Error("GitHub " + q.status);
+      if (q.status !== 409 && q.status !== 422) throw ghErr(q.status);
       return ghRaw(path).then(function(g) {
         return g && g.text === t ? g.sha : null;
       });
@@ -10084,6 +10264,11 @@
   function ghPost(path, body, method) {
     return api(path, { method: method || "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(ghJson);
   }
+  function ghErr(s) {
+    var e = new Error("GitHub " + s);
+    e.status = s;
+    return e;
+  }
   function ghJson(r) {
     return r.ok ? r.json() : r.json().catch(function() {
       return {};
@@ -10093,30 +10278,276 @@
       throw e;
     });
   }
-  var siteQ;
   function __run212() {
-    siteQ = Promise.resolve();
   }
-  function siteFront(id, edit, message) {
+  function siteFront(id, spec, message) {
     V.pageSent(id, "");
-    var prev = siteQ, p = prev.then(function() {
-      return frontWrite(id, edit, message, 0);
-    }).then(function(at2) {
-      V.pageSent(id, at2);
-    }, function(e) {
+    var show = spec.show;
+    delete spec.show;
+    return opSend("front", { id, spec, message }, [id], show).catch(function(e) {
       V.pageSent(id, null);
       throw e;
     });
-    siteQ = queueNext(prev, p);
-    return p;
   }
-  function queueNext(prev, p) {
-    return prev.then(function() {
-      return Promise.race([p.catch(function() {
-      }), new Promise(function(ok) {
-        setTimeout(ok, 3e4);
+  function frontEdit(id, spec) {
+    return function(f) {
+      if (spec.need && f.get(spec.need) === null) throw new Error("its page has no " + spec.need + " line");
+      if (spec.was) {
+        var w = {};
+        spec.was.forEach(function(k) {
+          w[k] = f.get(k);
+        });
+        pageWas[id] = w;
+      }
+      if (spec.follow && spec.set && f.get("title") === f.get("topic")) f.set("title", spec.set.topic);
+      (spec.drop || []).forEach(function(k) {
+        f.drop(k);
+      });
+      Object.keys(spec.set || {}).forEach(function(k) {
+        f.set(k, spec.set[k]);
+      });
+    };
+  }
+  var WAIT;
+  var opsWait;
+  var opsLast;
+  var opsOut;
+  var opsAwait;
+  var opsStuckNow;
+  var mineStuck;
+  var roundRun;
+  var idsMemo;
+  var RUN;
+  function __run312() {
+    WAIT = { waiting: true }, opsWait = [], opsLast = null, opsOut = {}, opsAwait = {}, opsStuckNow = null, mineStuck = {}, roundRun = null, idsMemo = null;
+    RUN = {
+      front: function(a) {
+        return frontWrite(a.id, frontEdit(a.id, a.spec), a.message, 0);
+      },
+      group: function(a) {
+        return siteGroupTo(a.ids, a.g, a.ex);
+      },
+      bin: function(a) {
+        var at2 = (/* @__PURE__ */ new Date()).toISOString();
+        return binFileWrite(
+          function(o) {
+            a.ids.forEach(function(id) {
+              if (a.on) o[id] = { deleted: a.date, written: at2 };
+              else delete o[id];
+            });
+          },
+          (a.on ? "Deleted in the viewer: " : "Restored in the viewer: ") + a.ids.join(", "),
+          0
+        ).then(function() {
+          return at2;
+        });
+      },
+      erase: function(a) {
+        return siteErase(a.ids, a.gone);
+      }
+    };
+  }
+  function opLocked(f) {
+    var g = function() {
+      return Promise.race([f(), new Promise(function(ok, no2) {
+        setTimeout(function() {
+          no2(new TypeError("Failed to fetch (no answer in a minute)"));
+        }, 6e4);
       })]);
+    };
+    return navigator.locks && navigator.locks.request ? navigator.locks.request("atlas-ops", g) : g();
+  }
+  function opSend(kind, args, ids, show) {
+    var op = { key: repo(), kind, args, ids, show: show || null };
+    idsMemo = null;
+    return opsKeep(op).then(function() {
+      opsWait.push(op);
+      opsAwait[op.seq] = 1;
+      var round = function(n) {
+        return opsRound().then(function() {
+          var x = opsOut[op.seq];
+          if (!x && n < 3 && opsWait.some(function(o) {
+            return o.seq === op.seq;
+          }) && !opsStuckNow) return round(n + 1);
+          delete opsOut[op.seq];
+          delete opsAwait[op.seq];
+          if (x && x.e) throw x.e;
+          return x ? x.r : WAIT;
+        });
+      };
+      return round(0);
+    }, function() {
+      return opLocked(function() {
+        return RUN[kind](args);
+      }).then(function(r) {
+        opAfter(op, r);
+        return r;
+      });
     });
+  }
+  function opsRound() {
+    if (!(repo() && token())) return Promise.resolve({ sent: 0, stuck: null, back: [] });
+    if (roundRun) return roundRun;
+    var out = { sent: 0, stuck: null, back: [] }, failed = [];
+    roundRun = opsLoad().then(function(all) {
+      return all.reduce(function(q, op) {
+        return q.then(function() {
+          if (out.stuck) return;
+          return opLocked(function() {
+            return opsHas(op.seq).then(function(still) {
+              if (!still) return { gone: true };
+              return RUN[op.kind](op.args).then(function(r) {
+                return opsDone(op.seq).then(function() {
+                  return { r };
+                });
+              });
+            });
+          }).then(function(x) {
+            opForget(op);
+            if (x.gone) {
+              opsOut[op.seq] = { r: op.at };
+              return;
+            }
+            opAfter(op, x.r);
+            opsOut[op.seq] = { r: x.r };
+            out.sent++;
+            if ((opsLast || []).indexOf(op.seq) >= 0) out.back = out.back.concat(op.ids || []);
+          }, function(e) {
+            var why = whyFailed(e);
+            if (why !== "other") {
+              out.stuck = why;
+              return;
+            }
+            opForget(op);
+            opsOut[op.seq] = { e };
+            if (!opsAwait[op.seq]) failed.push(opUndone(op, e));
+            return opsDone(op.seq);
+          });
+        });
+      }, Promise.resolve());
+    }).then(function() {
+      opsStuckNow = out.stuck;
+      idsMemo = null;
+      if (out.stuck) {
+        opsHold();
+        sendFailed(out.stuck);
+      }
+      if (failed.length) {
+        V.refreshMine();
+        alert("Not changed on GitHub: " + failed.join("; ") + ". The list shows them as GitHub has them.");
+      }
+      return out;
+    }, function() {
+      return out;
+    });
+    roundRun = roundRun.then(function(x) {
+      roundRun = null;
+      return x;
+    });
+    return roundRun;
+  }
+  function opForget(op) {
+    opsWait = opsWait.filter(function(o) {
+      return o.seq !== op.seq;
+    });
+    idsMemo = null;
+  }
+  function opAfter(op, r) {
+    var a = op.args;
+    if (op.kind === "front") V.pageSent(a.id, r);
+    else if (op.kind === "bin") a.ids.forEach(function(id) {
+      V.pageSent(id, a.on ? r : null);
+    });
+    else if (op.kind === "erase") hiddenSet(siteHidden().filter(function(id) {
+      return a.ids.indexOf(id) < 0;
+    }));
+  }
+  function opUndone(op, e) {
+    var a = op.args;
+    (op.ids || []).forEach(function(id) {
+      V.pageSent(id, null);
+      if (op.kind === "group" || op.kind === "front" && a.spec.set && "group" in a.spec.set) V.setMoved(id, null);
+      if (op.kind === "bin" || binOf(op)) binClear(id);
+      if (op.show && op.show.to) delete renamed[id];
+      if (op.kind === "erase") delete hiddenGone[id];
+    });
+    return (op.ids || []).map(function(id) {
+      var m = V.byId[id];
+      return m ? mapName(m) : id;
+    }).join(", ") + " (" + (e && e.message ? e.message : e) + ")";
+  }
+  function binOf(op) {
+    var sp = op.kind === "front" && op.args.spec;
+    if (!sp) return null;
+    if (sp.set && "deleted" in sp.set) return [JSON.parse(sp.set.deleted)];
+    return (sp.drop || []).indexOf("deleted") >= 0 ? [""] : null;
+  }
+  function opsHold() {
+    var pend = binPending(), n = 0, any = false;
+    opsWait.forEach(function(op) {
+      var b = op.kind === "bin" ? [op.args.on ? op.args.date : ""] : binOf(op);
+      (op.ids || []).forEach(function(id) {
+        if (op.show && op.show.to) {
+          renamed[id] = { was: op.show.was, to: op.show.to };
+          any = true;
+        }
+        if (op.kind === "erase") {
+          hiddenGone[id] = 1;
+          any = true;
+        }
+        if (op.kind === "front" || op.kind === "bin") V.pageSent(id, "");
+        if (b) {
+          pend[id] = [b[0], Date.now()];
+          n++;
+        }
+      });
+    });
+    if (n) binPendingSet(pend);
+    return any || n > 0;
+  }
+  function opsLoad() {
+    return opsAll(repo()).then(function(all) {
+      opsWait = all;
+      idsMemo = null;
+      if (opsLast === null) {
+        opsLast = all.map(function(o) {
+          return o.seq;
+        });
+        if (opsHold()) V.refreshMine();
+      }
+      return all;
+    }, function() {
+      return opsWait;
+    });
+  }
+  function opsDrain() {
+    return opsRound().then(function(x) {
+      return x.stuck ? x : upAll().then(function() {
+        return x;
+      }, function() {
+        return x;
+      });
+    });
+  }
+  function opsIds() {
+    if (idsMemo) return idsMemo;
+    var bySite = {}, o = {};
+    Object.keys(mine).forEach(function(k) {
+      if (mine[k].site) bySite[mine[k].site] = k;
+    });
+    opsWait.forEach(function(op) {
+      (op.ids || []).forEach(function(id) {
+        o[bySite[id] || id] = 1;
+      });
+    });
+    Object.keys(mineStuck).forEach(function(k) {
+      if (mine[k]) o[k] = 1;
+    });
+    idsMemo = Object.keys(o);
+    setTimeout(function() {
+      idsMemo = null;
+    }, 0);
+    return idsMemo;
   }
   function frontWrite(id, edit, message, tries) {
     var path = "/contents/maps/" + encodeURIComponent(id) + ".md", at2 = (/* @__PURE__ */ new Date()).toISOString();
@@ -10124,6 +10555,7 @@
       if (!r.ok) {
         var e = new Error(r.status === 404 ? "it has no page of its own" : "GitHub " + r.status);
         e.noPage = r.status === 404;
+        e.status = r.status;
         throw e;
       }
       return r.json();
@@ -10158,7 +10590,7 @@
       }).then(function() {
         return frontWrite(id, edit, message, tries + 1);
       });
-      if (!r.ok) throw new Error("GitHub " + r.status);
+      if (!r.ok) throw ghErr(r.status);
       return at2;
     });
   }
@@ -10169,17 +10601,13 @@
     var pend = binPending(), was = pend[id], date = (/* @__PURE__ */ new Date()).toISOString().slice(0, 19) + "Z";
     pend[id] = [on2 ? date : "", Date.now()];
     binPendingSet(pend);
-    return siteFront(id, function(f) {
-      if (on2) f.set("deleted", JSON.stringify(date));
-      else {
-        f.drop("deleted");
-        if (topic) {
-          var q = JSON.stringify(topic.replace(/["\\]/g, ""));
-          if (f.get("title") === f.get("topic")) f.set("title", q);
-          f.set("topic", q);
-        }
-      }
-    }, on2 ? "Map deleted in the viewer" : "Map restored in the viewer").catch(function(e) {
+    var n = renamed[id], spec = on2 ? { set: { deleted: JSON.stringify(date) } } : { drop: ["deleted"] };
+    if (!on2 && topic) {
+      spec.set = { topic: JSON.stringify(topic.replace(/["\\]/g, "")) };
+      spec.follow = true;
+      if (n) spec.show = { was: n.was, to: n.to };
+    }
+    return siteFront(id, spec, on2 ? "Map deleted in the viewer" : "Map restored in the viewer").catch(function(e) {
       var p = binPending();
       if (was === void 0) delete p[id];
       else p[id] = was;
@@ -10222,7 +10650,7 @@
       }).then(function() {
         return binFileWrite(edit, message, tries + 1);
       });
-      if (!r.ok) throw new Error("GitHub " + r.status);
+      if (!r.ok) throw ghErr(r.status);
     });
   }
   var pbWait;
@@ -10250,26 +10678,8 @@
     return w.p;
   }
   function pagelessWrite(w, on2) {
-    var ids = w.ids, prev = siteQ, p = prev.then(function() {
-      var at2 = (/* @__PURE__ */ new Date()).toISOString();
-      return binFileWrite(
-        function(o) {
-          ids.forEach(function(id) {
-            if (on2) o[id] = { deleted: w.date, written: at2 };
-            else delete o[id];
-          });
-        },
-        (on2 ? "Deleted in the viewer: " : "Restored in the viewer: ") + ids.join(", "),
-        0
-      ).then(function() {
-        return at2;
-      });
-    }).then(function(at2) {
-      ids.forEach(function(id) {
-        V.pageSent(id, on2 ? at2 : null);
-      });
-      return at2;
-    }, function(e) {
+    var ids = w.ids;
+    return opSend("bin", { ids, on: on2, date: w.date }, ids).catch(function(e) {
       ids.forEach(function(id) {
         V.pageSent(id, null);
       });
@@ -10282,8 +10692,6 @@
       V.refreshMine();
       throw e;
     });
-    siteQ = queueNext(prev, p);
-    return p;
   }
   var GONE_KEY;
   function __run243() {
@@ -10772,11 +11180,7 @@
     });
     namedSave();
     V.refreshMine();
-    siteErase(site2, gone).then(function() {
-      hiddenSet(siteHidden().filter(function(id) {
-        return site2.indexOf(id) < 0;
-      }));
-    }, function(e) {
+    opSend("erase", { ids: site2, gone }, site2).catch(function(e) {
       site2.forEach(function(id) {
         delete hiddenGone[id];
       });
@@ -10980,13 +11384,13 @@
             if (!m) return;
             if (!w.s) return moveTo(w.id, w.g);
             V.setMoved(w.id, w.page ? w.g : w.mv);
-            if (w.page && (m.group || "") !== w.g) return siteFront(w.id, function(f) {
-              f.set("group", JSON.stringify((ownGroup(w.g) ? w.s.group || "" : w.g).replace(/["\\]/g, "")));
-              var o3 = w.pw && w.pw.order != null ? w.pw.order : w.s.order;
-              if (o3 != null) f.set("order", String(o3));
-              if (w.s.example) f.set("example", "true");
-            }, "Map moved back in the viewer").catch(function() {
-            });
+            if (w.page && (m.group || "") !== w.g) {
+              var o3 = w.pw && w.pw.order != null ? w.pw.order : w.s.order, set = { group: JSON.stringify((ownGroup(w.g) ? w.s.group || "" : w.g).replace(/["\\]/g, "")) };
+              if (o3 != null) set.order = String(o3);
+              if (w.s.example) set.example = "true";
+              return siteFront(w.id, { set }, "Map moved back in the viewer").catch(function() {
+              });
+            }
           }).then(function() {
             var m = V.byId[w.id], n = renamed[w.id];
             if (m && mapName(m) !== w.name) return nameTo(m, w.name, !mine[w.id] && (n ? !!n.local : !gh2));
@@ -11139,6 +11543,7 @@
     __run282();
     __run292();
     __run302();
+    __run312();
   }
 
   // editor/src/create.js
@@ -11942,7 +12347,7 @@
     }
   }
   function __run213() {
-    box.querySelector(".m2-ed-tools").insertAdjacentElement("afterend", pal);
+    box2.querySelector(".m2-ed-tools").insertAdjacentElement("afterend", pal);
   }
   function palShow() {
     var cdp_ = cdPal(), show = palOn() || cdp_;
@@ -13395,7 +13800,7 @@
       return s;
     }).join(":");
   }
-  function __run312() {
+  function __run313() {
     window.m2EditNameHere = function(member) {
       var c = complexHere(member);
       if (c == null || shared.afSbgn || afKind()) return null;
@@ -15461,7 +15866,7 @@
     __run273();
     __run283();
     __run293();
-    __run312();
+    __run313();
     __run323();
     __run333();
     __run342();
@@ -16015,7 +16420,7 @@
   var helpBtn;
   var helpBox;
   function __run214() {
-    helpBtn = box.querySelector("#m2-ed-help"), helpBox = null;
+    helpBtn = box2.querySelector("#m2-ed-help"), helpBox = null;
   }
   function helpBuild() {
     var e = function(t) {
@@ -16460,118 +16865,6 @@
     });
   }
 
-  // editor/src/outbox.js
-  var dbP;
-  var box2;
-  var loaded;
-  function db() {
-    if (!dbP) dbP = new Promise(function(res, rej) {
-      var idb = window.indexedDB;
-      if (!idb) return rej(new Error("this browser keeps no data for the page"));
-      var r = idb.open("atlas-outbox", 1);
-      r.onupgradeneeded = function() {
-        if (!r.result.objectStoreNames.contains("saves")) r.result.createObjectStore("saves");
-      };
-      r.onsuccess = function() {
-        var d = r.result;
-        d.onversionchange = function() {
-          d.close();
-          dbP = null;
-        };
-        res(d);
-      };
-      r.onerror = function() {
-        dbP = null;
-        rej(r.error);
-      };
-      r.onblocked = function() {
-        dbP = null;
-        rej(new Error("another tab of this site holds the stored changes"));
-      };
-    });
-    return dbP;
-  }
-  function tx(mode, f) {
-    return db().then(function(d) {
-      return new Promise(function(res, rej) {
-        var t = d.transaction("saves", mode), q = f(t.objectStore("saves"));
-        t.oncomplete = function() {
-          res(q && q.result);
-        };
-        t.onerror = t.onabort = function() {
-          rej(t.error);
-        };
-      });
-    });
-  }
-  function outboxLoad(again) {
-    if (!box2) box2 = {};
-    if (!loaded || again) loaded = tx("readonly", function(st) {
-      return st.getAll();
-    }).then(function(all) {
-      var seen = {};
-      (all || []).forEach(function(r) {
-        if (r && r.key) {
-          seen[r.key] = 1;
-          if (!box2[r.key] || (r.at || 0) >= (box2[r.key].at || 0)) box2[r.key] = r;
-        }
-      });
-      if (again) Object.keys(box2).forEach(function(k) {
-        if (!seen[k] && box2[k].kept) delete box2[k];
-      });
-    }, function() {
-    }).then(function() {
-      return box2;
-    });
-    return loaded;
-  }
-  function outboxKeep(rec) {
-    if (!box2) box2 = {};
-    rec.at = Date.now();
-    box2[rec.key] = rec;
-    return tx("readwrite", function(st) {
-      return st.put(rec, rec.key);
-    }).then(function() {
-      rec.kept = true;
-    });
-  }
-  function outboxFresh(key) {
-    return tx("readonly", function(st) {
-      return st.get(key);
-    }).then(function(r) {
-      if (!box2) box2 = {};
-      if (r) {
-        r.kept = true;
-        if (!box2[key] || (r.at || 0) >= (box2[key].at || 0)) box2[key] = r;
-      } else if (box2[key] && box2[key].kept) delete box2[key];
-      return box2[key] || null;
-    });
-  }
-  function outboxDone(key, text) {
-    var r = box2 && box2[key];
-    if (r && text != null && r.text !== text) return Promise.resolve(false);
-    if (r) delete box2[key];
-    return tx("readwrite", function(st) {
-      var q = st.get(key);
-      q.onsuccess = function() {
-        if (q.result && (text == null || q.result.text === text)) st.delete(key);
-      };
-      return q;
-    }).then(function() {
-      return true;
-    }, function() {
-      return true;
-    });
-  }
-  function outboxGet(key) {
-    return box2 && box2[key] || null;
-  }
-  function outboxAll() {
-    return box2 ? Object.keys(box2).map(function(k) {
-      return box2[k];
-    }) : [];
-  }
-
   // editor/src/core.js
   var lastSvg;
   var lastFor;
@@ -16590,7 +16883,7 @@
   function src() {
     return shared.F.now();
   }
-  var box;
+  var box2;
   var status;
   var overlay;
   var on;
@@ -16621,7 +16914,7 @@
   var keyRun;
   var keyDue;
   function __run215() {
-    box = document.getElementById("m2-editwin"), status = document.getElementById("m2-ed-status");
+    box2 = document.getElementById("m2-editwin"), status = document.getElementById("m2-ed-status");
     overlay = document.getElementById("m2-edit-layer");
     on = false, map = null;
     name = "", handle = null;
@@ -16702,8 +16995,8 @@
     }
   }
   function gridButtons() {
-    box.querySelector("#m2-ed-grid").setAttribute("aria-pressed", String(gridSet.shown));
-    box.querySelector("#m2-ed-snap").setAttribute("aria-pressed", String(gridSet.snap));
+    box2.querySelector("#m2-ed-grid").setAttribute("aria-pressed", String(gridSet.shown));
+    box2.querySelector("#m2-ed-snap").setAttribute("aria-pressed", String(gridSet.snap));
   }
   var gridCv;
   function __run45() {
@@ -17053,7 +17346,7 @@
     sendOk();
     if (here().some(function(x) {
       return x.id !== t.id;
-    })) sendWaiting();
+    }) || opsIds().length) sendWaiting();
   }
   function sendOk() {
     clearTimeout(retryTimer);
@@ -17080,13 +17373,30 @@
     waitShow();
   }
   function sendWhy(e) {
-    return e === 401 || e === 403 || e === 404 ? "token" : typeof e === "number" && e !== 409 && e < 500 ? "other" : "net";
+    var s = typeof e === "number" ? e : e && e.status;
+    return s === 404 ? "token" : !s || s === 409 ? "net" : whyFailed(s);
+  }
+  function whyFailed(e) {
+    var s = typeof e === "number" ? e : e && e.status;
+    if (s === 401 || s === 403) return "token";
+    if (s >= 500 || !s && e instanceof TypeError && /fetch|network|load failed/i.test(e.message || "")) return "net";
+    return "other";
+  }
+  function waitIds() {
+    var o = {};
+    here().forEach(function(r) {
+      o[r.id] = 1;
+    });
+    opsIds().forEach(function(id) {
+      o[id] = 1;
+    });
+    return o;
   }
   function waitingOf(id) {
-    return !!waitFail && !!outboxGet(keyOf(id));
+    return !!waitFail && !!waitIds()[id];
   }
   function waitText() {
-    var n = waitFail === "net" ? here().length : 0;
+    var n = waitFail === "net" ? Object.keys(waitIds()).length : 0;
     return n ? "Offline: changes to " + n + (n > 1 ? " maps" : " map") + " kept in this browser, sent to GitHub when the connection is back." : passing;
   }
   function cloudOn(b, id) {
@@ -17109,7 +17419,7 @@
     }
     var l = document.getElementById("m2-list");
     if (!l) return;
-    var w = l.querySelector(":scope > .m2-wait");
+    var w = l.querySelector(":scope > p.m2-wait");
     if (t && !w) {
       w = document.createElement("p");
       w.className = "m2-set-note m2-wait";
@@ -17177,16 +17487,24 @@
               });
             });
           }, Promise.resolve()).then(function() {
-            if (sent) sendOk();
-            lastVisit = lastVisit.filter(function(k) {
-              return back2.indexOf(k) < 0;
-            });
-            if (says.length) passSay(says.join(" "), true);
-            else if (back2.length) passSay("Changes to " + back2.length + (back2.length > 1 ? " maps" : " map") + " from your last visit sent to GitHub.");
+            return null;
           }, function(e) {
             var why = sendWhy(e);
             if (why === "other") warn("Not saved on GitHub (" + e + "). Your changes are kept in this browser.");
             else sendFailed(why);
+            return why;
+          }).then(function(failed) {
+            return opsDrain().then(function(x) {
+              if (!failed && !x.stuck && (sent || x.sent) && !(on && site && outboxGet(keyOf(site.id)))) sendOk();
+              x.back.forEach(function(id) {
+                if (back2.indexOf(keyOf(id)) < 0) back2.push(keyOf(id));
+              });
+              lastVisit = lastVisit.filter(function(k) {
+                return back2.indexOf(k) < 0;
+              });
+              if (says.length) passSay(says.join(" "), true);
+              else if (back2.length) passSay("Changes to " + back2.length + (back2.length > 1 ? " maps" : " map") + " from your last visit sent to GitHub.");
+            });
           });
         });
       });
@@ -17587,14 +17905,14 @@
     });
   }
   function __run104() {
-    box.querySelector("#m2-ed-l-folder").addEventListener("click", function() {
+    box2.querySelector("#m2-ed-l-folder").addEventListener("click", function() {
       chooseFolder().catch(function() {
       });
     });
-    box.querySelector("#m2-ed-l-allow").addEventListener("click", allowFolder);
+    box2.querySelector("#m2-ed-l-allow").addEventListener("click", allowFolder);
   }
   function localBox() {
-    var b = box.querySelector("#m2-ed-local"), show = !!(on && site && site.pending && (undo.length || site.fromDraft) && !(repo() && token()));
+    var b = box2.querySelector("#m2-ed-local"), show = !!(on && site && site.pending && (undo.length || site.fromDraft) && !(repo() && token()));
     b.hidden = !show;
     if (!show) return;
     if (!b.dataset.seen) {
@@ -17630,7 +17948,7 @@
     }, 1e3);
   }
   function __run115() {
-    box.querySelector("#m2-ed-local-dl").addEventListener("click", function() {
+    box2.querySelector("#m2-ed-local-dl").addEventListener("click", function() {
       if (shared.text) download();
     });
   }
@@ -17865,9 +18183,9 @@
     return best ? String(sm.sources[best[0]]).split("/").pop() + ":" + (best[1] + 1) : "";
   }
   function ghForm(show) {
-    var f = box.querySelector("#m2-ed-gh");
+    var f = box2.querySelector("#m2-ed-gh");
     f.hidden = !show;
-    box.querySelector("#m2-ed-gh-off").hidden = show || !token() || !repo();
+    box2.querySelector("#m2-ed-gh-off").hidden = show || !token() || !repo();
   }
   function warn(t) {
     status.textContent = t;
@@ -17976,7 +18294,7 @@
     layTool("pack", ids);
   }
   function __run135() {
-    box.querySelector("#m2-ed-tidy-grid").addEventListener("click", snapMap);
+    box2.querySelector("#m2-ed-tidy-grid").addEventListener("click", snapMap);
   }
   function outerComplex(i) {
     var c = null;
@@ -17984,7 +18302,7 @@
     return c;
   }
   function __run145() {
-    box.querySelector("#m2-ed-tidy-pack").addEventListener("click", function() {
+    box2.querySelector("#m2-ed-tidy-pack").addEventListener("click", function() {
       pack(shared.selN.map(function(i) {
         var c = outerComplex(i);
         return nodes2[c == null ? i : c].id;
@@ -19119,16 +19437,16 @@
   }
   function buttons() {
     ["#m2-ed-save", "#m2-ed-undo", "#m2-ed-redo", "#m2-ed-grid", "#m2-ed-snap", "#m2-ed-tidy-grid", "#m2-ed-tidy-pack", "#m2-ed-help"].forEach(function(k) {
-      box.querySelector(k).disabled = !on;
+      box2.querySelector(k).disabled = !on;
     });
-    box.querySelector("#m2-ed-save").hidden = !!site;
+    box2.querySelector("#m2-ed-save").hidden = !!site;
     ghForm(!!(on && site && !site.mine && !token()));
     localBox();
-    box.querySelector("#m2-ed-back").hidden = on || !shared.text;
-    box.querySelector("#m2-ed-back").textContent = "Back to " + name;
-    box.querySelector("#m2-ed-stop").hidden = !on;
+    box2.querySelector("#m2-ed-back").hidden = on || !shared.text;
+    box2.querySelector("#m2-ed-back").textContent = "Back to " + name;
+    box2.querySelector("#m2-ed-stop").hidden = !on;
     var g = V.current && V.current.binned ? null : graphmlOf(V.current);
-    box.querySelector("#m2-ed-this").hidden = on || !g;
+    box2.querySelector("#m2-ed-this").hidden = on || !g;
     var off = !on && !(shared.dirty && !site) && !g;
     V.grid.classList.toggle("m2-edit-off", off);
     if (off && V.win === "edit" && V.current && !shared.switching && !V.editRight) {
@@ -19620,8 +19938,8 @@
     });
   }
   function __run245() {
-    box.querySelector("#m2-ed-gh-go").addEventListener("click", function() {
-      var v = box.querySelector("#m2-ed-gh-token").value.trim();
+    box2.querySelector("#m2-ed-gh-go").addEventListener("click", function() {
+      var v = box2.querySelector("#m2-ed-gh-token").value.trim();
       if (!v) return;
       try {
         localStorage.setItem(TOKEN_KEY, v);
@@ -19634,7 +19952,7 @@
         return r.ok ? r.json() : Promise.reject(r.status);
       }).then(function(d) {
         if (!d.permissions || !d.permissions.push) throw "it cannot write to " + repo();
-        box.querySelector("#m2-ed-gh-token").value = "";
+        box2.querySelector("#m2-ed-gh-token").value = "";
         offSay = null;
         upAll();
         waitFail = false;
@@ -19696,10 +20014,10 @@
       });
     });
     offSay = null;
-    box.querySelector("#m2-ed-gh-off").addEventListener("click", function() {
+    box2.querySelector("#m2-ed-gh-off").addEventListener("click", function() {
       askOff(disconnect);
     });
-    box.querySelector("#m2-ed-this").addEventListener("click", editShown);
+    box2.querySelector("#m2-ed-this").addEventListener("click", editShown);
   }
   var offSay;
   function disconnect() {
@@ -19817,7 +20135,7 @@
         };
         var cur = V.current && V.current.id;
         if (on) {
-          var st = box.querySelector("#m2-ed-stop");
+          var st = box2.querySelector("#m2-ed-stop");
           if (st && !st.hidden) st.click();
         }
         return Promise.resolve(saveTimer ? push() : saving).catch(function() {
@@ -19884,9 +20202,9 @@
   var inGrid;
   var gsMenu;
   function __run254() {
-    box.querySelector("#m2-ed-grid").addEventListener("click", gridShow);
-    box.querySelector("#m2-ed-snap").addEventListener("click", gridSnap);
-    inGrid = box.querySelector("#m2-ed-gsize");
+    box2.querySelector("#m2-ed-grid").addEventListener("click", gridShow);
+    box2.querySelector("#m2-ed-snap").addEventListener("click", gridSnap);
+    inGrid = box2.querySelector("#m2-ed-gsize");
     inGrid.value = String(gridSet.step);
     inGrid.addEventListener("change", function() {
       var was = Object.assign({}, gridSet);
@@ -19914,7 +20232,7 @@
   var kwBox;
   var kwBy;
   function __run264() {
-    box.querySelector("#m2-ed-gsdrop").addEventListener("click", function(e) {
+    box2.querySelector("#m2-ed-gsdrop").addEventListener("click", function(e) {
       e.stopPropagation();
       if (gsMenu) {
         gsClose();
@@ -20059,14 +20377,14 @@
     document.querySelectorAll('#m2-rail .m2-ri[data-win="edit"]').forEach(function(b) {
       b.addEventListener("click", shown);
     });
-    box.querySelector("#m2-ed-save").addEventListener("click", save);
-    box.querySelector("#m2-ed-undo").addEventListener("click", function() {
+    box2.querySelector("#m2-ed-save").addEventListener("click", save);
+    box2.querySelector("#m2-ed-undo").addEventListener("click", function() {
       if (on && !listGo(true)) back(undo, shared.redo);
     });
-    box.querySelector("#m2-ed-redo").addEventListener("click", function() {
+    box2.querySelector("#m2-ed-redo").addEventListener("click", function() {
       if (on && !listGo(false)) back(shared.redo, undo);
     });
-    box.querySelector("#m2-ed-stop").addEventListener("click", function() {
+    box2.querySelector("#m2-ed-stop").addEventListener("click", function() {
       V.win = "list";
       V.railMark();
       if (V.chosen) V.put(V.chosen);
@@ -20086,7 +20404,7 @@
     render();
   }
   function __run303() {
-    box.querySelector("#m2-ed-back").addEventListener("click", resume);
+    box2.querySelector("#m2-ed-back").addEventListener("click", resume);
   }
   function away() {
     if (!on) {
@@ -20103,7 +20421,7 @@
   }
   var HANDLE;
   var BEND;
-  function __run313() {
+  function __run314() {
     window.addEventListener("beforeunload", function(e) {
       if (shared.dirty) {
         keepNow2();
@@ -22063,7 +22381,7 @@
     __run284();
     __run294();
     __run303();
-    __run313();
+    __run314();
     __run343();
     __run353();
     __run363();

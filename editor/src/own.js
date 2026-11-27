@@ -1,8 +1,9 @@
 import { formatOfMap, shared, V } from './state.js';
-import { ahead, api, cloudOn, waitText, b64, blobSha, changed, drawText, freeName, gh, graphmlOf, heldText, localBox, map, mapTop, note, on, origFolderDrop, origRead, origWrite, repo, site, src, stop, toFolder, token, unkeep, warn } from './core.js';
+import { ahead, api, cloudOn, waitText, b64, blobSha, changed, drawText, freeName, gh, graphmlOf, heldText, localBox, map, mapTop, note, on, origFolderDrop, origRead, origWrite, repo, sendFailed, site, src, stop, toFolder, token, unkeep, warn, whyFailed } from './core.js';
 import { cdMap, cdMk, cdPicSource, cdpy, isCd } from './celldesigner.js';
 import { noLayout } from './graphml.js';
 import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
+import { opsAll, opsDone, opsHas, opsKeep } from './outbox.js';
 import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntries, packPlan, pngSize, settleGlyphs, svgPixels, unzip, zip } from './minerva.js';
 
     // ---------- the reader's own storage (editor/src/own.js) ----------
@@ -179,7 +180,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       V.regroupRename(was, v);   // the reader's order of groups and of the maps in it, and maps moved into it
       if (V.closed[was]) { V.closed[v] = true; delete V.closed[was]; V.saveClosed(); }
       V.refreshMine();
-      return pages.length ? siteGroupTo(pages, v, ex).catch(function (e) { alert(was + ' was not renamed on the site: ' + (e && e.message ? e.message : e) + '. The new name is kept in this browser only.'); }) : Promise.resolve();
+      return pages.length ? opSend('group', { ids: pages, g: v, ex: ex || null }, pages).catch(function (e) { alert(was + ' was not renamed on the site: ' + (e && e.message ? e.message : e) + '. The new name is kept in this browser only.'); }) : Promise.resolve();
     }
     function siteGroupTo(ids, g, ex) {   // maps/<id>.md of every map given: group g, example: dropped; one commit on the pages as
       // the commit read has them (a page gone meanwhile left out), three tries
@@ -366,7 +367,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     }   // a page's order as the last move found it (moveU's undo puts it back; the build's may lag)
     function toSiteGroup(id, g, k, top) {   // maps/<id>.md: its group and its order (after the group's last, k after it; top: n maps before its first); one commit
       var at = top ? siteFirst(g) - top + (k | 0) : siteOrder(g) + (k | 0);
-      return siteFront(id, function (f) { pageWas[id] = { order: f.get('order') }; f.set('group', JSON.stringify(g.replace(/["\\]/g, ''))); f.set('order', String(at)); f.drop('example'); }, 'Map moved in the viewer');   // moved out of its group: the reader's
+      return siteFront(id, { set: { group: JSON.stringify(g.replace(/["\\]/g, '')), order: String(at) }, drop: ['example'], was: ['order'] }, 'Map moved in the viewer');   // moved out of its group: the reader's
     }
     function put(id, g, before) {   // a map into the reader's order of group g, the group opened so the map stays in sight
       if (g && V.closed[g]) { delete V.closed[g]; V.saveClosed(); }
@@ -882,11 +883,8 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     }
     function toSiteName(id, was, v) {   // maps/<id>.md: its topic, and its title where it was the same; one commit
       var q = JSON.stringify(v.replace(/["\\]/g, ''));   // the build reads the front matter's quotes plainly
-      return siteFront(id, function (f) {
-        if (f.get('topic') === null) throw new Error('its page has no topic line');
-        if (f.get('title') === f.get('topic')) f.set('title', q);
-        f.set('topic', q);
-      }, 'Map renamed in the viewer');
+      var n = renamed[id];
+      return siteFront(id, { need: 'topic', follow: true, set: { topic: q }, show: n ? { was: n.was, to: n.to } : { was: was, to: v } }, 'Map renamed in the viewer');
     }
     // one way to make or update a reader's map, for files added here and found in their folder (the editor): by its id,
     // else by its file's name and content: the same file again, as
@@ -926,7 +924,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     function addPaint() {
       var box = document.getElementById('m2-list');
       if (!box) return;
-      Array.prototype.forEach.call(box.querySelectorAll('.m2-wait, .m2-pend-n'), function (x) { x.remove(); });
+      Array.prototype.forEach.call(box.querySelectorAll('.m2-item.m2-wait, .m2-pend-n'), function (x) { x.remove(); });
       Array.prototype.forEach.call(box.querySelectorAll('.m2-empty[hidden]'), function (x) { x.hidden = false; });   // only addPaint hides them
       adding = adding.filter(function (b) { return b.rows.length || b.done < b.n; });
       if (document.getElementById('m2-search').value.trim()) return;
@@ -1557,13 +1555,16 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     function toGh(s) {   // the reader's map edited, not saving on GitHub yet: sent (or its place there taken up), then saved there
       if (!mine[s.id]) return Promise.resolve();
       return upOne(s.id).then(function (n) {
+        delete mineStuck[s.id];
         if (!n || !n.path) return;   // gone, or sent by an older version (its file's sha not known)
         if (site !== s || !on || !(repo() && token())) { if (n.text !== n.saved) upAll(); return; }   // left meanwhile: its last changes sent all the same
         s.pending = false; s.path = n.path; s.sha = n.sha; s.saved = n.saved;
         localBox(); V.refreshMine();
         if (src() !== n.saved) { shared.dirty = true; changed(); }
       }, function (e) {
-        if (site === s) warn('Not on GitHub: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '. This map is kept in this browser only; it is sent again after the next change.');
+        var why = whyFailed(e);
+        if (why !== 'other') { mineStuck[s.id] = 1; sendFailed(why); }   // kept in this browser, sent with the connection back (opsDrain)
+        else if (site === s) warn('Not on GitHub: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '. This map is kept in this browser only; it is sent again after the next change.');
       });
     }
     // every map of the reader's not on GitHub, or with changes GitHub does not have (a save that failed, a disconnect,
@@ -1576,22 +1577,25 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     function upAll() {
       if (!(repo() && token())) return Promise.resolve();
       if (upRun) return upRun;
-      var went = [], failed = [], fail = function (r) { return function (e) { failed.push(r.title + ' (' + (e && e.message ? e.message : e) + ')'); }; };
+      var went = [], failed = [], stuck = null, fail = function (r) { return function (e) { var why = whyFailed(e); if (why !== 'other') { mineStuck[r.id] = 1; stuck = why; } else failed.push(r.title + ' (' + (e && e.message ? e.message : e) + ')'); }; };
+      var sent = function (r) { return function () { delete mineStuck[r.id]; went.push(r.title); }; };
       var listIn = function (n) { return V.siteList || !n ? Promise.resolve() : new Promise(function (res) { setTimeout(res, 500); }).then(function () { return listIn(n - 1); }); };
       return (upRun = mineIn.then(moveBack).then(function () { return listIn(60); }).then(function () {
         return Object.keys(mine).reduce(function (q, id) {
           return q.then(function () {
             var r = mine[id];
             if (!r || r.hidden || r.from || (on && site && site.id === id)) return;   // the map edited: its own way (toGh, push); a folder copy not yet back: moveBack's
-            if (!r.site) return upOne(id).then(function (n) { if (n) went.push(n.title); }, fail(r));
-            if (r.path && r.saved != null && r.text !== r.saved) return putMine(r).then(function () { went.push(r.title); }, fail(r));
+            if (!r.site) return upOne(id).then(function (n) { if (n) sent(r)(); }, fail(r));
+            if (r.path && r.saved != null && r.text !== r.saved) return putMine(r).then(sent(r), fail(r));
+            delete mineStuck[id];
           });
         }, Promise.resolve());
       }).then(function () {
         upRun = null;
         if (went.length || failed.length) V.refreshMine();
+        if (stuck) sendFailed(stuck);   // the grey line and the clouds (core.js), never red for a lost connection
         if (failed.length) warn('Not on GitHub, kept in this browser only: ' + failed.join(', ') + '.');
-        else if (went.length) note();
+        else if (went.length && !stuck) note();
       }));
     }
     // a reader's map's changes GitHub does not have, saved on the sha last known; refused as older (its last save
@@ -1603,7 +1607,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         body: JSON.stringify({ message: 'Moved in the viewer: ' + r.path.split('/').pop(), content: b64(t), sha: r.sha || undefined, branch: 'main' }) })
         .then(function (q) {
           if (q.ok) return q.json().then(function (d) { return learn(d.content.sha); });
-          if (q.status !== 409 && q.status !== 422) throw new Error('GitHub ' + q.status);
+          if (q.status !== 409 && q.status !== 422) throw ghErr(q.status);
           return Promise.all([api('/contents/' + r.path + '?ref=main').then(function (x) { return x.json(); }),
             api('/contents/' + r.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (x) { return x.text(); })])
             .then(function (f) { if (f[1] !== t) throw new Error('changed on GitHub since'); return learn(f[0].sha); });
@@ -1721,7 +1725,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         body: JSON.stringify({ message: 'Moved in the viewer: ' + path.split('/').pop(), content: b64(t), sha: sha || undefined, branch: 'main' }) })
         .then(function (q) {
           if (q.ok) return q.json().then(function (d) { return d.content.sha; });
-          if (q.status !== 409 && q.status !== 422) throw new Error('GitHub ' + q.status);
+          if (q.status !== 409 && q.status !== 422) throw ghErr(q.status);
           return ghRaw(path).then(function (g) { return g && g.text === t ? g.sha : null; });
         });
     }
@@ -1815,28 +1819,184 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     function binClear(id) { var p = binPending(); if (id in p) { delete p[id]; binPendingSet(p); } }
     function textOf(b64) { return new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\n/g, '')), function (c) { return c.charCodeAt(0); })); }   // GitHub's base64 content as text
     function ghPost(path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(ghJson); }
+    function ghErr(s) { var e = new Error('GitHub ' + s); e.status = s; return e; }
     function ghJson(r) { return r.ok ? r.json() : r.json().catch(function () { return {}; }).then(function (d) { var e = new Error(d && d.message || 'GitHub ' + r.status); e.status = r.status; throw e; }); }
     // maps/<id>.md's front matter changed by edit({ get, set, drop }) in one commit, the closing line and the body as they were
     // One page write at a time from this page: two at once on main refuse each other (409, the branch moved), as several
     // maps restored together did; a write still refused (another tab, an editor save) is read and tried up to three times
     // more; a write that never answers holds the next ones 30 s at most from its start
-    var siteQ;
     function __run21() {   // run at start, in order (__start)
-    siteQ = Promise.resolve();
     }
-    function siteFront(id, edit, message) {
-      V.pageSent(id, '');   // held from the moment it is asked for, also while it waits behind other writes
-      var prev = siteQ, p = prev.then(function () { return frontWrite(id, edit, message, 0); })
-        .then(function (at) { V.pageSent(id, at); }, function (e) { V.pageSent(id, null); throw e; });   // held until a build of this write
-      siteQ = queueNext(prev, p);
-      return p;
+    // spec: the page's edit as data, so it can be kept and sent later: set { line: value }, drop [line], follow: the title
+    // takes set.topic where it was the topic, need: a line the page must have, was: lines read before (this page's undo
+    // of a move); show: what the list shows meanwhile (a name: { was, to }), kept beside it
+    function siteFront(id, spec, message) {
+      V.pageSent(id, '');   // held from the moment it is asked for, also while it waits behind other writes; then until a build of this write
+      var show = spec.show; delete spec.show;
+      return opSend('front', { id: id, spec: spec, message: message }, [id], show).catch(function (e) { V.pageSent(id, null); throw e; });
     }
-    function queueNext(prev, p) {   // the next write waits for this one, at most 30 s counted from when this one starts
-      return prev.then(function () { return Promise.race([p.catch(function () {}), new Promise(function (ok) { setTimeout(ok, 30000); })]); });
+    function frontEdit(id, spec) {
+      return function (f) {
+        if (spec.need && f.get(spec.need) === null) throw new Error('its page has no ' + spec.need + ' line');
+        if (spec.was) { var w = {}; spec.was.forEach(function (k) { w[k] = f.get(k); }); pageWas[id] = w; }
+        if (spec.follow && spec.set && f.get('title') === f.get('topic')) f.set('title', spec.set.topic);
+        (spec.drop || []).forEach(function (k) { f.drop(k); });
+        Object.keys(spec.set || {}).forEach(function (k) { f.set(k, spec.set[k]); });
+      };
+    }
+    // The list's outbox (notes/offline.md, The plan to build, items 1 to 3): every change the list sends to GitHub (a
+    // page's edit, a group renamed, Deleted's file, Delete forever) is first kept in this browser (outbox.js, ops), then
+    // sent with every change kept before it, in the order kept (opsRound: one round at a time in this tab, the lock
+    // atlas-ops across tabs, so order holds across tabs and visits), and let go once GitHub has it. A send that fails for
+    // want of a connection, with GitHub's 5xx or the token refused ends the round: it and every change after it stay,
+    // nothing is said per action (core.js sendFailed: the grey line and the cloud, or the token's one red line) and the
+    // caller gets WAIT, so the list keeps showing the change; the next round is core.js sendWaiting's (the connection
+    // back, every 30 s, the page opened, the next save) or the next change's. GitHub refusing a change for another
+    // reason lets it go: its caller, when it is this tab's, gets the refusal and puts the list back; else opUndone does.
+    var WAIT, opsWait, opsLast, opsOut, opsAwait, opsStuckNow, mineStuck, roundRun, idsMemo, RUN;
+    function __run31() {   // run at start, in order (__start)
+    WAIT = { waiting: true }, opsWait = [], opsLast = null, opsOut = {}, opsAwait = {}, opsStuckNow = null, mineStuck = {}, roundRun = null, idsMemo = null;
+    RUN = {
+      front: function (a) { return frontWrite(a.id, frontEdit(a.id, a.spec), a.message, 0); },
+      group: function (a) { return siteGroupTo(a.ids, a.g, a.ex); },
+      bin: function (a) {
+        var at = new Date().toISOString();   // written: the viewer waits for a build that new
+        return binFileWrite(function (o) { a.ids.forEach(function (id) { if (a.on) o[id] = { deleted: a.date, written: at }; else delete o[id]; }); },
+          (a.on ? 'Deleted in the viewer: ' : 'Restored in the viewer: ') + a.ids.join(', '), 0).then(function () { return at; });
+      },
+      erase: function (a) { return siteErase(a.ids, a.gone); }
+    };
+    }
+    // one tab sends at a time; a send that never answers lets the others go after a minute (taken as no connection:
+    // kept, tried again; each kind of change written twice gives the same result)
+    function opLocked(f) {
+      var g = function () { return Promise.race([f(), new Promise(function (ok, no) { setTimeout(function () { no(new TypeError('Failed to fetch (no answer in a minute)')); }, 60000); })]); };
+      return navigator.locks && navigator.locks.request ? navigator.locks.request('atlas-ops', g) : g();
+    }
+    function opSend(kind, args, ids, show) {
+      var op = { key: repo(), kind: kind, args: args, ids: ids, show: show || null };
+      idsMemo = null;
+      return opsKeep(op).then(function () {
+        opsWait.push(op);
+        opsAwait[op.seq] = 1;   // its refusal is this caller's to say
+        var round = function (n) {   // a round under way may have read the store before this change was in it: one more
+          return opsRound().then(function () {
+            var x = opsOut[op.seq];
+            if (!x && n < 3 && opsWait.some(function (o) { return o.seq === op.seq; }) && !opsStuckNow) return round(n + 1);
+            delete opsOut[op.seq]; delete opsAwait[op.seq];
+            if (x && x.e) throw x.e;
+            return x ? x.r : WAIT;
+          });
+        };
+        return round(0);
+      }, function () {   // a browser that keeps nothing: sent at once, as before
+        return opLocked(function () { return RUN[kind](args); }).then(function (r) { opAfter(op, r); return r; });
+      });
+    }
+    function opsRound() {   // every change kept for this site sent in order, stopping at the first that must wait
+      if (!(repo() && token())) return Promise.resolve({ sent: 0, stuck: null, back: [] });
+      if (roundRun) return roundRun;
+      var out = { sent: 0, stuck: null, back: [] }, failed = [];
+      roundRun = opsLoad().then(function (all) {   // opsStuckNow: the last round ended on a change that waits
+        return all.reduce(function (q, op) {
+          return q.then(function () {
+            if (out.stuck) return;
+            return opLocked(function () {
+              return opsHas(op.seq).then(function (still) {
+                if (!still) return { gone: true };   // sent by another tab
+                return RUN[op.kind](op.args).then(function (r) { return opsDone(op.seq).then(function () { return { r: r }; }); });   // let go inside the lock, so no other tab sends it again
+              });
+            }).then(function (x) {
+              opForget(op);
+              if (x.gone) { opsOut[op.seq] = { r: op.at }; return; }
+              opAfter(op, x.r); opsOut[op.seq] = { r: x.r }; out.sent++;
+              if ((opsLast || []).indexOf(op.seq) >= 0) out.back = out.back.concat(op.ids || []);
+            }, function (e) {
+              var why = whyFailed(e);
+              if (why !== 'other') { out.stuck = why; return; }
+              opForget(op);
+              opsOut[op.seq] = { e: e };
+              if (!opsAwait[op.seq]) failed.push(opUndone(op, e));
+              return opsDone(op.seq);
+            });
+          });
+        }, Promise.resolve());
+      }).then(function () {
+        opsStuckNow = out.stuck; idsMemo = null;
+        if (out.stuck) { opsHold(); sendFailed(out.stuck); }
+        if (failed.length) { V.refreshMine(); alert('Not changed on GitHub: ' + failed.join('; ') + '. The list shows them as GitHub has them.'); }
+        return out;
+      }, function () { return out; });
+      roundRun = roundRun.then(function (x) { roundRun = null; return x; });
+      return roundRun;
+    }
+    function opForget(op) { opsWait = opsWait.filter(function (o) { return o.seq !== op.seq; }); idsMemo = null; }
+    function opAfter(op, r) {   // GitHub has it: what the page holds until a build of it
+      var a = op.args;
+      if (op.kind === 'front') V.pageSent(a.id, r);
+      else if (op.kind === 'bin') a.ids.forEach(function (id) { V.pageSent(id, a.on ? r : null); });   // restored: no line left to wait for
+      else if (op.kind === 'erase') hiddenSet(siteHidden().filter(function (id) { return a.ids.indexOf(id) < 0; }));
+    }
+    function opUndone(op, e) {   // refused when sent by a later round: the list back to how GitHub has it, said once
+      var a = op.args;
+      (op.ids || []).forEach(function (id) {
+        V.pageSent(id, null);
+        if (op.kind === 'group' || (op.kind === 'front' && a.spec.set && 'group' in a.spec.set)) V.setMoved(id, null);
+        if (op.kind === 'bin' || binOf(op)) binClear(id);
+        if (op.show && op.show.to) delete renamed[id];
+        if (op.kind === 'erase') delete hiddenGone[id];
+      });
+      return (op.ids || []).map(function (id) { var m = V.byId[id]; return m ? mapName(m) : id; }).join(', ') + ' (' + (e && e.message ? e.message : e) + ')';
+    }
+    function binOf(op) {   // a page's edit into Deleted (its date) or out of it (''), else null
+      var sp = op.kind === 'front' && op.args.spec;
+      if (!sp) return null;
+      if (sp.set && 'deleted' in sp.set) return [JSON.parse(sp.set.deleted)];
+      return (sp.drop || []).indexOf('deleted') >= 0 ? [''] : null;
+    }
+    // what the list shows of the changes still waiting (an earlier visit's, another tab's): names, held states, erased maps;
+    // the held states kept past their hour while they wait. The last change of a map wins
+    function opsHold() {
+      var pend = binPending(), n = 0, any = false;
+      opsWait.forEach(function (op) {
+        var b = op.kind === 'bin' ? [op.args.on ? op.args.date : ''] : binOf(op);
+        (op.ids || []).forEach(function (id) {
+          if (op.show && op.show.to) { renamed[id] = { was: op.show.was, to: op.show.to }; any = true; }
+          if (op.kind === 'erase') { hiddenGone[id] = 1; any = true; }
+          if (op.kind === 'front' || op.kind === 'bin') V.pageSent(id, '');
+          if (b) { pend[id] = [b[0], Date.now()]; n++; }
+        });
+      });
+      if (n) binPendingSet(pend);
+      return any || n > 0;
+    }
+    function opsLoad() {   // this site's waiting changes, as stored now (another tab's too)
+      return opsAll(repo()).then(function (all) {
+        opsWait = all; idsMemo = null;
+        if (opsLast === null) { opsLast = all.map(function (o) { return o.seq; }); if (opsHold()) V.refreshMine(); }
+        return all;
+      }, function () { return opsWait; });
+    }
+    // the list's changes, then the reader's own maps not on GitHub yet (upAll, after the round: its own sends are changes
+    // of the list too). Gives the round's { sent, stuck, back: the ids of maps of the last visit's changes sent }
+    function opsDrain() {
+      return opsRound().then(function (x) { return x.stuck ? x : upAll().then(function () { return x; }, function () { return x; }); });
+    }
+    // the maps whose changes wait (the list's rows: a reader's own map by its own id), for the grey line and the clouds;
+    // worked out once for a list drawn
+    function opsIds() {
+      if (idsMemo) return idsMemo;
+      var bySite = {}, o = {};
+      Object.keys(mine).forEach(function (k) { if (mine[k].site) bySite[mine[k].site] = k; });
+      opsWait.forEach(function (op) { (op.ids || []).forEach(function (id) { o[bySite[id] || id] = 1; }); });
+      Object.keys(mineStuck).forEach(function (k) { if (mine[k]) o[k] = 1; });
+      idsMemo = Object.keys(o);
+      setTimeout(function () { idsMemo = null; }, 0);
+      return idsMemo;
     }
     function frontWrite(id, edit, message, tries) {
       var path = '/contents/maps/' + encodeURIComponent(id) + '.md', at = new Date().toISOString();   // written: when this page last wrote it (the viewer waits for a build that new, V.pageBehind)
-      return api(path + '?ref=main').then(function (r) { if (!r.ok) { var e = new Error(r.status === 404 ? 'it has no page of its own' : 'GitHub ' + r.status); e.noPage = r.status === 404; throw e; } return r.json(); })
+      return api(path + '?ref=main').then(function (r) { if (!r.ok) { var e = new Error(r.status === 404 ? 'it has no page of its own' : 'GitHub ' + r.status); e.noPage = r.status === 404; e.status = r.status; throw e; } return r.json(); })
         .then(function (d) {
           var md = textOf(d.content);
           var fm = /^---(\r?\n)([\s\S]*?)\r?\n---/.exec(md);   // the front matter only, in the file's line ends
@@ -1852,7 +2012,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
           return api(path, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: message + ': ' + id, content: b64(md), sha: d.sha, branch: 'main' }) });
         }).then(function (r) {
           if ((r.status === 409 || r.status === 422) && tries < 3) return new Promise(function (ok) { setTimeout(ok, 500 * (tries + 1)); }).then(function () { return frontWrite(id, edit, message, tries + 1); });   // read again: another write came first
-          if (!r.ok) throw new Error('GitHub ' + r.status);
+          if (!r.ok) throw ghErr(r.status);
           return at;
         });
     }
@@ -1860,13 +2020,9 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       if (pageless((V.siteList || []).filter(function (x) { return x.id === id; })[0])) return pagelessBin(id, on);   // its line in maps/deleted.json
       var pend = binPending(), was = pend[id], date = new Date().toISOString().slice(0, 19) + 'Z';
       pend[id] = [on ? date : '', Date.now()]; binPendingSet(pend);
-      return siteFront(id, function (f) {
-        if (on) f.set('deleted', JSON.stringify(date));
-        else {
-          f.drop('deleted');
-          if (topic) { var q = JSON.stringify(topic.replace(/["\\]/g, '')); if (f.get('title') === f.get('topic')) f.set('title', q); f.set('topic', q); }
-        }
-      }, on ? 'Map deleted in the viewer' : 'Map restored in the viewer').catch(function (e) {
+      var n = renamed[id], spec = on ? { set: { deleted: JSON.stringify(date) } } : { drop: ['deleted'] };
+      if (!on && topic) { spec.set = { topic: JSON.stringify(topic.replace(/["\\]/g, '')) }; spec.follow = true; if (n) spec.show = { was: n.was, to: n.to }; }
+      return siteFront(id, spec, on ? 'Map deleted in the viewer' : 'Map restored in the viewer').catch(function (e) {
         var p = binPending(); if (was === undefined) delete p[id]; else p[id] = was; binPendingSet(p);
         V.refreshMine(); throw e;
       });
@@ -1889,7 +2045,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         return api('/contents/' + BIN_FILE, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: message, content: b64(binFileText(o)), sha: d.sha || undefined, branch: 'main' }) });
       }).then(function (r) {
         if ((r.status === 409 || r.status === 422) && tries < 3) return new Promise(function (ok) { setTimeout(ok, 500 * (tries + 1)); }).then(function () { return binFileWrite(edit, message, tries + 1); });
-        if (!r.ok) throw new Error('GitHub ' + r.status);
+        if (!r.ok) throw ghErr(r.status);
       });
     }
     var pbWait;
@@ -1908,17 +2064,12 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       return w.p;
     }
     function pagelessWrite(w, on) {
-      var ids = w.ids, prev = siteQ, p = prev.then(function () {
-        var at = new Date().toISOString();   // written: the viewer waits for a build that new
-        return binFileWrite(function (o) { ids.forEach(function (id) { if (on) o[id] = { deleted: w.date, written: at }; else delete o[id]; }); },
-          (on ? 'Deleted in the viewer: ' : 'Restored in the viewer: ') + ids.join(', '), 0).then(function () { return at; });
-      }).then(function (at) { ids.forEach(function (id) { V.pageSent(id, on ? at : null); }); return at; }, function (e) {   // restored: no line left to wait for
+      var ids = w.ids;
+      return opSend('bin', { ids: ids, on: on, date: w.date }, ids).catch(function (e) {
         ids.forEach(function (id) { V.pageSent(id, null); });
         var q = binPending(); ids.forEach(function (id) { if (w.was[id] === undefined) delete q[id]; else q[id] = w.was[id]; }); binPendingSet(q);
         V.refreshMine(); throw e;
       });
-      siteQ = queueNext(prev, p);
-      return p;
     }
     // Delete group (any group in sight): its maps into Deleted, as Delete map; Deleted shows maps only, and each keeps its
     // group, so Restore puts it back there. A group of the reader's goes from the list once its maps are in Deleted (its
@@ -2191,9 +2342,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       site.forEach(function (id) { hiddenGone[id] = 1; binClear(id); delete renamed[id]; draftDrop(id); });
       namedSave();
       V.refreshMine();
-      siteErase(site, gone).then(function () {
-        hiddenSet(siteHidden().filter(function (id) { return site.indexOf(id) < 0; }));
-      }, function (e) {
+      opSend('erase', { ids: site, gone: gone }, site).catch(function (e) {
         site.forEach(function (id) { delete hiddenGone[id]; });
         V.refreshMine();
         alert('Not deleted forever on GitHub: ' + (e && e.message ? e.message : e) + '. The map stays in Deleted.');
@@ -2292,9 +2441,12 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
               var m = V.byId[w.id]; if (!m) return;
               if (!w.s) return moveTo(w.id, w.g);
               V.setMoved(w.id, w.page ? w.g : w.mv);   // a site map: where this browser had it (its page written back: there until a build of that write)
-              if (w.page && (m.group || '') !== w.g) return siteFront(w.id, function (f) {   // its page as before: the group it was in (the site's own where that was the reader's), order, example
-                f.set('group', JSON.stringify((ownGroup(w.g) ? w.s.group || '' : w.g).replace(/["\\]/g, ''))); var o = w.pw && w.pw.order != null ? w.pw.order : w.s.order; if (o != null) f.set('order', String(o)); if (w.s.example) f.set('example', 'true');
-              }, 'Map moved back in the viewer').catch(function () {});
+              if (w.page && (m.group || '') !== w.g) {   // its page as before: the group it was in (the site's own where that was the reader's), order, example
+                var o = w.pw && w.pw.order != null ? w.pw.order : w.s.order, set = { group: JSON.stringify((ownGroup(w.g) ? w.s.group || '' : w.g).replace(/["\\]/g, '')) };
+                if (o != null) set.order = String(o);
+                if (w.s.example) set.example = 'true';
+                return siteFront(w.id, { set: set }, 'Map moved back in the viewer').catch(function () {});
+              }
             }).then(function () {   // its name back, where the move gave it one: in this browser if that one is kept here
               var m = V.byId[w.id], n = renamed[w.id];
               if (m && mapName(m) !== w.name) return nameTo(m, w.name, !mine[w.id] && (n ? !!n.local : !gh));
@@ -2343,5 +2495,5 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     mineIn.then(function () { projRecs(); });   // the projects from zips, for the list's top level mark
     }   // connected: the reader's maps kept in this browser go to GitHub
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); }   // the part's statements, in their order
-    export { moveOut, toMove, draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keepOther, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, openZipFolder, origGh, origPut, own, savedMine, toGh, upAll, upRun };
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); }   // the part's statements, in their order
+    export { opsDrain, opsIds, moveOut, toMove, draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keepOther, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, openZipFolder, origGh, origPut, own, savedMine, toGh, upAll, upRun };

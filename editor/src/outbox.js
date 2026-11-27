@@ -7,7 +7,12 @@
 // A database of its own (atlas-outbox), so the page's database keeps its version for older copies of the page. Every
 // tab of the site writes it: the records are read afresh before a send (outboxFresh) and let go only while they still
 // hold the text sent. Imports nothing; core.js sends (sendWaiting) and says what waits.
-var dbP, box, loaded;
+// Database atlas-ops, of its own too (an older copy of the page on the same address keeps opening atlas-outbox at
+// version 1): the list's changes with a token (a map's page edited: renamed, moved, deleted, restored; a group renamed; a
+// map deleted forever; Deleted's file for the build's own maps), one record per change in the order made, its key the
+// store's own counter (seq): { seq, key: the data repository, kind, args, ids, show, at }; own.js sends them (opSend,
+// opsDrain) one at a time and lets each go once GitHub has it.
+var dbP, opsP, box, loaded;
 function db() {
   if (!dbP) dbP = new Promise(function (res, rej) {
     var idb = window.indexedDB;
@@ -20,10 +25,22 @@ function db() {
   });
   return dbP;
 }
-function tx(mode, f) {
-  return db().then(function (d) {
+function opsDb() {
+  if (!opsP) opsP = new Promise(function (res, rej) {
+    var idb = window.indexedDB;
+    if (!idb) return rej(new Error('this browser keeps no data for the page'));
+    var r = idb.open('atlas-ops', 1);
+    r.onupgradeneeded = function () { if (!r.result.objectStoreNames.contains('ops')) r.result.createObjectStore('ops', { keyPath: 'seq', autoIncrement: true }); };
+    r.onsuccess = function () { var d = r.result; d.onversionchange = function () { d.close(); opsP = null; }; res(d); };
+    r.onerror = function () { opsP = null; rej(r.error); };
+    r.onblocked = function () { opsP = null; rej(new Error('another tab of this site holds the stored changes')); };
+  });
+  return opsP;
+}
+function tx(mode, f, store) {
+  return (store === 'ops' ? opsDb() : db()).then(function (d) {
     return new Promise(function (res, rej) {
-      var t = d.transaction('saves', mode), q = f(t.objectStore('saves'));
+      var t = d.transaction(store || 'saves', mode), q = f(t.objectStore(store || 'saves'));
       t.oncomplete = function () { res(q && q.result); };
       t.onerror = t.onabort = function () { rej(t.error); };
     });
@@ -69,3 +86,16 @@ export function outboxDone(key, text) {
 }
 export function outboxGet(key) { return (box && box[key]) || null; }
 export function outboxAll() { return box ? Object.keys(box).map(function (k) { return box[k]; }) : []; }
+// the list's changes: kept (rejects when the browser refused to keep it), every one of a repository in order, one
+// still there (another tab may have sent it), let go
+export function opsKeep(op) {
+  op.at = Date.now();
+  return tx('readwrite', function (st) { return st.add(op); }, 'ops').then(function (seq) { op.seq = seq; return op; });
+}
+export function opsAll(key) {
+  return tx('readonly', function (st) { return st.getAll(); }, 'ops').then(function (all) {
+    return (all || []).filter(function (o) { return o && o.key === key; }).sort(function (a, b) { return a.seq - b.seq; });
+  });
+}
+export function opsHas(seq) { return tx('readonly', function (st) { return st.get(seq); }, 'ops').then(function (o) { return !!o; }); }
+export function opsDone(seq) { return tx('readwrite', function (st) { return st.delete(seq); }, 'ops').catch(function () {}); }

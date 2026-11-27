@@ -9,7 +9,7 @@ import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, li
 import { help, helpBox } from './help.js';
 import { merge3 } from './merge.js';
 import { outboxAll, outboxDone, outboxFresh, outboxGet, outboxKeep, outboxLoad } from './outbox.js';
-import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keepOther, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, moveOut, toMove, openZipFolder, savedMine, toGh, upAll, upRun } from './own.js';
+import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keepOther, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, moveOut, opsDrain, opsIds, toMove, openZipFolder, savedMine, toGh, upAll, upRun } from './own.js';
 
     // ---------- the editor's shared core (editor/src/core.js) ----------
     // Moves only: nodes and bend points of a map, nudged in the map window. A CellDesigner map is edited as the GraphML
@@ -312,14 +312,14 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (r && r.text !== body && r.sha === (was || null)) { r.sha = t.sha; r.saved = body; r.also = null; outboxKeep(r).catch(function () {}); }
       else outboxDone(k, body);
       sendOk();
-      if (here().some(function (x) { return x.id !== t.id; })) sendWaiting();   // the connection is back: the others go too
+      if (here().some(function (x) { return x.id !== t.id; }) || opsIds().length) sendWaiting();   // the connection is back: the others go too, and the list's changes
     }
     function sendOk() {
       clearTimeout(retryTimer); retryTimer = null;
       waitFail = false;
       waitShow();
     }
-    function sendFailed(why) {   // 'net': no connection, GitHub not answering; 'token': the token refused
+    function sendFailed(why) {   // 'net': no connection, GitHub not answering; 'token': the token refused; also the list's changes' (own.js opsRound, upAll)
       if (why === 'token') {
         if (waitFail !== 'token') { warn('GitHub refused the token. Your changes are kept in this browser. Connect again with a new token.'); ghForm(true); }
         waitFail = 'token';
@@ -329,10 +329,22 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       }
       waitShow();
     }
-    function sendWhy(e) { return e === 401 || e === 403 || e === 404 ? 'token' : typeof e === 'number' && e !== 409 && e < 500 ? 'other' : 'net'; }   // a status GitHub gave, else a lost connection
-    function waitingOf(id) { return !!waitFail && !!outboxGet(keyOf(id)); }   // the cloud by a map: not on GitHub, and a send has failed
+    function sendWhy(e) {   // a map's save: not found means the token cannot see the repository; a clash or a lost connection waits
+      var s = typeof e === 'number' ? e : e && e.status;
+      return s === 404 ? 'token' : !s || s === 409 ? 'net' : whyFailed(s);
+    }
+    // why a send to GitHub failed (a status it gave, or an error with one, or fetch's own): token, refused; net, no
+    // connection or GitHub not answering (5xx); other, a refusal waiting will not fix. An error of the code is other
+    function whyFailed(e) {
+      var s = typeof e === 'number' ? e : e && e.status;
+      if (s === 401 || s === 403) return 'token';
+      if (s >= 500 || (!s && e instanceof TypeError && /fetch|network|load failed/i.test(e.message || ''))) return 'net';
+      return 'other';
+    }
+    function waitIds() { var o = {}; here().forEach(function (r) { o[r.id] = 1; }); opsIds().forEach(function (id) { o[id] = 1; }); return o; }   // the maps with a save or a change of the list waiting
+    function waitingOf(id) { return !!waitFail && !!waitIds()[id]; }   // the cloud by a map: not on GitHub, and a send has failed
     function waitText() {
-      var n = waitFail === 'net' ? here().length : 0;
+      var n = waitFail === 'net' ? Object.keys(waitIds()).length : 0;
       return n ? 'Offline: changes to ' + n + (n > 1 ? ' maps' : ' map') + ' kept in this browser, sent to GitHub when the connection is back.' : passing;
     }
     function cloudOn(b, id) {   // the cloud put by a row of the list, or taken away (buildList asks for each row, waitShow for the rows shown)
@@ -345,7 +357,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (e) { e.textContent = t; e.hidden = !t; }
       var l = document.getElementById('m2-list');
       if (!l) return;
-      var w = l.querySelector(':scope > .m2-wait');
+      var w = l.querySelector(':scope > p.m2-wait');
       if (t && !w) { w = document.createElement('p'); w.className = 'm2-set-note m2-wait'; l.insertBefore(w, l.firstChild); }
       if (w) { if (t) w.textContent = t; else w.remove(); }
       l.querySelectorAll('.m2-map[data-id]').forEach(function (b) { cloudOn(b, b.getAttribute('data-id')); });
@@ -376,15 +388,19 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
             var list = here().filter(function (r) { return !(on && site && site.id === r.id) && busy.indexOf('atlas-edit-' + r.key) < 0; }), back = [], says = [], sent = 0;
             return list.reduce(function (p, r) {
               return p.then(function () { return sendOne(r).then(function (x) { if (!x) return; sent++; if (lastVisit.indexOf(r.key) >= 0) back.push(r.key); if (x.say) says.push(x.say); waitShow(); }); });
-            }, Promise.resolve()).then(function () {
-              if (sent) sendOk();
-              lastVisit = lastVisit.filter(function (k) { return back.indexOf(k) < 0; });
-              if (says.length) passSay(says.join(' '), true);   // both changed the same item (merge.js): said until the next change
-              else if (back.length) passSay('Changes to ' + back.length + (back.length > 1 ? ' maps' : ' map') + ' from your last visit sent to GitHub.');
-            }, function (e) {
+            }, Promise.resolve()).then(function () { return null; }, function (e) {
               var why = sendWhy(e);
               if (why === 'other') warn('Not saved on GitHub (' + e + '). Your changes are kept in this browser.');
               else sendFailed(why);
+              return why;
+            }).then(function (failed) {   // the list's changes (own.js) whatever became of the saves: their own order, their own failures
+              return opsDrain().then(function (x) {
+                if (!failed && !x.stuck && (sent || x.sent) && !(on && site && outboxGet(keyOf(site.id)))) sendOk();   // all through (the map open sends its own)
+                x.back.forEach(function (id) { if (back.indexOf(keyOf(id)) < 0) back.push(keyOf(id)); });
+                lastVisit = lastVisit.filter(function (k) { return back.indexOf(k) < 0; });
+                if (says.length) passSay(says.join(' '), true);   // both changed the same item (merge.js): said until the next change
+                else if (back.length) passSay('Changes to ' + back.length + (back.length > 1 ? ' maps' : ' map') + ' from your last visit sent to GitHub.');
+              });
             });
           });
         });
@@ -3648,4 +3664,4 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); __run47(); }   // the part's statements, in their order
-    export { cloudOn, sendWaiting, waitText, asSpace, G, GE, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubEnd, hubPorts, inComplex, landBox, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownCursors, ownMenus, paint, parse, parseFix, picWait, placed, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, takes, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };
+    export { cloudOn, sendFailed, sendWaiting, waitText, whyFailed, asSpace, G, GE, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubEnd, hubPorts, inComplex, landBox, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownCursors, ownMenus, paint, parse, parseFix, picWait, placed, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, takes, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };
