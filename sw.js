@@ -7,7 +7,8 @@
 //   network (and kept), else the copy of any version. An address without a version, or asked with no-cache: the
 //   network first, the copy when it fails. Other sites (GitHub's API) are never touched.
 // One copy per path (the query is left out of the key; the full address it came from is in a header).
-// KILL: a release with true drops every copy this scope kept, unregisters the worker and reloads its pages.
+// KILL: a release with true drops every copy this scope kept and unregisters the worker, with no reload (a page that
+// registers it again at its next load only repeats this); sw="off" on the include unregisters it from the page.
 var LAYOUT = 1;   // the kept copies' layout: a new number drops the copies of the earlier one
 var KILL = false;
 var WAIT = 4000;
@@ -24,8 +25,7 @@ function activate() {
     return Promise.all(ks.filter(function (k) { return mine(k) && (KILL || k !== NAME); }).map(function (k) { return caches.delete(k); }));
   }).then(function () {
     if (!KILL) return self.clients.claim();
-    return self.registration.unregister().then(function () { return self.clients.matchAll({ type: 'window' }); })
-      .then(function (cs) { cs.forEach(function (c) { c.navigate(c.url).catch(function () {}); }); });
+    return self.registration.unregister();   // pages open stay as they are (this worker answers nothing now); the next load is the network's
   });
 }
 self.addEventListener('message', function (e) {   // the page asks which layout and scope answer it

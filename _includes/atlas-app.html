@@ -4265,7 +4265,7 @@ page, so its styles keep the base they were made on).
     var w = offWorker();
     if (!w) return;
     var at = '{{ include.sw | default: "" }}' || EDITOR.replace(/editor\/$/, '') + 'sw.js';
-    if (at === 'off') return;   // a copy that keeps nothing for offline (sw="off" on the include)
+    if (at === 'off') return void w.getRegistration().then(function (g) { if (g) g.unregister(); }, function () {});   // a copy that keeps nothing for offline (sw="off" on the include): a worker registered before is let go
     try { if (navigator.webdriver && !localStorage.getItem('atlas-sw-test')) return; } catch (e) { return; }   // a browser driven by a test: none, so its routes see every request (tests/offline-page.js asks for it)
     w.addEventListener('message', function (e) { if (e.data && e.data.kept) { offName = e.data.kept; offCheck(); } });
     w.addEventListener('controllerchange', function () { offAsk(); offSoon(); });
