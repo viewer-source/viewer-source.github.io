@@ -117,7 +117,19 @@ function places(g) {
   return { N: N, E: E, H: H };
 }
 function near(a, b, tol) { return Math.abs(a - b) <= (tol || 1e-3); }
-function compare(want, got) {   // what differs between the places the editor had and the converter reads back
+// each arc's points as an SBGN-ML text has them, start, nexts, end: { id: [[x, y], ...] }
+function arcPoints(t) {
+  var out = {}, m, re = /<(?:[\w-]+:)?arc\b([^>]*)>([\s\S]*?)<\/(?:[\w-]+:)?arc>/g;
+  while ((m = re.exec(t))) {
+    var id = /\bid="([^"]+)"/.exec(m[1]); if (!id) continue;
+    var ps = [], q, pr = /<(?:[\w-]+:)?(start|next|end)\b([^>]*)>/g;
+    while ((q = pr.exec(m[2]))) { var x = /\bx="([^"]+)"/.exec(q[2]), y = /\by="([^"]+)"/.exec(q[2]); if (x && y) ps.push([F(x[1]), F(y[1])]); }
+    out[id[1]] = ps;
+  }
+  return out;
+}
+function compare(want, got, file) {   // what differs between the places the editor had and the converter reads back (file: the SBGN-ML written)
+  var FP = file ? arcPoints(file) : {};
   var A = places(want), B = places(got), bad = [];
   Object.keys(A.N).forEach(function (id) { if (!B.N[id] || !A.N[id].every(function (v, j) { return near(v, B.N[id][j]); })) bad.push('node ' + id); });
   Object.keys(A.E).forEach(function (id) {
@@ -130,6 +142,8 @@ function compare(want, got) {   // what differs between the places the editor ha
       if (same) return;
       // an end on the line toward its next point reads as the centre: drawn the same
       var c = [box[0] + box[2] / 2, box[1] + box[3] / 2], aim = k ? (a.pts.length ? a.pts[a.pts.length - 1] : null) : (a.pts[0] || null);
+      var fp = FP[id];   // the converter's own aim: the arc's next point as the file has it (the other end where no bend)
+      if (fp && fp.length >= 2) aim = k ? fp[fp.length - 2] : fp[1];
       if (!aim) { var o = A.N[k ? a.s : a.t]; aim = [o[0] + o[2] / 2 + a.off[k ? 0 : 2], o[1] + o[3] / 2 + a.off[k ? 1 : 3]]; }
       var u = [aim[0] - c[0], aim[1] - c[1]], v = [a.off[k], a.off[k + 1]], n = Math.hypot(u[0], u[1]);
       var onLine = n && Math.abs(u[0] * v[1] - u[1] * v[0]) / n <= 1.5 && u[0] * v[0] + u[1] * v[1] >= 0;
@@ -178,7 +192,7 @@ var g2 = conv(later.map(function (x) { return x.p; }));
 later.forEach(function (x, j) {
   var say = function (m) { fails++; console.log('FAIL ' + rel(x.f) + ' (moves ' + x.seed + '): ' + m); };
   if (!g2[j]) return say('the converter cannot read what was written');
-  var bad = compare(x.g1, g2[j]);
+  var bad = compare(x.g1, g2[j], x.s1);
   if (bad.length) say(bad.length + ' places differ: ' + bad.slice(0, 4).join('; '));
   var un = U.diff(x.s, x.s1, touches(x.ids, x.s), opt);
   if (un.length) say(un.length + ' untouched changed: ' + un.slice(0, 2).join('; '));
