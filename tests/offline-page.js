@@ -30,8 +30,12 @@ function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   await page.waitForFunction(function () { return navigator.serviceWorker && navigator.serviceWorker.controller; }, null, { timeout: 30000 }).catch(function () {});
   ok('A a worker controls the page', await page.evaluate(function () { return !!navigator.serviceWorker.controller; }));
   await page.waitForFunction(function () { var i = document.getElementById('m2-img'); return i && i.style.visibility !== 'hidden'; }, null, { timeout: 30000 }).catch(function () {});
-  await wait(12000);   // the list's pictures and the steps ahead
-  var k = await keys();
+  var until = async function (want, ms) {   // the kept files once they hold every path of want (or ms passed)
+    var t = Date.now(), k;
+    do { k = await keys().catch(function () { return []; }); if (want.every(function (p) { return k.indexOf(p) >= 0; })) break; await wait(1000); } while (Date.now() - t < ms);
+    return k;
+  };
+  var k = await until([scope, '/index.json'], 30000);
   ok('A the page kept', k.indexOf(scope) >= 0, k.length + ' files kept');
   ok('A the list kept', k.indexOf('/index.json') >= 0);
   ok('A the map shown kept (picture)', k.some(function (p) { return /glycolysis-graphml.*\.svg$/.test(p); }));
@@ -42,9 +46,9 @@ function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   // D first part: the Edit tab opened online, the drawing code fetched ahead
   await page.keyboard.press('e').catch(function () {});
   await page.waitForFunction(function () { return !!window.m2Editor; }, null, { timeout: 30000 }).catch(function () {});
-  await wait(8000);
-  k = await keys();
-  ['/editor/editor.js', '/renderers/converter/cdrender.js', '/renderers/converter/sbgn_edit.js', '/renderers/yrender/yrender.js'].forEach(function (f) {
+  var code = ['/editor/editor.js', '/renderers/converter/cdrender.js', '/renderers/converter/sbgn_edit.js', '/renderers/yrender/yrender.js'];
+  k = await until(code.map(function (f) { return scope.replace(/\/$/, '') + f; }), 90000);
+  code.forEach(function (f) {
     ok('D code kept ahead: ' + f, k.indexOf(scope.replace(/\/$/, '') + f) >= 0);
   });
   await page.keyboard.press('e').catch(function () {});

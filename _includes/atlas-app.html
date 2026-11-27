@@ -4267,11 +4267,18 @@ page, so its styles keep the base they were made on).
     var at = '{{ include.sw | default: "" }}' || EDITOR.replace(/editor\/$/, '') + 'sw.js';
     if (at === 'off') return void w.getRegistration().then(function (g) { if (g) g.unregister(); }, function () {});   // a copy that keeps nothing for offline (sw="off" on the include): a worker registered before is let go
     try { if (navigator.webdriver && !localStorage.getItem('atlas-sw-test')) return; } catch (e) { return; }   // a browser driven by a test: none, so its routes see every request (tests/offline-page.js asks for it)
-    w.addEventListener('message', function (e) { if (e.data && e.data.kept) { offName = e.data.kept; offCheck(); } });
+    w.addEventListener('message', function (e) { if (e.data && e.data.kept) { var first = !offName; offName = e.data.kept; offCheck(); if (first) offFirst(); } });
     w.addEventListener('controllerchange', function () { offAsk(); offSoon(); });
     w.register(at, { updateViaCache: 'none' }).then(offAsk, function () {});
     window.addEventListener('online', function () { offCheck(); offSoon(); });
     window.addEventListener('offline', offCheck);
+  }
+  function offFirst() {   // what loaded before the worker took over (the first visit): the page, the list, the editor, kept now
+    if (!navigator.onLine) return;
+    [location.pathname, '{{ include.index | relative_url }}'].forEach(function (u) { offAsked[u] = 1; netFetch(u, { cache: 'no-cache' }).catch(function () {}); });
+    var u0 = EDITOR + 'editor.js' + BUILD;
+    if (editorAsked && !offAsked[u0]) { offAsked[u0] = 1; offQueue.unshift(u0); }
+    offPump();
   }
   function offAsk() { var w = offWorker(), c = w && w.controller; if (c) c.postMessage('kept?'); }
   function offCheck() {   // offline: the paths this browser keeps (the worker's own copies), the list drawn again
@@ -4317,6 +4324,7 @@ page, so its styles keep the base they were made on).
   function offCode() {   // the drawing code of every format, once the editor is loaded: a format first edited offline has it
     var w = offWorker();
     if (!w || !w.controller) return;
+    var u0 = EDITOR + 'editor.js' + BUILD; if (!offAsked[u0]) { offAsked[u0] = 1; offQueue.push(u0); }
     ['yrender/yrender.js', 'converter/cdrender.js', 'converter/cd_edit.js', 'converter/cd_make.js', 'converter/sbgn_edit.js',
      'converter/sbml_edit.js', 'converter/sbgnml_read.js', 'converter/graphml_edit.js', 'converter/notation.js', 'layout/layout.js',
      'layout/holding.js'].forEach(function (f) { var u = RENDERERS + f + BUILD; if (!offAsked[u]) { offAsked[u] = 1; offQueue.push(u); } });
