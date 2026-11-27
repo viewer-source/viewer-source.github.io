@@ -6442,6 +6442,18 @@
   var opsP;
   var box;
   var loaded;
+  var persisted;
+  function keepAsked() {
+    if (persisted) return;
+    persisted = true;
+    try {
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(function(y) {
+        if (!y) return navigator.storage.persist();
+      }).catch(function() {
+      });
+    } catch (e) {
+    }
+  }
   function db() {
     if (!dbP) dbP = new Promise(function(res, rej) {
       var idb = window.indexedDB;
@@ -6532,6 +6544,7 @@
   }
   function outboxKeep(rec) {
     if (!box) box = {};
+    keepAsked();
     rec.at = Date.now();
     box[rec.key] = rec;
     return tx("readwrite", function(st) {
@@ -6577,6 +6590,7 @@
     }) : [];
   }
   function opsKeep(op) {
+    keepAsked();
     op.at = Date.now();
     return tx("readwrite", function(st) {
       return st.add(op);
@@ -7114,6 +7128,7 @@
 
   // editor/src/own.js
   function draftPut(id, rec) {
+    keepAsked();
     rec.id = id;
     V.drafts[id] = rec;
     V.draftIds();

@@ -3,7 +3,7 @@ import { ahead, api, cloudOn, waitText, b64, blobSha, changed, drawText, freeNam
 import { cdMap, cdMk, cdPicSource, cdpy, isCd } from './celldesigner.js';
 import { noLayout } from './graphml.js';
 import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
-import { opsAll, opsDone, opsHas, opsKeep } from './outbox.js';
+import { keepAsked, opsAll, opsDone, opsHas, opsKeep } from './outbox.js';
 import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntries, packPlan, pngSize, settleGlyphs, svgPixels, unzip, zip } from './minerva.js';
 
     // ---------- the reader's own storage (editor/src/own.js) ----------
@@ -13,7 +13,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     // viewer, so a page without the Edit tab loads none of it; the viewer keeps the
     // database's opening (V.draftDo, one place for its version), the drafts' read, the folder's name, the list's refresh
     // and the maps arrived on the site (V.arrived), and asks this part for the reader's maps (own, below).
-    function draftPut(id, rec) { rec.id = id; V.drafts[id] = rec; V.draftIds(); return V.draftDo('readwrite', function (st) { return st.put(rec, id); }); }
+    function draftPut(id, rec) { keepAsked(); rec.id = id; V.drafts[id] = rec; V.draftIds(); return V.draftDo('readwrite', function (st) { return st.put(rec, id); }); }
     function draftDrop(id) {
       if (V.kept && V.kept.id === id && V.kept.draft) V.dropKept();
       if (!V.drafts[id]) return Promise.resolve();

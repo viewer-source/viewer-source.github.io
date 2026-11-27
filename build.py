@@ -480,7 +480,19 @@ def binned(eid, e):
     return e
 
 
+def size_of(e):
+    # the bytes a reader keeps for offline: the map's own file, its picture and click data (the page keeps a group or
+    # the whole list ahead while they total 10 MB or less)
+    n = 0
+    for u in [e.get('image'), e.get('annotation')] + [(e.get('downloads') or [{}])[0].get('url')]:
+        f = os.path.join(ROOT, u.split('?')[0].lstrip('/')) if isinstance(u, str) and u.startswith('/') else None
+        if f and os.path.isfile(f):
+            n += os.path.getsize(f)
+    return n
+
+
 def write_entry(eid, e, body):
+    e = dict(e, size=size_of(e))
     with open(os.path.join(ROOT, '_maps', eid + '.md'), 'w', encoding='utf-8') as f:
         f.write('---\n' + ''.join('%s: %s\n' % (k, json.dumps(v, ensure_ascii=False)) for k, v in e.items()) + '---\n' + body + '\n')
 

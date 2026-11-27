@@ -12,7 +12,14 @@
 // map deleted forever; Deleted's file for the build's own maps), one record per change in the order made, its key the
 // store's own counter (seq): { seq, key: the data repository, kind, args, ids, show, at }; own.js sends them (opSend,
 // opsDrain) one at a time and lets each go once GitHub has it.
-var dbP, opsP, box, loaded;
+var dbP, opsP, box, loaded, persisted;
+// the browser asked once a change is first kept here to keep the site's data when storage runs short (Safari's seven
+// days, a full disk); asked then, not at the first visit, as Firefox puts it to the reader
+export function keepAsked() {
+  if (persisted) return;
+  persisted = true;
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(function (y) { if (!y) return navigator.storage.persist(); }).catch(function () {}); } catch (e) {}
+}
 function db() {
   if (!dbP) dbP = new Promise(function (res, rej) {
     var idb = window.indexedDB;
@@ -60,6 +67,7 @@ export function outboxLoad(again) {
 }
 export function outboxKeep(rec) {   // rejects when the browser refused to keep it (storage full, a private window's limits)
   if (!box) box = {};
+  keepAsked();
   rec.at = Date.now();
   box[rec.key] = rec;
   return tx('readwrite', function (st) { return st.put(rec, rec.key); }).then(function () { rec.kept = true; });
@@ -89,6 +97,7 @@ export function outboxAll() { return box ? Object.keys(box).map(function (k) { r
 // the list's changes: kept (rejects when the browser refused to keep it), every one of a repository in order, one
 // still there (another tab may have sent it), let go
 export function opsKeep(op) {
+  keepAsked();
   op.at = Date.now();
   return tx('readwrite', function (st) { return st.add(op); }, 'ops').then(function (seq) { op.seq = seq; return op; });
 }

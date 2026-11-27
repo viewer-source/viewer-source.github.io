@@ -680,6 +680,9 @@ page, so its styles keep the base they were made on).
   .m2-wait .m2-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .m2-wait .m2-spin { width: 9px; height: 9px; flex: none; border: 1.5px solid #dadce0; border-top-color: #80868b; border-radius: 50%; animation: m2-spin .8s linear infinite; }
   @keyframes m2-spin { to { transform: rotate(360deg); } }
+  /* offline: a map whose picture this browser has not kept (sw.js), its name grey; chosen, the note in the view */
+  .m2-map.m2-off .m2-name { color: #9aa0a6; }
+  #m2-offnote { position: absolute; left: 0; right: 0; top: 45%; margin: 0; text-align: center; color: #80868b; pointer-events: none; }
   .m2-wait-bad { color: var(--m2-error); cursor: pointer; }
   .m2-wait-why { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .m2-pend-n { float: right; font-size: 11px; color: #9aa0a6; }
@@ -3917,6 +3920,7 @@ page, so its styles keep the base they were made on).
       var tag = TAG_ICONS[m.tag];
       if (tag) { b.insertAdjacentHTML('beforeend', tag[0]); tips.push(tag[1]); }
       if (m.imageError) { b.insertAdjacentHTML('beforeend', ERROR_ICON); tips.push('Images not made from the current GraphML'); }
+      if (offKept && !m.mine && !offKept[pathOf(asSource(m).image)]) { b.classList.add('m2-off'); tips.push('Not available offline'); }   // offline, its picture not kept (sw.js)
       var named = !!own && own.canRename(m, ghNow);   // a map whose name can be changed here (own.js): a double-click on it
       if (named) tips.push('Double-click to rename');
       b.title = tips.join(', ');
@@ -4071,9 +4075,10 @@ page, so its styles keep the base they were made on).
     document.getElementById('m2-title').textContent = m.title;
     document.title = m.title + ' – {{ include.name }}';
     img.style.visibility = 'hidden';  // only if the new picture is not there yet
+    offNote(false);
     (kp ? keptPic(kp) : get(m.image + ver(m))).then(function (pic) {
       if (current !== m) return;
-      if (!pic) { ed.pictured(true); return; }   // no picture: the Edit window waiting for it goes on (the editor draws its own)
+      if (!pic) { offNote(!navigator.onLine && !m.mine); ed.pictured(true); return; }   // no picture: the Edit window waiting for it goes on (the editor draws its own); offline, the note
       if (pic !== img) { img.removeAttribute('id'); pic.id = 'm2-img'; pic.alt = m.title; img.replaceWith(pic); img = pic; }
       img.style.visibility = '';
       draw();
@@ -4133,6 +4138,7 @@ page, so its styles keep the base they were made on).
     box.innerHTML = '';
     if (source) get(source.data + ver(source)).then(function (d) { if (current === m && d) box.innerHTML = d.html; });
     prefetch();
+    offSoon();
   }
   // the list and the arrow keys route at once, not on the browser's hashchange, which comes a moment later: so a
   // second click or key press always starts from the map just chosen
@@ -4242,6 +4248,81 @@ page, so its styles keep the base they were made on).
   check();
   setInterval(check, 30000);
   document.addEventListener('visibilitychange', check);
+  // ---------- kept for offline (sw.js, the site's service worker) ----------
+  // The page, its code and every file it fetches from this site are kept by the worker, so the same address opens
+  // without a connection. Offline, a map whose picture is not kept is grey in the list and says so when chosen. Idle and
+  // online, more is kept by steps: the map shown's own file, then its group's files when they total OFF_MAX or less,
+  // then the whole list's (each map's size from the index); never on Save-Data or 2g, never on a closed page.
+  var offKept = null, offName = null, offAsked = {}, offQueue = [], offTimer = 0, OFF_MAX = 10 * 1048576;
+  function pathOf(u) { try { return new URL(u, location.href).pathname; } catch (e) { return ''; } }
+  function offNote(on) {
+    var n = document.getElementById('m2-offnote');
+    if (!on) { if (n) n.remove(); return; }
+    if (!n) { n = el('p', '', 'Not available offline.'); n.id = 'm2-offnote'; view.appendChild(n); }
+  }
+  function offWorker() { return CLOSED || !('serviceWorker' in navigator) ? null : navigator.serviceWorker; }
+  function offStart() {
+    var w = offWorker();
+    if (!w) return;
+    var at = '{{ include.sw | default: "" }}' || EDITOR.replace(/editor\/$/, '') + 'sw.js';
+    if (at === 'off') return;   // a copy that keeps nothing for offline (sw="off" on the include)
+    try { if (navigator.webdriver && !localStorage.getItem('atlas-sw-test')) return; } catch (e) { return; }   // a browser driven by a test: none, so its routes see every request (tests/offline-page.js asks for it)
+    w.addEventListener('message', function (e) { if (e.data && e.data.kept) { offName = e.data.kept; offCheck(); } });
+    w.addEventListener('controllerchange', function () { offAsk(); offSoon(); });
+    w.register(at, { updateViaCache: 'none' }).then(offAsk, function () {});
+    window.addEventListener('online', function () { offCheck(); offSoon(); });
+    window.addEventListener('offline', offCheck);
+  }
+  function offAsk() { var w = offWorker(), c = w && w.controller; if (c) c.postMessage('kept?'); }
+  function offCheck() {   // offline: the paths this browser keeps (the worker's own copies), the list drawn again
+    var was = !!offKept;
+    if (navigator.onLine || !offName || !window.caches) {
+      offKept = null;
+      if (was) buildList(document.getElementById('m2-search').value, true);
+      return;
+    }
+    caches.open(offName).then(function (c) { return c.keys(); }).then(function (ks) {
+      var k = {};
+      ks.forEach(function (r) { k[pathOf(r.url)] = 1; });
+      offKept = k;
+      buildList(document.getElementById('m2-search').value, true);
+      if (current && !current.mine && !k[pathOf(asSource(current).image)]) offNote(true);
+    }).catch(function () {});
+  }
+  function offSoon() { clearTimeout(offTimer); offTimer = setTimeout(offAhead, 3000); }
+  function offFiles(m) {
+    var out = [], add = function (u, v) { if (u && !/^blob:/.test(u)) out.push(u + (v || '')); }, t = textOf(m);
+    add(m.image, ver(m)); add(m.annotation, ver(m));
+    if (t) add(t.data, ver(t));
+    if (m.sbgn) { add(m.sbgn.image, ver(m)); add(m.sbgn.annotation, ver(m)); }
+    add(m.downloads && m.downloads[0] && m.downloads[0].url);
+    return out;
+  }
+  function offAhead() {
+    var w = offWorker(), c = navigator.connection, m = current;
+    if (!w || !w.controller || !navigator.onLine || !m || m.mine || c && (c.saveData || /2g/.test(c.effectiveType || ''))) return;
+    var site = maps.filter(function (x) { return !x.mine && !x.binned; });
+    var size = function (l) { return l.reduce(function (a, x) { return a + (x.size > 0 ? x.size : Infinity); }, 0); };
+    var group = m.group ? site.filter(function (x) { return x.group === m.group; }) : [];
+    var todo = [m].concat(size(group) <= OFF_MAX ? group : [], size(site) <= OFF_MAX ? site : []);
+    todo.forEach(function (x) { offFiles(x).forEach(function (u) { if (!offAsked[u]) { offAsked[u] = 1; offQueue.push(u); } }); });
+    offPump();
+  }
+  function offPump() {   // one file at a time, only while the page's own loading is idle
+    if (!offQueue.length) return;
+    if (busy || queue.length) return void setTimeout(offPump, 1000);
+    var u = offQueue.shift();
+    fetch(u, { priority: 'low' }).then(function (r) { return r.ok && r.blob(); }).catch(function () { delete offAsked[u]; }).then(function () { setTimeout(offPump, 50); });
+  }
+  function offCode() {   // the drawing code of every format, once the editor is loaded: a format first edited offline has it
+    var w = offWorker();
+    if (!w || !w.controller) return;
+    ['yrender/yrender.js', 'converter/cdrender.js', 'converter/cd_edit.js', 'converter/cd_make.js', 'converter/sbgn_edit.js',
+     'converter/sbml_edit.js', 'converter/sbgnml_read.js', 'converter/graphml_edit.js', 'converter/notation.js', 'layout/layout.js',
+     'layout/holding.js'].forEach(function (f) { var u = RENDERERS + f + BUILD; if (!offAsked[u]) { offAsked[u] = 1; offQueue.push(u); } });
+    offPump();
+  }
+  if (document.readyState === 'complete') setTimeout(offStart, 0); else window.addEventListener('load', function () { setTimeout(offStart, 0); });
   // ---------- the right-click menu over the map (--m2-context: 1) ----------
   // shortcuts to what the tabs and buttons already do, never the only way to it (phones have no right click);
   // Shift with the right click gives the browser's own menu; the same in edit mode, View mode in place of Edit mode
@@ -4854,7 +4935,7 @@ page, so its styles keep the base they were made on).
     setTimeout(function () {   // after the viewer's script has run to its end
       var s = document.createElement('script');
       s.src = EDITOR + 'editor.js' + BUILD;
-      s.onload = function () { editor = window.m2Editor(V); own = editor.own; draftsShown(); var mine = function () { ownIn = true; refreshMine(); }; own.read().then(mine, mine); editorWait.splice(0).forEach(function (f) { f(); }); };
+      s.onload = function () { offCode(); editor = window.m2Editor(V); own = editor.own; draftsShown(); var mine = function () { ownIn = true; refreshMine(); }; own.read().then(mine, mine); editorWait.splice(0).forEach(function (f) { f(); }); };
       s.onerror = function () { editorAsked = false; ownIn = true; if (win === 'edit' || eRight.open) { win = win === 'edit' ? 'list' : win; eRight.open = false; railMark(); } if (!chosen && siteList) route(); };
       document.head.appendChild(s);
     }, 0);

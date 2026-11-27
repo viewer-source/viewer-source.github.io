@@ -13,6 +13,7 @@ rm -rf "$site/editor" && cp -r "$here/editor" "$site/editor"   # the editor, loa
 for f in yrender/yrender.js converter/cdrender.js converter/cd_edit.js converter/cd_make.js converter/sbgn_edit.js converter/sbml_edit.js converter/sbgnml_read.js layout/layout.js; do   # the renderers the editor runs, of the same commit
   mkdir -p "$site/renderers/$(dirname $f)" && cp "$here/renderers/$f" "$site/renderers/$f"
 done
+cp "$here/sw.js" "$site/sw.js"   # the page kept for offline, registered by the viewer at the site's root
 mkdir -p "$site/images/legend" && cp "$here"/images/legend/* "$site/images/legend/"   # the legend card the viewer opens
 git -C "$here" log -1 --format='viewer-source/viewer-source.github.io %h' > "$site/_includes/VERSION"
 cat "$site/_includes/VERSION"
