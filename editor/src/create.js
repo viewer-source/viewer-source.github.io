@@ -2356,7 +2356,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         : r[2] === 'colour' ? '<span class="m2-ed-pc"><input type="color" tabindex="-1" aria-label="' + r[1] + ', picker"><input type="text" id="' + id + '" spellcheck="false" autocomplete="off"' + (r[0] === 'fill' ? ' placeholder="none"' : '') + '></span>'
         : r[2] === 'num' ? '<input type="number" id="' + id + '" step="any"' + (r[3] || (r[0] === 'width' ? ' min="0.25" max="20"' : /^[st][xy]$/.test(r[0]) ? '' : ' min="1" max="5000"')) + '>'
         : r[2] === 'card' ? '<input type="text" inputmode="decimal" class="m2-ed-card" id="' + id + '" placeholder="1" spellcheck="false" autocomplete="off">'
-        : r[2] === 'pic' ? '<span class="m2-ed-ppic"><img alt="" hidden><span class="m2-ed-ppicname"></span><button type="button" id="' + id + '">Choose</button><button type="button" class="m2-ed-ppicoff">Remove</button></span>'
+        : r[2] === 'pic' ? '<span class="m2-ed-ppic"><img alt="" hidden><span class="m2-ed-ppicname"></span><button type="button" id="' + id + '">Upload</button><button type="button" class="m2-ed-ppicoff">Remove</button></span>'
         : '<input type="text" id="' + id + '" spellcheck="false" autocomplete="off">';
       return '<tr data-k="' + r[0] + '"' + (r[4] ? ' title="' + r[4] + '"' : '') + '><th><label for="' + id + '">' + r[1] + '</label></th><td>' + f + '</td></tr>';
     }).join('') + '</table>'; }
@@ -2625,8 +2625,8 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       rows.forEach(function (r, j) { ROWS.splice(k + 1 + j, 0, r); EXTRA.push(r[0]); propListen(r); });
     }
     // a picture's row (a format's part adds one: CellDesigner's Picture): v { name, src } or null; its preview, its file's
-    // name, and Choose while there is none, Remove while there is one: one button at a time, so the row fits the panel at
-    // its default width (240 px); a picture is replaced by Remove then Choose, or by a drop or the right-click. The
+    // name, and Upload while there is none, Remove while there is one: one button at a time, so the row fits the panel at
+    // its default width (240 px); a picture is replaced by Remove then Upload, or by a drop or the right-click. The
     // buttons are the part's
     function picShow(f, v) {
       var box = f.parentNode, img = box.querySelector('img'), nm = box.querySelector('.m2-ed-ppicname'), src = v && v.src || '';

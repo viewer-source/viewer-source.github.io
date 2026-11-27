@@ -1,6 +1,6 @@
 // MINERVA's pictures put on where the person works (step 3 of the pack, notes/minerva-pack-plan.md), live, as a person
 // outside would on a CellDesigner map in edit mode:
-//   1. Properties' Picture row on a species: Choose a PNG; drawn in place of its shape and name, the note in the file;
+//   1. Properties' Picture row on a species: Upload a PNG; drawn in place of its shape and name, the note in the file;
 //      undo and redo by the keys. Fit box to picture by the right-click: the box at the picture's proportions (3:1),
 //      its centre and width kept, one undo step. Remove picture by the right-click.
 //   2. A compartment: an SVG chosen, kept as SVG and drawn as SVG, its note naming the PNG; its name still drawn.
@@ -77,7 +77,7 @@ var SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" heigh
   await page.goto(base, { waitUntil: 'load' });
   await page.evaluate(function () { localStorage.clear(); indexedDB.deleteDatabase('atlas-edit-drafts'); });
   await enter('srebp-celldesigner');
-  // 1. a species: Choose a PNG in Properties
+  // 1. a species: Upload a PNG in Properties
   var SP = 'sa_n3', CP = 'ca_n2', CX = 'sa_n1', t1 = await now(), b0 = await box(SP);
   await select(SP);
   var row = await page.$eval('.m2-ed-pnode tr[data-k="pic"]', function (r) { return !r.hidden && !r.closest('[hidden]') ? r.textContent : null; }).catch(function () { return null; });
@@ -91,7 +91,7 @@ var SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" heigh
   var btns = function () { return page.$eval('.m2-ed-pnode tr[data-k="pic"]', function (r) { var c = r; while (c.parentElement && getComputedStyle(c).overflowX === 'visible') c = c.parentElement;   // the panel's visible edge
       var edge = c.getBoundingClientRect().right, fit = Array.prototype.every.call(r.querySelectorAll('button'), function (b) { return b.hidden || b.getBoundingClientRect().right <= edge + 0.5; });
       return [r.querySelector('#m2-ed-pic').hidden, r.querySelector('.m2-ed-ppicoff').hidden, fit]; }); };
-  ok('1. with a picture: Remove shown, Choose hidden (one button, the row fits 240 px)', JSON.stringify(await btns()) === '[true,false,true]', JSON.stringify(await btns()));
+  ok('1. with a picture: Remove shown, Upload hidden (one button, the row fits 240 px)', JSON.stringify(await btns()) === '[true,false,true]', JSON.stringify(await btns()));
   await undo();
   ok('1. undone: no note, no picture', glyph(await now(), 's', 's_n3') === null && (await imgs()).length === 0);
   await redo();
@@ -121,7 +121,7 @@ var SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" heigh
   if (Array.isArray(it)) ok('1. right-click: Remove picture', false, it.join(' | ')); else { await it.click(); await page.waitForTimeout(2000); }
   ok('1. Remove picture: the note gone, the species drawn again', glyph(await now(), 's', 's_n3') === null && !(await imgs()).some(function (x) { return /png/.test(x.href) && x.g === SP; }));
   await select(SP);
-  ok('1. without a picture: Choose shown, Remove hidden', JSON.stringify(await btns()) === '[false,true,true]', JSON.stringify(await btns()));
+  ok('1. without a picture: Upload shown, Remove hidden', JSON.stringify(await btns()) === '[false,true,true]', JSON.stringify(await btns()));
   // 4. not a picture (on the species, its picture removed)
   t4 = await now();
   await choose(function () { return page.click('#m2-ed-pic'); }, { name: 'fake.png', mimeType: 'image/png', buffer: Buffer.from('not a picture') });

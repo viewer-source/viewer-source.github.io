@@ -1528,7 +1528,7 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
     // a species' structural state as one row (one field, as it is one), after
     // the compartment's rows; its text, empty for none; residues stay on the right-click (many, each its own list)
     propRows([['ss', 'Structural state', 'text', '', 'The species\u2019 structural state, free text; emptied, it is removed']]);
-    // MINERVA's picture (notes/minerva-pack-plan.md, step 3), last: Choose and Remove on the node Properties is for
+    // MINERVA's picture (notes/minerva-pack-plan.md, step 3), last: Upload and Remove on the node Properties is for
     propRows([['pic', 'Image', 'pic', '', 'MINERVA’s image, drawn stretched to the box as MINERVA draws it (PNG or SVG)']]);
     field('pic').addEventListener('click', function () { var ids = cdPicIds(); if (ids.length) cdPicChoose(function (f) { cdPicSet(ids, f); }); });
     field('pic').parentNode.querySelector('.m2-ed-ppicoff').addEventListener('click', function () { var ids = cdPicIds(); if (ids.length) cdPicSet(ids, null); });
@@ -1554,7 +1554,7 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
     }
     // ---------- MINERVA's pictures (notes/minerva-pack-plan.md, step 3) ----------
     // A picture on a compartment or a species (a complex too; a complex's member none: MINERVA reads only top-level
-    // species), drawn stretched to its box as MINERVA draws it: Properties' Picture row (Choose, Remove), the right-click
+    // species), drawn stretched to its box as MINERVA draws it: Properties' Picture row (Upload, Remove), the right-click
     // items Set picture..., Remove picture and Fit box to picture, or a PNG or SVG dropped on it. The picture is kept
     // first where the maps are kept (own.js picKeep, through celldesigner.js cdPicKeep), then its note written
     // (cd_make.picture), one undo step; refused (not PNG or SVG, GitHub refusing it): said, nothing written. Fit box to
