@@ -16,8 +16,11 @@ import { sbJs, sbpy } from './engines.js';
         // edited as it is, but for lines at complex members put right (sbgn_edit.membersOut), said once the map is drawn and
         // written at the next save; at once when the engine is loaded, else once it is
         open: function (t, g0, still) {
-          var fix = function () { var mo = sbJs.membersOut(t); return { g: mo.text, t: mo.text, t0: t, said: sbJs.membersSaid(mo.said) }; };
-          return sbJs ? fix() : sbpy().then(function () { return still && !still() ? null : fix(); });
+          var fix = function () {   // a file the engine cannot read, or an engine without it: edited as it is, as before
+            try { var mo = sbJs && sbJs.membersOut ? sbJs.membersOut(t) : null; } catch (e) { mo = null; }
+            return mo && mo.said.length ? { g: mo.text, t: mo.text, t0: t, said: sbJs.membersSaid(mo.said), redraw: true } : { g: t, t: t };
+          };
+          return sbJs ? fix() : sbpy().then(function () { return still && !still() ? null : fix(); }, function () { return still && !still() ? null : { g: t, t: t }; });
         },
         drawOwn: function (t) { var no = noLayout(t); if (no) return Promise.reject(new Error(no)); return yr().then(function () { return window.yrender.render(t, { classes: true, groups: true, sbgn: false }).svg; }); },   // a reader's own map drawn for the list (core.js drawText), as the build draws
         ahead: { load: yr },   // the read-ahead: the renderer; the file is edited as it is

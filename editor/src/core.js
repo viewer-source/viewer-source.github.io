@@ -1287,7 +1287,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         var sh = F.ownFrame ? null : shiftAhead(o.g), moved = sh ? [sh[0] ? sh[0] + ' right' : '', sh[1] ? sh[1] + ' down' : ''].filter(Boolean).join(' and ') : '';
         openSaid = null;
         takenIn = [o.said, moved ? 'Everything moved ' + moved + ', as a map here has no negative places.' : ''].filter(Boolean).join(' ') || null;
-        begin(o.g, o.t, n, h, s, same, o.t0 || null, F, o.own);
+        begin(o.g, o.t, n, h, s, o.redraw ? null : same, o.t0 || null, F, o.own);   // redraw: the opening changed what is drawn (lines at complex members), the picture on screen not taken
       };
       if (!o.then) return go(o);   // GraphML: edited as it is, at once
       quiet();

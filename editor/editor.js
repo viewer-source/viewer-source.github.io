@@ -1837,7 +1837,11 @@
       open: function(t, g0, still) {
         var t0 = t, members = [];
         return sbpy().then(function() {
-          var mo = sbJs && sbJs.membersOut ? sbJs.membersOut(t) : { text: t, said: [] };
+          var mo = { text: t, said: [] };
+          try {
+            if (sbJs && sbJs.membersOut) mo = sbJs.membersOut(t);
+          } catch (e) {
+          }
           members = mo.said;
           var tin = sbIn(mo.text), sited = function(x) {
             return (x.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length;
@@ -1858,8 +1862,8 @@
           if (ed0.unique) t = ed0.unique(t, g1);
           var g = sbGraphml(t, g1), sb1 = { base: t, g0: g1 };
           var n = !V.sites && sbJs && sbJs.sitesOut && isSb(t0) ? (t0.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length : 0;
-          var said = [sbJs.membersSaid(members), n ? n + (n > 1 ? " sites" : " site") + " kept as links on " + (n > 1 ? "their glyphs" : "its glyph") + " and drawn as the value alone, as Show sites (Settings, Display) is off." : ""].filter(Boolean).join(" ") || null;
-          return { g, t, t0, said, own: { sb: sb1, sbLast: [g, edOf(t).write(t, g), sb1] } };
+          var said = [members.length ? sbJs.membersSaid(members) : "", n ? n + (n > 1 ? " sites" : " site") + " kept as links on " + (n > 1 ? "their glyphs" : "its glyph") + " and drawn as the value alone, as Show sites (Settings, Display) is off." : ""].filter(Boolean).join(" ") || null;
+          return { g, t, t0, said, redraw: !!members.length, own: { sb: sb1, sbLast: [g, edOf(t).write(t, g), sb1] } };
         });
       },
       // a reader's own map drawn for the list (core.js drawText): SBGN-ML only (not SBML), from the empty base if made here,
@@ -6342,11 +6346,17 @@
       // written at the next save; at once when the engine is loaded, else once it is
       open: function(t, g0, still) {
         var fix = function() {
-          var mo = sbJs.membersOut(t);
-          return { g: mo.text, t: mo.text, t0: t, said: sbJs.membersSaid(mo.said) };
+          try {
+            var mo = sbJs && sbJs.membersOut ? sbJs.membersOut(t) : null;
+          } catch (e) {
+            mo = null;
+          }
+          return mo && mo.said.length ? { g: mo.text, t: mo.text, t0: t, said: sbJs.membersSaid(mo.said), redraw: true } : { g: t, t };
         };
         return sbJs ? fix() : sbpy().then(function() {
           return still && !still() ? null : fix();
+        }, function() {
+          return still && !still() ? null : { g: t, t };
         });
       },
       drawOwn: function(t) {
@@ -17775,7 +17785,7 @@
       var sh = F.ownFrame ? null : shiftAhead(o2.g), moved = sh ? [sh[0] ? sh[0] + " right" : "", sh[1] ? sh[1] + " down" : ""].filter(Boolean).join(" and ") : "";
       openSaid = null;
       takenIn = [o2.said, moved ? "Everything moved " + moved + ", as a map here has no negative places." : ""].filter(Boolean).join(" ") || null;
-      begin(o2.g, o2.t, n, h, s, same, o2.t0 || null, F, o2.own);
+      begin(o2.g, o2.t, n, h, s, o2.redraw ? null : same, o2.t0 || null, F, o2.own);
     };
     if (!o.then) return go(o);
     quiet();

@@ -5,9 +5,10 @@
 // 2. A yEd GraphML with a line between two members of one complex and one between members of two complexes: the first
 //    taken out, the second joined at both ends, said.
 // 3. A file with no such line: nothing said, the text as it came.
-//   node tests/member-arcs-live.js <the converter's repository> [base address] [--local]
+// 4. The mast cell map (yEd, compartments and complexes), from the site's data folder (--data): every line kept.
+//   node tests/member-arcs-live.js <the converter's repository> [base address] [--local] [--data <the site's data folder>]
 var path = require('path'), fs = require('fs'), os = require('os'), cp = require('child_process'), { chromium } = require('playwright');
-var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
+var args = process.argv.slice(2), local = args.indexOf('--local') >= 0, di = args.indexOf('--data'), data = di >= 0 ? args.splice(di, 2)[1] : null; args = args.filter(function (a) { return a !== '--local'; });
 var conv = args[0], base = args[1] || 'https://viewer-source.github.io/styles/', here = path.join(__dirname, '..'), bad = 0;
 if (!conv) { console.log('usage: node tests/member-arcs-live.js <the converter\'s repository> [base] [--local]'); process.exit(2); }
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
@@ -66,6 +67,13 @@ fs.writeFileSync(path.join(dir, 'members-v01.graphml'), g.stdout);
     var r3 = await add(plain);
     ok('3. a file with no such line: nothing about members said', !/complex members/.test(r3.said), r3.said || '(nothing)');
   }
+  // 4. a yEd map with compartments and complexes and no line at a member (the review's case: a compartment taken for a
+  // complex rewrote 504 lines): nothing said, every line kept
+  var mast = data ? path.join(data, 'maps', 'asthmamap-mast-cell-graphml.graphml') : '';
+  if (mast && fs.existsSync(mast)) {
+    var r4 = await add(mast), n0 = (fs.readFileSync(mast, 'utf8').match(/<edge /g) || []).length, n4 = (r4.text.match(/<edge /g) || []).length;
+    ok('4. a compartmented yEd map: nothing about members said, every line kept', !/complex members/.test(r4.said) && n4 === n0, n4 + ' of ' + n0 + ' lines; ' + (r4.said || '(nothing said)'));
+  } else console.log('skip  4. (no --data)');
   ok('no script errors', !errs.length, errs.join('; '));
   await b.close();
   fs.rmSync(dir, { recursive: true, force: true });

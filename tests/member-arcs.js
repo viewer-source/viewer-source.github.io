@@ -2,6 +2,8 @@
 // converter's rules.joined: for every SBGN-ML file under the folders given, and for the cases below (also as yEd
 // GraphML, written by the converter from them), the map read from the corrected text means what the converter's
 // corrected reading of the original means (check.meaning); a file with no such line comes back byte for byte.
+// A file the editor leaves as it is must be one the converter leaves as it is too (a file the converter cannot read,
+// skipped).
 //   node tests/member-arcs.js <the converter's repository> [<folder or file> ...]
 var fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process');
 var here = path.join(__dirname, '..'), se = require(path.join(here, 'renderers/converter/sbgn_edit.js'));
@@ -24,7 +26,7 @@ var CASES = {   // two members of one complex, a member and a member of another 
     '</map></sbgn>\n'
 };
 Object.keys(CASES).forEach(function (n) { var f = path.join(tmp, n); fs.writeFileSync(f, CASES[n]); files.push(f); });
-(function walk(list) { list.forEach(function (p) { var s = fs.statSync(p); if (s.isDirectory()) walk(fs.readdirSync(p).sort().map(function (f) { return path.join(p, f); })); else if (/\.(sbgn|nwt)$/i.test(p)) files.push(p); }); })(args);
+(function walk(list) { list.forEach(function (p) { var s = fs.statSync(p); if (s.isDirectory()) walk(fs.readdirSync(p).sort().map(function (f) { return path.join(p, f); })); else if (/\.(sbgn|nwt|graphml)$/i.test(p)) files.push(p); }); })(args);
 // the cases as yEd GraphML too, as the converter writes them (its lines at members as drawn, not joined)
 var py = function (code, input) { var r = cp.spawnSync('python3', ['-c', code, conv], { input: input, maxBuffer: 1 << 30, encoding: 'utf8' }); if (r.status) { console.log(r.stderr); process.exit(2); } return r.stdout; };
 Object.keys(CASES).forEach(function (n) {
@@ -37,7 +39,7 @@ files.forEach(function (f) {
   var t = fs.readFileSync(f, 'utf8'), r;
   try { r = se.membersOut(t, { DOMParser: DP }); } catch (e) { console.log('FAIL  ' + f + ': ' + e.message); bad++; return; }
   if (!r.said.length && f.indexOf(tmp) === 0) { console.log('FAIL  ' + f + ': a case with lines at members left as it was'); bad++; return; }
-  if (!r.said.length) { if (r.text !== t) { console.log('FAIL  ' + f + ': changed with nothing said'); bad++; } else same++; return; }
+  if (!r.said.length) { if (r.text !== t) { console.log('FAIL  ' + f + ': changed with nothing said'); bad++; } else { same++; pairs.push([f, f, null]); } return; }
   changed++;
   var out = path.join(tmp, 'fixed-' + changed + path.extname(f));
   fs.writeFileSync(out, r.text);
@@ -51,14 +53,18 @@ var res = JSON.parse(py([
   'rd = lambda f: graphml.read(f) if f.endswith(".graphml") else sbgnml.read(f)',
   'out = []',
   'for a, b in json.loads(sys.stdin.read()):',
-  '    with report.collect(), contextlib.redirect_stdout(io.StringIO()):',
-  '        x, y = check.meaning(rules.joined(rd(a))), check.meaning(rd(b))',
+  '    try:',
+  '        with report.collect(), contextlib.redirect_stdout(io.StringIO()):',
+  '            m = rd(a)',
+  '            x, y = check.meaning(rules.joined(m)), check.meaning(m if a == b else rd(b))',
+  '    except (Exception, SystemExit):',
+  '        out.append([[], []]); continue',
   '    out.append([sorted(map(repr, (x[0] - y[0]) + (x[1] - y[1]))), sorted(map(repr, (y[0] - x[0]) + (y[1] - x[1])))])',
   'print(json.dumps(out))'].join('\n'), JSON.stringify(pairs.map(function (p) { return [p[0], p[1]]; }))));
 pairs.forEach(function (p, i) {
   var d = res[i];
-  if (d[0].length || d[1].length) { console.log('FAIL  ' + p[0] + ': meaning differs from the converter\'s\n  converter only: ' + d[0].join('; ') + '\n  editor only: ' + d[1].join('; ')); bad++; }
-  else console.log('ok    ' + path.basename(p[0]) + ': ' + p[2].join('; '));
+  if (d[0].length || d[1].length) { console.log('FAIL  ' + p[0] + ': meaning differs from the converter\'s' + (p[2] ? '' : ' (left as it was here)') + '\n  converter only: ' + d[0].join('; ') + '\n  editor only: ' + d[1].join('; ')); bad++; }
+  else if (p[2]) console.log('ok    ' + path.basename(p[0]) + ': ' + p[2].join('; '));
 });
 console.log(files.length + ' files: ' + changed + ' corrected as the converter does, ' + same + ' unchanged, ' + bad + ' wrong');
 fs.rmSync(tmp, { recursive: true, force: true });

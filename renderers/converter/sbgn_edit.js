@@ -3084,39 +3084,51 @@
   // ---------- lines at a complex's members, put right on opening ----------
   // A complex's member has no lines of its own (SBGN PD 2.1, 2.3.4: a subunit has no incoming or outgoing arcs). A copy
   // of the converter's rule (rules.to_complex, its master; the same on every route there): a line drawn to or from a
-  // member is joined to the outermost complex around it, its end at the complex's centre (so drawn to its outline), and
+  // member is joined to the outermost complex around it, its end on the complex's outline (SBGN-ML; GraphML: its centre), and
   // a line within one complex (two of its members, or a member and the complex) is taken out, as is a member's line
   // that repeats one the complex has. SBGN-ML and yEd GraphML; only the ends and lines it touches change.
   //   membersOut(t) -> { text, said: [one line per line changed] } (text unchanged and said empty when nothing is)
+  var KIND_Y = { white_circle: 'catalysis', t_shape: 'inhibition', crows_foot_one: 'inhibition', white_diamond: 'modulation',
+                 white_delta: 'stimulation', white_delta_bar: 'trigger', delta: 'production' };   // graphml.HEAD; else a plain line
+  var PLAIN = { consumption: 1, 'logic arc': 1, 'equivalence arc': 1 };   // sbgnml.HEAD: one plain line
+  var NOT_ENDS = { 'state variable': 1, 'unit of information': 1, cardinality: 1, annotation: 1 };   // glyphs no line is read at
   function membersOut(t, opt) {
     if (t.charCodeAt(0) === 0xFEFF) { var r0 = membersOut(t.slice(1), opt); r0.text = '﻿' + r0.text; return r0; }
-    var doc = new (DP(opt))().parseFromString(t, 'application/xml'), top = doc.documentElement, said = [];
+    var said = [];
+    if (!/com\.yworks\.sbgn\.Complex|class\s*=\s*["']complex/.test(t)) return { text: t, said: said };   // no complex: nothing to read
+    var doc = new (DP(opt))().parseFromString(t, 'application/xml'), top = doc.documentElement;
     if (!top || (top.localName !== 'sbgn' && top.localName !== 'graphml')) return { text: t, said: said };
-    var yed = top.localName === 'graphml', T = null, nodes = new Map(), owner = new Map(), arcs = [];
-    var nameOf = function (el) {   // a node as found on the drawing: its label, else its kind
-      if (!el) return '?';
-      if (yed) { var l = Array.prototype.filter.call(el.getElementsByTagNameNS(YNS, 'NodeLabel'), function (x) { return !x.getAttribute('iconData'); })[0], c = cfg(el);
-        return (l && l.textContent.trim()) || (c ? c.replace('com.yworks.sbgn.', '') : 'node'); }
+    var yed = top.localName === 'graphml', root = yed ? top : kid(top, 'map');   // SBGN-ML: the first map, the one edited
+    if (!root) return { text: t, said: said };
+    var T = null, nodes = new Map(), twice = new Set(), owner = new Map(), arcs = [];
+    var lab = function (el) {   // a node as found on the drawing: its label, else its kind
+      if (yed) { var r = realizer(el), l = r ? kids(r, 'NodeLabel').filter(function (x) { return !x.getAttribute('iconData'); })[0] : null;
+        return (l && l.textContent.trim()) || (r ? cfgOf(r) : 'node'); }
       var lb = kid(el, 'label'); return (lb && (lb.getAttribute('text') || '').trim()) || el.getAttribute('class') || 'glyph';
     };
-    var cfg = function (n) {   // a yEd node's shape (its realizer's configuration, a group's shown one)
-      var d = Array.prototype.filter.call(n.getElementsByTagNameNS(YNS, '*'), function (x) { return x.getAttribute('configuration'); })[0];
-      return d ? d.getAttribute('configuration') : '';
-    };
-    var isCx = function (el) { return yed ? cfg(el) === 'com.yworks.sbgn.Complex' : /^complex( multimer)?$/.test(el.getAttribute('class') || ''); };
+    var isCx = function (el) { if (yed) { var r = realizer(el); return !!r && cfgOf(r) === 'Complex'; } return /^complex( multimer)?$/.test(el.getAttribute('class') || ''); };
     var up = function (el) {   // the node or glyph holding el, or null
-      for (var p = el.parentNode; p && p.nodeType === 1; p = p.parentNode) if (p.localName === (yed ? 'node' : 'glyph')) return p;
+      for (var p = el.parentNode; p && p.nodeType === 1 && p !== root; p = p.parentNode) if (p.localName === (yed ? 'node' : 'glyph')) return p;
       return null;
     };
     var outer = function (el) { var out = null; for (var p = up(el); p; p = up(p)) if (isCx(p)) out = p; return out; };
-    Array.prototype.forEach.call(doc.getElementsByTagName('*'), function (el) {
-      if (el.localName === (yed ? 'node' : 'glyph') && el.getAttribute('id')) nodes.set(el.getAttribute('id'), el);
-      if (!yed && el.localName === 'port' && el.parentNode) owner.set(el.getAttribute('id'), el.parentNode);
-      if (el.localName === (yed ? 'edge' : 'arc')) arcs.push(el);
-    });
-    var at = function (id) { return nodes.get(id) || owner.get(id) || null; };   // a port's end is its glyph's
-    var head = function (a) { if (!yed) return a.getAttribute('class'); var ar = a.getElementsByTagNameNS(YNS, 'Arrows')[0]; return ar ? ar.getAttribute('target') : ''; };
-    var key = function (s, t, a) { return s.getAttribute('id') + '\u0000' + t.getAttribute('id') + '\u0000' + head(a); };
+    (function walk(el) {
+      kids(el).forEach(function (c) {
+        var id = c.getAttribute('id');
+        if (c.localName === (yed ? 'node' : 'glyph') && id && !NOT_ENDS[c.getAttribute('class')]) { if (nodes.has(id)) twice.add(id); nodes.set(id, c); }
+        if (!yed && c.localName === 'port') owner.set(id, c.parentNode);
+        if (c.localName === (yed ? 'edge' : 'arc')) arcs.push(c);
+        walk(c);
+      });
+    })(root);
+    var at = function (id) { return twice.has(id) ? null : nodes.get(id) || owner.get(id) || null; };   // an id two glyphs share left alone
+    var head = function (a) {
+      if (!yed) return PLAIN[a.getAttribute('class')] ? 'plain' : a.getAttribute('class');
+      var ar = a.getElementsByTagNameNS(YNS, 'Arrows')[0]; return KIND_Y[ar ? ar.getAttribute('target') : ''] || 'plain';
+    };
+    var key = function (s, e, a) { return s.getAttribute('id') + '\u0000' + e.getAttribute('id') + '\u0000' + head(a); };
+    var box = function (g) { var b = kid(g, 'bbox'); return b ? ['x', 'y', 'w', 'h'].map(function (k) { return F(b.getAttribute(k)); }) : null; };
+    var xy = function (p) { return p ? [F(p.getAttribute('x')), F(p.getAttribute('y'))] : null; };
     var ends = new Set();
     arcs.forEach(function (a) { var s = at(a.getAttribute('source')), e = at(a.getAttribute('target')); if (s && e) ends.add(key(s, e, a)); });
     arcs.forEach(function (a) {
@@ -3125,19 +3137,21 @@
       var cs = outer(s), ce = outer(e);
       if (!cs && !ce) return;
       T = T || new Tags(t, doc);
-      var what = nameOf(s) + ' → ' + nameOf(e);
-      if ((cs || s) === (ce || e)) { T.cut(a); said.push(what + ': within the complex ' + nameOf(cs || ce) + ', taken out'); return; }
-      var ns = cs || s, ne = ce || e, k = key(ns, ne, a);
+      var what = lab(s) + ' → ' + lab(e);
+      if ((cs || s) === (ce || e)) { T.cut(a); said.push(what + ': within the complex ' + lab(cs || ce) + ', taken out'); return; }
+      var k = key(cs || s, ce || e, a);
       if (ends.has(k)) { T.cut(a); said.push(what + ': drawn to a member, the same line as its complex\'s, taken out'); return; }
       ends.add(k);
-      [[cs, 'source', 'start', 'sx', 'sy'], [ce, 'target', 'end', 'tx', 'ty']].forEach(function (x) {
+      var nx = kids(a, 'next').map(xy), p0 = yed ? null : xy(kid(a, 'start')), p1 = yed ? null : xy(kid(a, 'end'));
+      [[cs, 'source', 'start', 'sx', 'sy', nx[0] || p1], [ce, 'target', 'end', 'tx', 'ty', nx[nx.length - 1] || p0]].forEach(function (x) {
         var c = x[0];
         if (!c) return;
         T.set(a, x[1], c.getAttribute('id'));
-        if (yed) { var pt = a.getElementsByTagNameNS(YNS, 'Path')[0]; if (pt) { T.set(pt, x[3], '0.0'); T.set(pt, x[4], '0.0'); } }
-        else { var p = kid(a, x[2]), b = kid(c, 'bbox'); if (p && b) { T.set(p, 'x', num(F(b.getAttribute('x')) + F(b.getAttribute('w')) / 2)); T.set(p, 'y', num(F(b.getAttribute('y')) + F(b.getAttribute('h')) / 2)); } }
+        if (yed) { var pt = a.getElementsByTagNameNS(YNS, 'Path')[0]; if (pt) { T.set(pt, x[3], '0.0'); T.set(pt, x[4], '0.0'); } return; }
+        var p = kid(a, x[2]), b = box(c);   // the end on the complex's outline, toward the line's next point
+        if (p && b) { var q = x[5] ? boxCut(b, x[5]) : centre(b); T.set(p, 'x', num(q[0])); T.set(p, 'y', num(q[1])); }
       });
-      said.push(what + ': drawn to ' + [[cs, s], [ce, e]].filter(function (x) { return x[0]; }).map(function (x) { return nameOf(x[1]) + ', a member of ' + nameOf(x[0]); }).join(', and ') + ', joined to the complex');
+      said.push(what + ': drawn to ' + [[cs, s], [ce, e]].filter(function (x) { return x[0]; }).map(function (x) { return lab(x[1]) + ', a member of ' + lab(x[0]); }).join(', and ') + ', joined to the complex');
     });
     return { text: T ? T.text() : t, said: said };
   }

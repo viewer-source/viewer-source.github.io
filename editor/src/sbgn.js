@@ -202,7 +202,8 @@ import { sbJs, sbScript, sbpy } from './engines.js';
         open: function (t, g0, still) {
           var t0 = t, members = [];
           return sbpy().then(function () {
-            var mo = sbJs && sbJs.membersOut ? sbJs.membersOut(t) : { text: t, said: [] };   // lines at complex members put right (membersOut)
+            var mo = { text: t, said: [] };   // lines at complex members put right (membersOut); a file it cannot read as it is
+            try { if (sbJs && sbJs.membersOut) mo = sbJs.membersOut(t); } catch (e) {}
             members = mo.said;
             var tin = sbIn(mo.text), sited = function (x) { return (x.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length; };
             if (tin === t) return g0;
@@ -218,8 +219,8 @@ import { sbJs, sbScript, sbpy } from './engines.js';
             // the sites the file draws on its state variables, written as their glyphs' links while Show sites is off
             // (sbOut): said once the map is drawn, as the file changes on entry
             var n = !V.sites && sbJs && sbJs.sitesOut && isSb(t0) ? (t0.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length : 0;
-            var said = [sbJs.membersSaid(members), n ? n + (n > 1 ? ' sites' : ' site') + ' kept as links on ' + (n > 1 ? 'their glyphs' : 'its glyph') + ' and drawn as the value alone, as Show sites (Settings, Display) is off.' : ''].filter(Boolean).join(' ') || null;
-            return { g: g, t: t, t0: t0, said: said, own: { sb: sb1, sbLast: [g, edOf(t).write(t, g), sb1] } };   // sbLast kept for src()
+            var said = [members.length ? sbJs.membersSaid(members) : '', n ? n + (n > 1 ? ' sites' : ' site') + ' kept as links on ' + (n > 1 ? 'their glyphs' : 'its glyph') + ' and drawn as the value alone, as Show sites (Settings, Display) is off.' : ''].filter(Boolean).join(' ') || null;
+            return { g: g, t: t, t0: t0, said: said, redraw: !!members.length, own: { sb: sb1, sbLast: [g, edOf(t).write(t, g), sb1] } };   // sbLast kept for src()
           });
         },
         // a reader's own map drawn for the list (core.js drawText): SBGN-ML only (not SBML), from the empty base if made here,

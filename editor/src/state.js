@@ -77,7 +77,8 @@ export var shared = {};
 //   reads(t)   a file of this format (formatOfText)
 //   entry(m)   a map's entry edited from a file of this format (formatOfMap)
 //   open(t, g0, still)  a file opened for editing: { g: the GraphML edited, t: the text edited, t0: the file as read, said:
-//              what the opening changed in it, own: the format's fields of the map (putMap) }, or a promise of it; null
+//              what the opening changed in it, redraw: true when that changes the drawing (the picture on screen not
+//              taken), own: the format's fields of the map (putMap) }, or a promise of it; null
 //              when the opening was left (still() false). GraphML: at once, the file itself
 //   base       the file the GraphML edited was read from, kept with a point to go back to (core.js good, the history)
 //              and put back with it: { keep(), put(b) } (SBGN-ML: shared.sb.base); none: nothing kept
