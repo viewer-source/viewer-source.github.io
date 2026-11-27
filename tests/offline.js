@@ -5,7 +5,9 @@
 //   node tests/offline.js [base address] [--local]
 // --local: the editor and the viewer of the working tree routed into the live page (as tests/edit-reload.js).
 // Parts: A a move offline kept and said; B a reload offline keeps it; C the connection back sends it; D a file changed on
-// GitHub meanwhile: the reader's version saved, the other in its history; E the token refused; F a reload with the
+// GitHub meanwhile: the two joined by element (editor/src/merge.js), silently where they changed different things, and
+// where both changed one node the reader's kept, the other version kept as a copy and said until the next move;
+// K two machines, a large edit and a small one made on the version before it, sent in either order; E the token refused; F a reload with the
 // connection back sends at once, and the map opens from GitHub's new version; G the map open in the editor sent when the
 // connection is back; I another tab's newer text sent, not this tab's older one; J the token pasted again sends what
 // waits; H no token: nothing sent when the connection comes back.
@@ -48,7 +50,8 @@ function ok(what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG '
     });
   }
   f['maps/glycolysis-graphml.md'] = '---\ntitle: "Glycolysis"\ntopic: "Glycolysis"\ngroup: "GraphML"\norder: 1\n---\n';
-  await page.route('https://api.github.com/**', async function (route) {
+  var head = 'c0', trees = {}, blobs = {}, nn = 0;
+  var serve = function (target) { return target.route('https://api.github.com/**', async function (route) {
     if (S.net === 'down') return route.abort('internetdisconnected');
     var r = route.request(), u = new URL(r.url()), m = u.pathname.match(/^\/repos\/[^/]+\/[^/]+(\/.*)?$/), rest = m ? m[1] || '' : '', meth = r.method();
     var json = function (s, o) { return route.fulfill({ status: s, contentType: 'application/json', body: JSON.stringify(o) }); };
@@ -56,6 +59,13 @@ function ok(what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG '
     if (!m) return json(404, {});
     if (/dispatches$/.test(rest)) return route.fulfill({ status: 204, body: '' });
     if (rest === '') return json(200, { permissions: { push: true } });
+    // a new map (a copy): the git data calls of own.js toSiteMany, the tree's files written when the branch moves
+    if (rest === '/git/ref/heads/main') return json(200, { object: { sha: head } });
+    if (/^\/git\/commits\//.test(rest) && meth === 'GET') return json(200, { sha: head, tree: { sha: 't-' + head } });
+    if (rest === '/git/blobs' && meth === 'POST') { var bs = 'b' + (++nn); blobs[bs] = Buffer.from(JSON.parse(r.postData()).content, 'base64').toString('utf8'); return json(201, { sha: bs }); }
+    if (rest === '/git/trees' && meth === 'POST') { var ts = 'tree' + (++nn); trees[ts] = JSON.parse(r.postData()).tree; return json(201, { sha: ts }); }
+    if (rest === '/git/commits' && meth === 'POST') { var cs = 'c' + (++nn); trees[cs] = trees[JSON.parse(r.postData()).tree]; return json(201, { sha: cs }); }
+    if (rest === '/git/refs/heads/main') { head = JSON.parse(r.postData()).sha; (trees[head] || []).forEach(function (x) { if (x.sha === null) delete f[x.path]; else f[x.path] = x.content != null ? x.content : blobs[x.sha]; }); return json(200, { object: { sha: head } }); }
     if (rest === '/contents/maps') return json(200, Object.keys(f).filter(function (p) { return /^maps\/[^/]+$/.test(p); }).map(function (p) { return { name: p.slice(5), path: p, type: 'file', sha: gitSha(f[p]) }; }));
     var c = rest.match(/^\/contents\/(.+)$/);
     if (c && meth === 'PUT') {
@@ -74,7 +84,8 @@ function ok(what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG '
       return json(200, { sha: gitSha(f[p2]), content: Buffer.from(f[p2]).toString('base64') });
     }
     return json(404, { message: 'Not Found' });
-  });
+  }); };
+  await serve(page);
   var status = function () { return page.$eval('#m2-ed-status', function (s) { return s.classList.contains('m2-ed-warn') ? s.textContent : ''; }).catch(function () { return ''; }); };
   var edLine = function () { return page.$eval('#m2-ed-wait', function (s) { return s.hidden ? '' : s.textContent; }).catch(function () { return ''; }); };
   var listLine = function () { return page.$eval('#m2-list > .m2-wait', function (s) { return s.textContent; }).catch(function () { return ''; }); };
@@ -91,6 +102,16 @@ function ok(what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG '
     await page.waitForSelector('#m2-ed-undo:not([disabled])', { state: 'attached', timeout: 30000 }).catch(async function (e) { console.log('   (editing did not start: ' + (await page.$eval('#m2-ed-status', function (x) { return x.textContent; }).catch(function () { return '?'; })) + ' / hash ' + (await page.evaluate(function () { return location.hash; })) + ' / win ' + (await page.$eval('.m2', function (x) { return x.className; }).catch(function () { return '?'; })) + ')'); throw e; }); await page.waitForTimeout(1500);
     await page.mouse.click(1000, 800); await page.keyboard.press('Control+A'); await page.keyboard.press('ArrowRight'); await page.waitForTimeout(400); await page.keyboard.press('Escape');
     moves++;
+  };
+  var edit1 = async function () {   // one node moved (clicked, then Shift and the arrow twice); gives its id
+    if (!(await page.$('#m2-ed-undo:not([disabled])'))) await page.click('.m2-ri[data-win="edit"]');
+    await page.waitForSelector('#m2-ed-undo:not([disabled])', { state: 'attached', timeout: 30000 }); await page.waitForTimeout(1500);
+    var c = await page.$$eval('#m2-img [data-n]', function (l) { for (var g of l) { var r = g.getBoundingClientRect(); if (r.width > 20 && r.left > 300 && r.top > 100 && r.right < 1380 && r.bottom < 880) return [r.left + r.width / 2, r.top + r.height / 2, g.getAttribute('data-n')]; } return null; });
+    await page.keyboard.press('Escape'); await page.mouse.click(c[0], c[1]); await page.waitForTimeout(300);
+    for (var i = 0; i < 2; i++) { await page.keyboard.press('Shift+ArrowRight'); await page.waitForTimeout(120); }
+    await page.waitForTimeout(400); await page.keyboard.press('Escape');
+    moves++;
+    return c[2];
   };
   var toList = async function () { await page.click('.m2-ri[data-win="list"]'); await page.waitForTimeout(800); };
   var online = function () { return page.evaluate(function () { dispatchEvent(new Event('online')); }); };
@@ -135,16 +156,77 @@ function ok(what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG '
   ok('C no pop-up, no red (the browser\'s own leave question on the reload is wanted)', !S.dialogs.filter(function (d) { return !/^beforeunload/.test(d); }).length && !(await status()), S.dialogs.join(' | ') + ' ' + (await status()));
 
   console.log('# D: the file changed on GitHub while offline');
+  var copies = function () { return Object.keys(f).filter(function (p) { return /^maps\/.+\.md$/.test(p) && /other version/.test(f[p]); }); };
+  var rename = function (t, add, id) { var i = t.indexOf('<y:NodeLabel', id ? t.indexOf('<node id="' + id + '"') : 0), j = t.indexOf('<', t.indexOf('>', i) + 1); return t.slice(0, j) + add + t.slice(j); };   // a node's label (id's, else the first)
   await page.click('#m2-list .m2-map[data-id="' + ID + '"]').catch(function () {}); await page.waitForTimeout(1500);
   S.net = 'down'; await edit(); await page.waitForTimeout(5000);
-  var mine = (await box())[ID];
+  var mine = (await box())[ID], KEY = mine && mine.key;
   await reload();   // the page left: the outbox's text is all that holds the reader's move
-  await toList();   // the map no longer open in the editor (a clash of the map open is the editor's own: tests/save-clash.js)
-  f[FILE] = f[FILE].replace('</graphml>', '<!-- changed elsewhere -->\n</graphml>');   // another device's save
+  await toList();   // the map no longer open in the editor (the map open: tests/save-clash.js)
+  f[FILE] = f[FILE].replace('</graphml>', '<!-- changed elsewhere -->\n</graphml>');   // another device's save, of something the reader did not change
   S.net = 'up'; await online(); await page.waitForTimeout(3000);
-  ok('D the reader\'s version saved over it', !!mine && f[FILE] === mine.text);
-  ok('D said in one grey line', /^Glycolysis had also changed elsewhere: your version is saved; the other is in its history\.$/.test(await listLine()), await listLine());
-  ok('D nothing waits', !Object.keys(await box()).length);
+  ok('D1 changed elsewhere, something else: both joined', !!mine && f[FILE] === mine.text.replace('</graphml>', '<!-- changed elsewhere -->\n</graphml>'));
+  ok('D1 silent: no clash said, no copy', !/changed elsewhere/.test(await listLine()) && !copies().length, await listLine());
+  ok('D1 nothing waits', !Object.keys(await box()).length);
+  await page.click('#m2-list .m2-map[data-id="' + ID + '"]').catch(function () {}); await page.waitForTimeout(1500);
+  S.net = 'down'; var nX = await edit1(); await page.waitForTimeout(5000);
+  var mine2 = (await box())[ID];
+  await reload(); await toList();
+  var theirs = rename(f[FILE], ' (renamed elsewhere)', nX);   // the same node renamed elsewhere, which the reader moved
+  f[FILE] = theirs;
+  S.net = 'up'; await online(); await page.waitForTimeout(6000);
+  // (the editor may have opened the version before D1's join, read ahead: the join then brings D1's comment back too)
+  var noC = function (t) { return t.replace('<!-- changed elsewhere -->\n', ''); };
+  ok('D2 one node changed on both: the reader\'s kept, the rest joined', !!mine2 && noC(f[FILE]) === noC(mine2.text) && f[FILE].indexOf('<!-- changed elsewhere -->') > 0 && f[FILE].indexOf('(renamed elsewhere)') < 0, f[FILE] === theirs ? 'theirs on GitHub' : '');
+  var cp2 = copies(), cpFile = cp2.length ? f[cp2[0].replace(/\.md$/, '.graphml')] : null;
+  ok('D2 the other version kept as a copy, named so', cp2.length === 1 && cpFile === theirs && /title: "Glycolysis \(other version\)"/.test(f[cp2[0]] || ''), cp2.join(','));
+  var dl = 'Glycolysis had also changed elsewhere: the changes are joined, yours kept where both changed the same item; the other version is kept as Glycolysis (other version).';
+  ok('D2 said in one grey line', (await listLine()) === dl, await listLine());
+  await page.waitForTimeout(7000);
+  ok('D2 the line stays until the next move', (await listLine()) === dl, await listLine());
+  ok('D2 the copy in the list', (await page.$$eval('#m2-list .m2-map', function (l) { return l.filter(function (e) { return /other version/.test(e.textContent); }).length; })) === 1);
+  ok('D2 no red, no pop-up', !(await status()) && !S.dialogs.filter(function (d) { return !/^beforeunload/.test(d); }).length, (await status()) + ' ' + S.dialogs.join(' | '));
+  await page.click('#m2-list .m2-map[data-id="' + ID + '"]').catch(function () {}); await page.waitForTimeout(1500);
+  await edit(); await page.waitForTimeout(5000);
+  ok('D2 the line gone with the next move, which is saved', !(await edLine()) && f[FILE] !== mine2.text, await edLine());
+  cp2.forEach(function (p) { delete f[p]; delete f[p.replace(/\.md$/, '.graphml')]; });
+
+  console.log('# K: two machines, a large edit and a small one made on the version before it');
+  // the small edit, made on another machine from v0: one node renamed (a node the large edit moves), a comment added; the
+  // large one: the whole map moved (taken as a shift of its frame, no change of any node), then that node moved again
+  var nK, small = function (v0) { return rename(v0, ' (small edit)', nK).replace('</graphml>', '<!-- small edit -->\n</graphml>'); };
+  var keep = function (pg, rec) { return pg.evaluate(function (rec) { return new Promise(function (res) { var q = indexedDB.open('atlas-outbox', 1); q.onupgradeneeded = function () { q.result.createObjectStore('saves'); }; q.onsuccess = function () { var t = q.result.transaction('saves', 'readwrite'); t.objectStore('saves').put(rec, rec.key); t.oncomplete = function () { q.result.close(); res(); }; }; }); }, rec); };
+  // order 1: the small edit on GitHub first; the large one, kept here offline, sent after it
+  var v0 = f[FILE];
+  S.net = 'down'; await edit(); nK = await edit1(); await page.waitForTimeout(5000);
+  var large = (await box())[ID];
+  await toList();
+  f[FILE] = small(v0);
+  S.net = 'up'; await online(); await page.waitForTimeout(6000);
+  ok('K1 the small edit first, the large here after: the large kept, the small edit\'s comment joined', !!large && f[FILE] === large.text.replace('</graphml>', '<!-- small edit -->\n</graphml>'));
+  var k1 = copies();
+  ok('K1 the node both changed: the large edit\'s; the small edit kept as the copy', k1.length === 1 && f[k1[0].replace(/\.md$/, '.graphml')] === small(v0) && f[FILE].indexOf('(small edit)') < 0, k1.join(','));
+  k1.forEach(function (p) { delete f[p]; delete f[p.replace(/\.md$/, '.graphml')]; });
+  // order 2: the large edit saved here first; the small one, waiting on another machine (a second browser), sent after
+  await page.click('#m2-list .m2-map[data-id="' + ID + '"]').catch(function () {}); await page.waitForTimeout(1500);
+  var w0 = f[FILE];
+  await edit(); nK = await edit1(); await page.waitForTimeout(5000);
+  var big = f[FILE];
+  await toList();
+  var ctx2 = await b.newContext({ viewport: { width: 1400, height: 900 } }), p2 = await ctx2.newPage();
+  p2.on('pageerror', function (e) { S.errs.push('machine 2: ' + e.message); });
+  if (local) { await p2.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); }); }
+  await serve(p2);
+  await p2.goto(base, { waitUntil: 'load' });
+  await p2.evaluate(function () { localStorage.clear(); localStorage.setItem('atlas-edit-token', 'test-token'); localStorage.setItem('atlas-edit-level', 'full'); });
+  await keep(p2, { key: KEY, id: ID, path: FILE, name: 'Glycolysis', text: small(w0), sha: gitSha(w0), saved: w0, also: null, mine: false, at: Date.now() });
+  await p2.reload({ waitUntil: 'load' }); await p2.waitForTimeout(8000);   // the page opening sends what waits
+  ok('K2 the large edit first, the small one from the other machine after: the large kept outside the node both changed', big !== w0 && f[FILE].indexOf('(small edit)') > 0 && f[FILE].indexOf('<!-- small edit -->') > 0, f[FILE] === big ? 'the large edit alone' : '');
+  var k2 = copies();
+  ok('K2 the large edit kept as the copy on that machine', k2.length === 1 && f[k2[0].replace(/\.md$/, '.graphml')] === big, k2.join(','));
+  ok('K2 that machine says it', /^Glycolysis had also changed elsewhere: the changes are joined, yours kept where both changed the same item; the other version is kept as Glycolysis \(other version\)\.$/.test(await p2.$eval('#m2-list > .m2-wait', function (s) { return s.textContent; }).catch(function () { return ''; })));
+  k2.forEach(function (p) { delete f[p]; delete f[p.replace(/\.md$/, '.graphml')]; });
+  await ctx2.close();
 
   console.log('# E: the token refused');
   await page.click('#m2-list .m2-map[data-id="' + ID + '"]').catch(function () {}); await page.waitForTimeout(1500);

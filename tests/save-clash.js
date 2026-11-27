@@ -1,9 +1,11 @@
 // The save clash: two tabs edit the same map, each from the version it opened. The first saves; the second, saving
-// later, finds the map changed since it opened it. Neither version is lost: the newer one stays where it is, the
-// second tab's version is kept as a copy beside it (in the same group of the list, under the map), and the second tab
-// says so in its status line. No merge. Each way of keeping maps:
-// 1. GitHub (a token; GitHub played by this script, files from a clone of the site's data repository): the file there
-//    keeps the first tab's text, the second tab's text is sent as a map of its own.
+// later, finds the map changed since it opened it. Neither version is lost. Each way of keeping maps:
+// 1. GitHub (a token; GitHub played by this script, files from a clone of the site's data repository): the two versions
+//    joined by element (editor/src/merge.js, core.js joinOpen): the two tabs moved different nodes, so GitHub has both
+//    moves, silently, and the second tab goes on editing the joined map; both moved the same node: the second tab's
+//    position, silently (a position alone is no clash); no copy either time.
+// 2. and 3. keep the second tab's version as a copy beside it (in the same group of the list, under the map), said in
+// its status line; no merge:
 // 2. A folder on the computer (the browser's private file system, handed out by showDirectoryPicker), no token: the
 //    map's file keeps the first tab's text, the second tab's is written beside it.
 // 3. This browser, no token and no folder: the draft keeps the first tab's text, the second tab's is kept as a map of
@@ -17,6 +19,8 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 var data = process.argv[3], local = process.argv.indexOf('--local') > 0;
 if (!data) { console.log('usage: node tests/save-clash.js <base address> <clone of the data repository> [--local]'); process.exit(2); }
 var MAP = 'glycolysis-graphml', bad = 0, ED = local ? require('./editor-now.js')(path.join(__dirname, '..')) : null;
+var esb = require(require.resolve('esbuild', { paths: [path.join(__dirname, '..')] }));
+var MG = { exports: {} }; new Function('module', 'exports', esb.transformSync(fs.readFileSync(path.join(__dirname, '../editor/src/merge.js'), 'utf8'), { format: 'cjs' }).code)(MG, MG.exports);
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 
 function helpers(page) {
@@ -28,8 +32,8 @@ function helpers(page) {
     await page.click('.m2-ri[data-win="edit"]');
     await page.waitForFunction(function () { return !!window.m2EditNow(); }, null, { timeout: 30000 }); await page.waitForTimeout(1500);
   };
-  h.move = async function (keys) {
-    var c = await page.$$eval('#m2-img [data-n]', function (l) { for (var g of l) { var r = g.getBoundingClientRect(); if (r.width > 20 && r.left > 300 && r.top > 100 && r.right < 1380 && r.bottom < 880) return [r.left + r.width / 2, r.top + r.height / 2]; } return null; });
+  h.move = async function (keys, nth) {   // nth: the nth node in view (0 the first)
+    var c = await page.$$eval('#m2-img [data-n]', function (l, nth) { var k = 0; for (var g of l) { var r = g.getBoundingClientRect(); if (r.width > 20 && r.left > 300 && r.top > 100 && r.right < 1380 && r.bottom < 880 && k++ === (nth || 0)) return [r.left + r.width / 2, r.top + r.height / 2]; } return null; }, nth || 0);
     await page.keyboard.press('Escape'); await page.waitForTimeout(150);
     await page.mouse.click(c[0], c[1]); await page.waitForTimeout(300);
     for (var i = 0; i < 2; i++) { await page.keyboard.press(keys || 'Shift+ArrowRight'); await page.waitForTimeout(120); }
@@ -89,18 +93,26 @@ async function github(b) {
   await A.page.goto(base, { waitUntil: 'load' });
   await A.page.evaluate(function () { localStorage.clear(); localStorage.setItem('atlas-edit-token', 'test-token'); });
   await A.h.open(); await A.h.edit(); await B.h.open(); await B.h.edit();
+  var t0 = await B.h.now();
   await A.h.move(); await A.page.waitForTimeout(5000);
   var tA = await A.h.now(), p = Object.keys(body).filter(function (k) { return /glycolysis-graphml\.graphml$/.test(k); })[0];
   ok('the first tab saved', p && body[p] === tA, p);
-  await B.h.move('Shift+ArrowDown'); var tB = await B.h.now(); await B.page.waitForTimeout(8000);
-  ok("the second tab: the first tab's file on GitHub kept", body[p] === tA);
-  var kept = Object.keys(body).filter(function (k) { return k !== p && body[k] === tB; });
-  ok("the second tab's version sent beside it as a map of its own", kept.length === 1, kept.join(','));
-  var md = kept.length ? body[kept[0].replace(/\.[^.]+$/, '.md')] || '' : '';
-  ok('in the same group as the map, named as the reader\'s version', /your version/i.test(md), md.replace(/\n/g, ' '));
-  ok('and said', /your version/i.test(await B.h.status()), await B.h.status());
-  await B.h.move('Shift+ArrowLeft'); var tB2 = await B.h.now(); await B.page.waitForTimeout(6000);
-  ok('editing goes on in the copy: the next move saved there, the map left as it was', kept.length === 1 && body[kept[0]] === tB2 && body[p] === tA);
+  var others = function () { return Object.keys(body).filter(function (k) { return k !== p && /\.md$/.test(k) && /(other|your) version/.test(body[k]); }); };
+  await B.h.move('Shift+ArrowDown', 3); var tB = await B.h.now(); await B.page.waitForTimeout(9000);
+  var want = MG.exports.merge3(t0, tB, tA);
+  ok('the second tab, another node moved: GitHub has both moves', tA !== t0 && tB !== t0 && !want.broken && !want.clashes && body[p] === want.text && body[p] !== tA && body[p] !== tB);
+  ok('no copy, nothing said', !others().length && !(await B.h.status()) && !(await B.page.$eval('#m2-ed-wait', function (s) { return s.hidden ? '' : s.textContent; }).catch(function () { return ''; })), others().join(',') + ' ' + (await B.h.status()));
+  ok('the second tab goes on editing the joined map', (await B.h.now()) === body[p]);
+  await B.h.move('Shift+ArrowLeft', 3); var tB2 = await B.h.now(); await B.page.waitForTimeout(6000);
+  ok('its next move saved over the joined map', tB2 !== want.text && body[p] === tB2);
+  console.log('-- GitHub, the same node moved in both tabs');
+  await A.h.open(); if (!(await A.page.evaluate(function () { return !!window.m2EditNow(); }))) await A.h.edit();   // the joined version read afresh
+  await A.h.move('Shift+ArrowUp', 5); await A.page.waitForTimeout(5000);
+  var tA3 = await A.h.now();
+  ok('the first tab saved', body[p] === tA3);
+  await B.h.move('Shift+ArrowRight', 5); var tB3 = await B.h.now(); await B.page.waitForTimeout(9000);
+  var want3 = MG.exports.merge3(tB2, tB3, tA3);
+  ok('the second tab\'s position kept, silently, no copy', want3.moved >= 1 && !want3.clashes && body[p] === want3.text && !others().length && !(await B.h.status()), JSON.stringify({ moved: want3.moved, clashes: want3.clashes, broken: want3.broken }));
   ok('no script error', !A.errs.length && !B.errs.length, A.errs.concat(B.errs).join(' | '));
   await ctx.close();
 }

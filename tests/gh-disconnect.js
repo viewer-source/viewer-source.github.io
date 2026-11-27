@@ -102,15 +102,14 @@ var prot = function () { return (files[P].match(/<celldesigner:class>PROTEIN</g)
   await make(950, 500); await page.waitForTimeout(6000);
   ok('3. saving goes on after', prot() === n0 + 3, String(prot()));
 
-  // 4. changed elsewhere while disconnected, with a move: the reader's version kept (beside it, or saved over it)
+  // 4. changed elsewhere while disconnected, with a move: the two joined by element (editor/src/merge.js), silently, as
+  // they changed different things (a protein made here, a comment written there)
   await page.click('#m2-ed-gh-off'); await page.waitForTimeout(300); await page.click('.m2-ask-yes'); await page.waitForTimeout(500);
   await make(1000, 550); await page.waitForTimeout(2000);
   files[P] = files[P].replace('</sbml>', '</sbml>\n<!-- changed elsewhere -->');
-  await connect(); await page.waitForTimeout(3000);
-  // (the copy beside it is written by keepBeside, whose GitHub calls this script does not play, so here no copy can be
-  // made: the reader's version is saved over it, the other kept in the file's history, said in the grey line)
+  await connect(); await page.waitForTimeout(4000);
   var gl = await page.$eval('#m2-ed-wait', function (x) { return x.hidden ? '' : x.textContent; }).catch(function () { return null; });   // null: a page older than the line (only the editor served)
-  ok('4. changed elsewhere, no copy possible: the reader\'s version saved over it, said in grey (not as "newer than the copy opened")', !/<!-- changed elsewhere -->/.test(files[P]) && (gl === null || /had also changed elsewhere: your version is saved/.test(gl)) && !/newer than|Not saved/.test(await status()), gl + ' | ' + (await status()));
+  ok('4. changed elsewhere, something else: both kept, nothing said', /<!-- changed elsewhere -->/.test(files[P]) && prot() === n0 + 4 && !gl && !/newer than|Not saved|changed elsewhere/.test(await status()), prot() + '/' + (n0 + 4) + ' comment ' + /<!-- changed elsewhere -->/.test(files[P]) + ' | ' + gl + ' | ' + (await status()));
 
   ok('no script errors', errs.length === 0, errs.join(' | '));
   await b.close();

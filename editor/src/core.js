@@ -7,8 +7,9 @@ import { beyond, glyphArcs, glyphPort, joinAt, joinGuides, joinSolve, nodeCentre
 import { sbpy } from './engines.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveSays, origAll, palDown, palShow, palUp, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
+import { merge3 } from './merge.js';
 import { outboxAll, outboxDone, outboxFresh, outboxGet, outboxKeep, outboxLoad } from './outbox.js';
-import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, moveOut, toMove, openZipFolder, savedMine, toGh, upAll, upRun } from './own.js';
+import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keepOther, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, moveOut, toMove, openZipFolder, savedMine, toGh, upAll, upRun } from './own.js';
 
     // ---------- the editor's shared core (editor/src/core.js) ----------
     // Moves only: nodes and bend points of a map, nudged in the map window. A CellDesigner map is edited as the GraphML
@@ -202,6 +203,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
     function changed() {   // after every move, undo or redo: the site's map is saved a few seconds after the last one
       edits++;
+      if (passStay) { passStay = false; passing = ''; waitShow(); }   // a clash's line said until the reader's next change
       if (openSay) { if (status.textContent === openSay.t) quiet(); openSay = null; }   // the save clash said until the reader's next change
       goodNow();
       if (shared.F.moved) shared.F.moved();   // the format's own after a move (SBGN-ML: a file the move turned, its GraphML made again)
@@ -276,13 +278,13 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // opens, and every half minute while anything waits. Said as states, not messages: once a send has failed and changes
     // still wait, one grey line in the Edit window and above the list ("Offline: changes to 2 maps kept in this browser,
     // sent to GitHub when the connection is back.") and a crossed-out cloud by each map waiting; nothing online, nothing
-    // once all is sent. A file changed on GitHub meanwhile (another tab, another device): the reader's version is saved
-    // over it, the other stays in the file's history, said by one grey line. A token refused: kept, said once.
+    // once all is sent. A file changed on GitHub meanwhile (another tab, another device): the versions joined by element
+    // (sendOne, merge.js), the other side's kept as a copy where both changed one item. A token refused: kept, said once.
     // Two tabs: one sends at a time (Web Locks), each record read afresh before it is sent, and a map being edited in
     // another tab (its lock atlas-edit-<key> held) is left to that tab's own saves
-    var waitFail, sendRun, retryTimer, lastVisit, passing, passTimer, sending, lockFree, CLOUD;
+    var waitFail, sendRun, retryTimer, lastVisit, passing, passTimer, passStay, passAfter, sending, lockFree, CLOUD;
     function __run47() {   // run at start, in order (__start)
-    waitFail = false, sendRun = null, retryTimer = null, lastVisit = null, passing = '', passTimer = null, sending = {}, lockFree = null;
+    waitFail = false, sendRun = null, retryTimer = null, lastVisit = null, passing = '', passTimer = null, passStay = false, passAfter = null, sending = {}, lockFree = null;
     CLOUD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 2 20 20"/><path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193"/><path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07"/></svg>';
     addEventListener('online', function () { sendWaiting(); sendOpen(); });
     addEventListener('pagehide', keepNow);   // the tab left or hidden: the open map's moves not yet sent kept now (the save waits 3 s after the last move)
@@ -309,7 +311,6 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var k = keyOf(t.id), r = outboxGet(k);
       if (r && r.text !== body && r.sha === (was || null)) { r.sha = t.sha; r.saved = body; r.also = null; outboxKeep(r).catch(function () {}); }
       else outboxDone(k, body);
-      if (t.clashSay) { passSay(t.clashSay + ' had also changed elsewhere: your version is saved; the other is in its history.'); t.clashSay = null; }
       sendOk();
       if (here().some(function (x) { return x.id !== t.id; })) sendWaiting();   // the connection is back: the others go too
     }
@@ -349,9 +350,10 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (w) { if (t) w.textContent = t; else w.remove(); }
       l.querySelectorAll('.m2-map[data-id]').forEach(function (b) { cloudOn(b, b.getAttribute('data-id')); });
     }
-    function passSay(t) {   // a line said for a few seconds, then gone
-      passing = t; waitShow();
-      clearTimeout(passTimer); passTimer = setTimeout(function () { passing = ''; waitShow(); }, 6000);
+    function passSay(t, stay) {   // a line said for a few seconds, then gone; stay: until the reader's next change (changed)
+      if (passStay && !stay) return;   // a clash's line not taken away by a passing one
+      passing = t; passStay = !!stay; waitShow();
+      clearTimeout(passTimer); passTimer = stay ? null : setTimeout(function () { passing = ''; waitShow(); }, 6000);
     }
     // a lock held by this tab while it edits a map, so another tab's round leaves that map to this tab's saves
     function editLock(id) {
@@ -371,13 +373,13 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           if (!(repo() && token())) return;
           return (navigator.locks && navigator.locks.query ? navigator.locks.query() : Promise.resolve({ held: [] })).then(function (q) {
             var busy = (q.held || []).map(function (h) { return h.name; });
-            var list = here().filter(function (r) { return !(on && site && site.id === r.id) && busy.indexOf('atlas-edit-' + r.key) < 0; }), back = [], clash = [], sent = 0;
+            var list = here().filter(function (r) { return !(on && site && site.id === r.id) && busy.indexOf('atlas-edit-' + r.key) < 0; }), back = [], says = [], sent = 0;
             return list.reduce(function (p, r) {
-              return p.then(function () { return sendOne(r).then(function (x) { if (!x) return; sent++; if (lastVisit.indexOf(r.key) >= 0) back.push(r.key); if (x.clash) clash.push(r.name); waitShow(); }); });
+              return p.then(function () { return sendOne(r).then(function (x) { if (!x) return; sent++; if (lastVisit.indexOf(r.key) >= 0) back.push(r.key); if (x.say) says.push(x.say); waitShow(); }); });
             }, Promise.resolve()).then(function () {
               if (sent) sendOk();
               lastVisit = lastVisit.filter(function (k) { return back.indexOf(k) < 0; });
-              if (clash.length) passSay(clash.join(', ') + ' had also changed elsewhere: your version is saved; the other is in its history.');
+              if (says.length) passSay(says.join(' '), true);   // both changed the same item (merge.js): said until the next change
               else if (back.length) passSay('Changes to ' + back.length + (back.length > 1 ? ' maps' : ' map') + ' from your last visit sent to GitHub.');
             }, function (e) {
               var why = sendWhy(e);
@@ -392,25 +394,31 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       return sendRun;
     }
     // one record sent, read afresh first (another tab may hold a newer text); GitHub's file read: already there, on the
-    // version the text was made on, or changed elsewhere (not the page's own save under way when the text was kept).
-    // Throws GitHub's status, or the lost connection
+    // version the text was made on, or changed elsewhere (not the page's own save under way when the text was kept): then
+    // the three versions joined by element (joined: merge.js) and the result sent; where both changed the same item the
+    // reader's wins and the other side is kept as '<map> (other version)' (x.say, the line). Gives { sha, text: what
+    // GitHub has now, say }; throws GitHub's status, or the lost connection
     function sendOne(r) {
       return outboxFresh(r.key).then(function (cur) {
         if (!cur || cur.text !== r.text) return null;   // let go, or a newer text kept meanwhile (sent at the next round)
         return ghRead(r.path).then(function (g) {
           g = g || { sha: null, text: null };   // not on GitHub (a file made by the first save, or deleted there: written again)
-          if (g.text === r.text) return { sha: g.sha };   // GitHub has it already (sent by another tab)
-          var clash = g.text != null && g.sha !== r.sha && g.text !== r.saved && g.text !== r.also;
+          if (g.text === r.text) return { sha: g.sha, text: r.text };   // GitHub has it already (sent by another tab)
+          var j = g.text != null && g.sha !== r.sha && g.text !== r.saved && g.text !== r.also ? joined(r.saved, r.text, g.text) : null, t = j ? j.text : r.text;
+          if (t === g.text) return { sha: g.sha, text: t };   // nothing of the reader's beyond what is there
           return api('/contents/' + r.path, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: 'Moved in the viewer: ' + r.path.split('/').pop(), content: b64(r.text), sha: g.sha || undefined, branch: 'main' }) })
+            body: JSON.stringify({ message: 'Moved in the viewer: ' + r.path.split('/').pop(), content: b64(t), sha: g.sha || undefined, branch: 'main' }) })
             .then(function (q) { if (!q.ok) throw q.status; return q.json(); })
-            .then(function (d) { return { sha: d.content.sha, clash: clash }; });
+            .then(function (d) { return { sha: d.content.sha, text: t, j: j, other: g.text }; });
         }).then(function (x) {
           learnt(r.path, x.sha); forget(r.id);   // what was read ahead of this map is older now
-          if (r.mine) savedMine({ id: r.id, sha: x.sha }, r.text);
+          if (r.mine) savedMine({ id: r.id, sha: x.sha }, x.text, x.text !== r.text);
           var u = unsaved[r.id];
           if (u && u.text === r.text) delete unsaved[r.id];
-          return outboxDone(r.key, r.text).then(function () { return x; });
+          return outboxDone(r.key, r.text).then(function () {
+            if (!x.j || !x.j.real) return x;
+            return otherKept(r.id, r.name, x.j, x.other).then(function (l) { x.say = l; return x; });
+          });
         });
       });
     }
@@ -692,7 +700,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var u = unsaved[s.id];
       if (u && u.site === s) body = u.text;   // left with moves after that save: those are the reader's version
       forget(s.id); learnt(s.path, 'changed'); delete unsaved[s.id];   // opened again, the map is read afresh from GitHub
-      clashed(s, body, 'on GitHub');
+      return joinOpen(s, body);
     }
     // the save clash: map s changed elsewhere since this page opened it (where: on GitHub, in another tab) is left as it
     // is there; the reader's version t is kept as a map of theirs right under it (own.js keepBeside), said, and editing
@@ -712,29 +720,63 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         warn(openSay.t);
         outboxDone(keyOf(s.id), null).then(waitShow);   // the reader's version is the copy now: the map's own record let go
       }).catch(function (e) {
-        if (s.path && repo() && token()) return oursOver(s, on && site === s ? src() : t, n);   // no copy made (a map of a kind that cannot be copied, GitHub refusing it): never a dead end, the reader's version saved over it, the other in its history
+        if (s.path && repo() && token()) { s.clashed = false; return joinOpen(s, t); }   // no copy made (a map of a kind that cannot be copied, GitHub refusing it): never a dead end, joined on GitHub
         warn('Not saved: ' + n + ' was changed ' + where + ' since you opened it, so it is not overwritten, and your version could not be kept beside it (' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '). Download the map to keep your changes.');
       });
     }
-    // a clash where no copy can be made (an SBGN-ML map of a group): the reader's version is saved over the file, the
-    // other stays in the file's history on GitHub, said by one grey line; editing goes on. Not sent (no connection): it
-    // waits in the outbox, sent later the same way
-    function oursOver(s, t, n) {
-      var r = recOf(s, t, n), once = function () { return sendOne(r); };
+    // A save of the map open refused as the file changed elsewhere (another tab, another device), or a clash with no copy
+    // possible: the three versions joined by element (sendOne, merge.js), GitHub given the result, and editing goes on
+    // from it: the map opened again on the joined version, moves made meanwhile joined in too (kept in the outbox, taken
+    // up by the opening). Silent unless both changed the same item (a line until the next move). No connection: the
+    // text waits in the outbox and is joined when it is sent
+    function joinOpen(s, body) {
+      var t = on && site === s ? src() : body, r = recOf(s, t), once = function () { return sendOne(r); };
       return outboxKeep(r).then(function () { return navigator.locks ? navigator.locks.request('atlas-outbox', once) : once(); }).then(function (x) {
-        if (!x) return;
-        if (site === s) {
-          s.sha = x.sha; s.saved = t; s.clashed = false; stuck = false;
-          if (src() === t) shared.dirty = false; else if (on) { clearTimeout(saveTimer); saveTimer = setTimeout(push, AUTOSAVE); }   // moves made meanwhile: saved as usual
-          quiet();
-        }
+        if (site === s) { s.clashed = false; stuck = false; }
+        if (!x) return;   // a newer text kept meanwhile (another tab): sent by the next round
         sendOk();
-        passSay(n + ' had also changed elsewhere: your version is saved; the other is in its history.');
+        if (!(on && site === s)) { if (x.say) passSay(x.say, true); return; }
+        s.sha = x.sha; s.saved = x.text;
+        return settled().then(function () {
+          if (!(on && site === s)) { if (x.say) passSay(x.say, true); return; }
+          var now = src();
+          if (x.text === t) { if (x.say) passSay(x.say, true); if (now === t) shared.dirty = false; else { clearTimeout(saveTimer); saveTimer = setTimeout(push, AUTOSAVE); } quiet(); return; }
+          // the joined version holds changes made elsewhere: editing goes on from it, the map opened again, moves made
+          // meanwhile joined in through the outbox; a join of those that fails keeps them on the version before, so their
+          // send joins again (and keeps the other side as a copy) in place of writing over what was joined
+          if (now !== t) {
+            var j2 = joined(t, now, x.text);
+            outboxKeep(Object.assign(recOf(s, j2.text), j2.broken ? { sha: null, saved: t } : { sha: x.sha, saved: x.text }, { also: null })).catch(function () {});
+          }
+          var m = V.current && V.current.id === s.id ? V.current : V.byId[s.id];
+          clearTimeout(saveTimer); saveTimer = null; shared.dirty = false;
+          if (x.say) passAfter = x.say;
+          if (m) { editUnlock(); on = false; editMap(m); } else if (x.say) { passAfter = null; passSay(x.say, true); }
+        });
       }, function (e) {
         if (site === s) { s.clashed = false; stuck = false; quiet(); }
         var why = sendWhy(e);
         if (why === 'other') warn('Not saved on GitHub (' + e + '). Your changes are kept in this browser.'); else sendFailed(why);
       });
+    }
+    function settled() {   // a move still being drawn into the file: waited for (as push waits), so src() holds it
+      return new Promise(function (res) { (function w() { if (drawing) setTimeout(w, 100); else res(); })(); });
+    }
+    // the three versions of a map joined (merge.js): { text, real } where real is a clash to say (both changed the same
+    // item, or the versions could not be joined: the reader's then, whole); a missing base (a file made by the first save) joins nothing
+    function joined(base, ours, theirs) {
+      var m = base == null ? { text: ours, broken: 'no version to start from' } : merge3(base, ours, theirs);
+      return { text: m.text, real: !!m.broken || m.clashes > 0, broken: m.broken };
+    }
+    // the other side of a clash kept, silently, as '<map> (other version)' under the map where it can be copied (own.js
+    // keepOther), else left in the file's history; gives the line said
+    function otherKept(id, n, j, other) {
+      var line = function (title) {
+        var kept = title ? 'the other version is kept as ' + title + '.' : 'the other version is in its history.';
+        return j.broken ? n + ' had also changed elsewhere and the two could not be joined: your version is saved; ' + kept
+          : n + ' had also changed elsewhere: the changes are joined, yours kept where both changed the same item; ' + kept;
+      };
+      return keepOther(id, other).then(line, function () { return line(null); });
     }
     // The error catcher: an error nobody caught while a map is edited (in a gesture, a key, a timer, a promise) is said in
     // one line with where it happened in the editor's sources (editor.js.map, fetched at the first error), and the map is
@@ -1876,6 +1918,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
             var Fs = formatOfText(r[2]);   // the site's text as the editor's GraphML, its format's way
             siteRef = r[3] ? baseOf(Fs && Fs.asGraphml ? Fs.asGraphml(r[2]) : r[2], r[3]) : null;
             map.title = m.title; document.getElementById('m2-title').textContent = m.title;
+            if (passAfter) { var pa = passAfter; passAfter = null; setTimeout(function () { passSay(pa, true); }, 0); }   // a join's line, said once the opening's own change is made
           });
         });
       };
@@ -1906,16 +1949,20 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       gp.then(function (g) {
         // moves of this map not saved on GitHub when editing was left: taken up again and saved (saved: GitHub's text,
         // for the check of a refused save; an SBGN-ML map's edited copy not made yet: none on GitHub still); GitHub
-        // changed elsewhere meanwhile: the reader's version is saved over it, the other kept in its history
+        // changed elsewhere meanwhile: the versions joined (joined), the other side kept as a copy where both changed one item
         var u = unsaved[m.id], o = outboxGet(k);
-        if (!u && o) u = { text: o.text, site: { sha: o.sha } };
-        var usha = u ? u.site.sha || null : undefined;
+        if (!u && o) u = { text: o.text, site: { sha: o.sha, saved: o.saved }, also: o.also };
+        var usha = u ? u.site.sha || null : undefined, j = null;
         delete unsaved[m.id];
-        if (u && g && g.text === u.text) { u = null; outboxDone(k, g.text).then(waitShow); }   // GitHub has it already
+        if (u && g && g.sha !== usha && g.text !== u.text) {   // changed there since: the three versions joined (merge.js)
+          var ub = u.site.saved != null ? u.site.saved : u.site.base;
+          if (g.text !== ub && g.text !== u.also) { j = joined(ub, u.text, g.text); u.text = j.text; }
+        }
+        if (u && g && g.text === u.text) { u = null; outboxDone(k, o ? o.text : null).then(waitShow); }   // GitHub has it already (the record read let go, not a newer one)
         if (u) return go(u.text, g ? { path: path, sha: g.sha, saved: g.text } : { path: path, sha: null }).then(function () {
           if (tk !== opening) return;
-          if ((g ? g.sha : null) !== usha && g && site) site.clashSay = m.title;   // said once the save has gone through
           shared.dirty = true; changed(); note();
+          if (j && j.real) otherKept(m.id, m.topic || m.title, j, g.text).then(function (l) { passSay(l, true); });   // said until the next change
         }, notLoaded);
         if (!g && p.F.ahead.path) return published.then(function (t) { return go(t, { path: path, sha: null }); }).catch(notLoaded);   // a map edited as a copy of its own (SBGN-ML) with no copy yet: the first save makes it
         if (!g) return fromSite(null);   // not a map of this repository: saved as a file
@@ -1967,13 +2014,14 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
             api('/contents/' + s0.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (r) { return r.status === 404 && copy ? s0.base : r.text(); })])
             .then(function (f) {
               if (!on || site !== s0) return;   // another map opened meanwhile: this one stays as kept in the browser, taken up when it is opened again (its moves never written into the map open now)
-              s0.sha = f[0].sha || null; s0.pending = false; buttons();
+              s0.pending = false; buttons();
               // compared with what this page last saved there, not with the text editing began from (else every save made
               // before a Disconnect read as a change by someone else)
               if (f[1] !== (s0.saved != null ? s0.saved : s0.base)) {
-                if (moved) return conflict(s0, keep);   // changed elsewhere meanwhile: the reader's moves kept beside it, said
-                stuck = true; warn('Connected, but the map on GitHub was changed elsewhere since you opened it; you made no move, so nothing is lost. Stop editing and open the map again.'); return;
+                if (moved) return conflict(s0, keep);   // changed elsewhere meanwhile: joined (joinOpen), on the version editing knew, so the join sees the change
+                s0.sha = f[0].sha || null; stuck = true; warn('Connected, but the map on GitHub was changed elsewhere since you opened it; you made no move, so nothing is lost. Stop editing and open the map again.'); return;
               }
+              s0.sha = f[0].sha || null;
               if (s0.id) Promise.resolve(unkeep(s0.id)).then(function () { s0.known = null; }, function () {});   // GitHub holds the map from now on; nothing kept in this browser now (else a second Disconnect read the draft's going as another tab's change)
               if (moved) { setText(keep); shared.dirty = true; push(); } else quiet();
             }); });

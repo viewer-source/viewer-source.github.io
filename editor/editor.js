@@ -74,7 +74,7 @@
           }
           return { kind, props: props2 };
         }
-        function read(t, opt) {
+        function read2(t, opt) {
           opt = opt || {};
           var doc2 = opt.doc;
           if (!doc2) {
@@ -335,7 +335,7 @@
         var api2 = {
           G: G2,
           Y: Y2,
-          read,
+          read: read2,
           realizerOf: realizerOf2,
           place,
           boxes,
@@ -2310,13 +2310,13 @@
       var i = propNode(), g = i >= 0 ? hubGroup(i) : null;
       if (!g) return;
       var b = boxOf(i), ant = sbAnts()[nodes2[i].id], lt = sbJs.GLT.test(sbClasses()[nodes2[i].id] || "") ? sbJs.lookOf(realizerOf(nodes2[i].el)).font : null;
-      var items = nodes2.map(function(n, k) {
+      var items2 = nodes2.map(function(n, k) {
         if (k === i || hubGroup(k) !== g) return null;
         var o = boxOf(k);
         return { id: n.id, box: [+fmt(o[0] + o[2] / 2 - b[2] / 2), +fmt(o[1] + o[3] / 2 - b[3] / 2), b[2], b[3]], ant, letters: lt };
       }).filter(Boolean);
       if (!keepSel(function() {
-        return fitHubs(items);
+        return fitHubs(items2);
       })) warn("Every one of this kind already has this size and antenna.");
     });
     props.querySelector(".m2-ed-pstd").addEventListener("click", function() {
@@ -2325,12 +2325,12 @@
       });
       if (!ns.length) return;
       var s = stdScale(), lt = stdLetters();
-      var items = ns.map(function(i) {
+      var items2 = ns.map(function(i) {
         var gate = hubGroup(i) === "gate", S = sbJs.SIZE[gate ? "and" : "process"], o = boxOf(i), w = S[0] * s, h = S[1] * s;
         return { id: nodes2[i].id, box: [+fmt(o[0] + o[2] / 2 - w / 2), +fmt(o[1] + o[3] / 2 - h / 2), w, h], ant: sbJs.ANT * s, letters: gate ? lt : null };
       });
       if (!keepSel(function() {
-        return fitHubs(items);
+        return fitHubs(items2);
       })) warn("Already at the standard size and antenna.");
     });
   }
@@ -2530,10 +2530,10 @@
   function svNm(i) {
     return nameOf(i).replace(/\s+/g, " ").trim();
   }
-  function fitHubs(items) {
-    if (!items.length) return false;
+  function fitHubs(items2) {
+    if (!items2.length) return false;
     var was = {};
-    items.forEach(function(it) {
+    items2.forEach(function(it) {
       var i = nodes2.findIndex(function(n) {
         return n.id === it.id;
       });
@@ -2541,7 +2541,7 @@
     });
     var t2;
     try {
-      t2 = sbJs.fit(shared.text, items, { sbgn: src() });
+      t2 = sbJs.fit(shared.text, items2, { sbgn: src() });
     } catch (err) {
       warn("Not changed: " + (err && err.message || err) + ".");
       return false;
@@ -2742,8 +2742,8 @@
     cdPicMiss = false;
     cdPicKeeper = null;
   }
-  function cdPicSource(read, names, keep) {
-    cdPicRead = read;
+  function cdPicSource(read2, names, keep) {
+    cdPicRead = read2;
     cdPicNames = names;
     cdPicKeeper = keep;
   }
@@ -3178,24 +3178,24 @@
     }, open: cdSvOpen, move: cdSvMove, del: cdSvDelete, unitStays: true, on: cdPal, far: cdSvFar, typed: cdSsTyped };
   }
   function cdLit(hlE, glyphs) {
-    var rx = /* @__PURE__ */ new Set();
+    var rx2 = /* @__PURE__ */ new Set();
     var F = shared.F, of = function(id) {
       return id.slice(0, id.lastIndexOf("|"));
     };
     shared.selE.forEach(function(k) {
-      if (/\|[ab]$/.test(edges2[k].id)) rx.add(of(edges2[k].id));
+      if (/\|[ab]$/.test(edges2[k].id)) rx2.add(of(edges2[k].id));
     });
     shared.selN.forEach(function(i) {
       var r = F.square(nodes2[i].id);
-      if (r != null) rx.add(r);
+      if (r != null) rx2.add(r);
     });
-    if (!rx.size) return;
+    if (!rx2.size) return;
     edges2.forEach(function(e, k) {
-      if (F.ownLine(e.id) && rx.has(of(e.id))) hlE.add(k);
+      if (F.ownLine(e.id) && rx2.has(of(e.id))) hlE.add(k);
     });
     nodes2.forEach(function(n, i) {
       var r = F.square(n.id);
-      if (r != null && rx.has(r)) glyphs.add(i);
+      if (r != null && rx2.has(r)) glyphs.add(i);
     });
   }
   function cdEndTo(k, end, i) {
@@ -3670,15 +3670,15 @@
     if (mode === "file") {
       var r = origAll()[palId()];
       if (!r) return null;
-      var now = cdMk.colours(t), same = function(a, b2) {
+      var now = cdMk.colours(t), same2 = function(a, b2) {
         return a == null || b2 == null || String(a).toLowerCase() === String(b2).toLowerCase();
       };
       return Object.keys(r.fill || {}).every(function(id) {
-        return same(now.fill[id], r.fill[id]);
+        return same2(now.fill[id], r.fill[id]);
       }) && Object.keys(r.line || {}).every(function(id) {
         var a = now.line[id] || {};
         return Object.keys(r.line[id]).every(function(q) {
-          return same(a[q], r.line[id][q]);
+          return same2(a[q], r.line[id][q]);
         });
       });
     }
@@ -3690,15 +3690,15 @@
     if (mode === "confetti") return cols.every(function(c) {
       return confettiOne("#" + c.slice(2));
     });
-    var fn = cdFills(mode, t), read = 0;
+    var fn = cdFills(mode, t), read2 = 0;
     var all = Object.keys(n).every(function(cls) {
       var x = cls === "DEGRADED" ? null : fn(cls);
-      if (x) read++;
+      if (x) read2++;
       return !x || Object.keys(n[cls]).every(function(c) {
         return c.slice(2) === x.slice(1).toLowerCase();
       });
     });
-    return read ? all : null;
+    return read2 ? all : null;
   }
   var CD_UNKNOWN;
   function __run82() {
@@ -3997,14 +3997,14 @@
   }
   function cdLinkMarks(out) {
     var add = cdAdd(), no2 = link.how && link.how.no, part = !no2 && link.how && link.how.part;
-    var rx = !(add || part) || no2 ? -1 : cdRole(link.from) === "proc" ? link.from : link.to >= 0 && cdRole(link.to) === "proc" ? link.to : -1;
-    if (rx >= 0) cdMainLine(out, rx);
+    var rx2 = !(add || part) || no2 ? -1 : cdRole(link.from) === "proc" ? link.from : link.to >= 0 && cdRole(link.to) === "proc" ? link.to : -1;
+    if (rx2 >= 0) cdMainLine(out, rx2);
     if (cdFromJoin()) {
       var J = cdJoin2(link.from, false);
       out.push(cdDot(J || cdCentre(link.from), "m2-ed-pickh"));
     } else cdPicked(out, link.from);
     if (link.to < 0 || !link.how || no2) return;
-    if (rx === link.to) out.push(landMarks([], link.how.land && link.how.land.Q || cdCentre(link.to)));
+    if (rx2 === link.to) out.push(landMarks([], link.how.land && link.how.land.Q || cdCentre(link.to)));
     else cdLand(out, link.to, link.how.land);
   }
   var cdOver;
@@ -5003,9 +5003,9 @@
   function cdSsFirst(txt, keep) {
     return function(F) {
       if (keep != null) return [keep];
-      var rx = cdRx(txt), H2 = Math.PI / 2, c = [cdTop];
-      [37 + rx, -(37 + rx)].forEach(function(dx) {
-        if (Math.abs(dx) + rx <= F[2] / 2) c.push(H2 - dx / F[2] * H2);
+      var rx2 = cdRx(txt), H2 = Math.PI / 2, c = [cdTop];
+      [37 + rx2, -(37 + rx2)].forEach(function(dx) {
+        if (Math.abs(dx) + rx2 <= F[2] / 2) c.push(H2 - dx / F[2] * H2);
       });
       return c;
     };
@@ -5980,16 +5980,16 @@
     return cdBgMemo[1];
   }
   function cdBgFind(ref) {
-    var same = cdBgs().filter(function(g) {
+    var same2 = cdBgs().filter(function(g) {
       return g.name === ref.name;
     });
-    return same.filter(function(g) {
+    return same2.filter(function(g) {
       return g.box && g.box.every(function(v, k) {
         return Math.abs(v - ref.box[k]) < 5e-3;
       });
-    })[0] || same.filter(function(g) {
+    })[0] || same2.filter(function(g) {
       return ref.n != null && g.n === ref.n;
-    })[0] || (same.length === 1 ? same[0] : null);
+    })[0] || (same2.length === 1 ? same2[0] : null);
   }
   function cdBgDo(ref, f) {
     return cdApply(function(t) {
@@ -6911,8 +6911,8 @@
     var n = 0;
     return text.replace(/(<celldesigner:layer\b[^>]*?\sid=")([^"]*)("[^>]*>)([\s\S]*?<\/celldesigner:layer>)/g, function(all, a, id, b, body) {
       if (!/\sname="Background (?:images|pictures)"/.test(all.slice(0, all.indexOf(">")))) return all;
-      var items = body.match(/<celldesigner:layerSpeciesAlias\b[\s\S]*?<\/celldesigner:layerSpeciesAlias>/g) || [];
-      var under2 = items.length && !/<celldesigner:listOf(?:Squares|FreeLines)>\s*<celldesigner:/.test(body) && items.every(function(t) {
+      var items2 = body.match(/<celldesigner:layerSpeciesAlias\b[\s\S]*?<\/celldesigner:layerSpeciesAlias>/g) || [];
+      var under2 = items2.length && !/<celldesigner:listOf(?:Squares|FreeLines)>\s*<celldesigner:/.test(body) && items2.every(function(t) {
         var ln = /<celldesigner:layerNotes>([\s\S]*?)<\/celldesigner:layerNotes>/.exec(t), z = ln && zOf(ln[1]);
         return ln && glyphOf(ln[1]) && z != null && z < 0;
       });
@@ -7399,7 +7399,7 @@
     var gh2 = !!(repo() && token()), tg = t && !t.classList.contains("m2-link-group") && t.dataset.group;
     var g = m ? m.mine || gh2 ? m.group || "" : "" : tg && (ownGroup(tg) || gh2) ? tg : "", onGroup = t && !m && ownGroup(g);
     var into = m ? m.group || "" : tg && (ownGroup(tg) || V.siteGroupOf(tg) || t.classList.contains("m2-empty")) ? tg : "";
-    var items = [["New SBGN-ML map", function() {
+    var items2 = [["New SBGN-ML map", function() {
       listMade(function() {
         return newMap(into);
       });
@@ -7413,7 +7413,7 @@
     }], ["Add group", function() {
       renameGroup(null);
     }]];
-    if (canRestoreExamples()) items.push(["Restore example maps", restoreExamples]);
+    if (canRestoreExamples()) items2.push(["Restore example maps", restoreExamples]);
     var editing2 = V.grid.classList.contains("m2-editing") && V.chosen && V.chosen.id === (m && m.id);
     if (m && m.binned) {
       var bsel = V.picked();
@@ -7470,11 +7470,11 @@
           packZip(cds, false, cds[0].group || mapName(cds[0]));
         }));
       }
-      items = mapItems.length ? mapItems.concat([null], items) : items;
-      if (del.length) items.last = [["Delete " + del.length + " maps", function() {
+      items2 = mapItems.length ? mapItems.concat([null], items2) : items2;
+      if (del.length) items2.last = [["Delete " + del.length + " maps", function() {
         binU(del, true);
       }, false, DEL_KEY]];
-      return items;
+      return items2;
     }
     if (m && canRename(m, gh2)) mapItems.push(["Rename map", function() {
       renameMap(m.id);
@@ -7490,30 +7490,30 @@
     if (m && canTop(m)) mapItems.push(["Set as top level", function() {
       moveU([m.id], m.group, true);
     }]);
-    if (mapItems.length) items = mapItems.concat([null], items);
-    items.mapItems = mapItems.length;
-    if (m && cdOf(m)) items.dl = [packItem("Download as MINERVA zip", function() {
+    if (mapItems.length) items2 = mapItems.concat([null], items2);
+    items2.mapItems = mapItems.length;
+    if (m && cdOf(m)) items2.dl = [packItem("Download as MINERVA zip", function() {
       packZip([m], false, mapName(m));
     })];
     var siteG = t && !m && tg && !ownGroup(tg) && !t.dataset.bin && canRenameGroup(tg) ? tg : null;
     var packG = t && !m && tg && !t.dataset.bin && inGroup(tg).some(cdOf) ? tg : null;
-    if (packG) items = [packItem("Download as MINERVA zip", function() {
+    if (packG) items2 = [packItem("Download as MINERVA zip", function() {
       packZip(inGroup(packG), true, packG);
-    }), null].concat(items);
-    if (onGroup || siteG) items = [["Rename group", function() {
+    }), null].concat(items2);
+    if (onGroup || siteG) items2 = [["Rename group", function() {
       renameGroup(siteG || g);
-    }], null].concat(items);
-    if (onGroup) items.last = [["Remove group", function() {
+    }], null].concat(items2);
+    if (onGroup) items2.last = [["Remove group", function() {
       removeU(g);
     }]];
     var dg = t && !m && tg && !t.dataset.bin ? groupMaps(tg, gh2) : null;
-    if (dg && (dg.length || onGroup && !inGroup(tg).length)) (items.last = items.last || []).push(["Delete group", function() {
+    if (dg && (dg.length || onGroup && !inGroup(tg).length)) (items2.last = items2.last || []).push(["Delete group", function() {
       deleteGroupU(tg, dg);
     }, false, DEL_KEY]);
-    if (m && !editing2 && canDelete(m, gh2)) items.last = [["Delete map", function() {
+    if (m && !editing2 && canDelete(m, gh2)) items2.last = [["Delete map", function() {
       binU([m]);
     }, false, DEL_KEY]];
-    return items;
+    return items2;
   }
   function movable(m) {
     if (!m || m.shownAs) return false;
@@ -7772,6 +7772,17 @@
         if (!(repo() && token())) toFolder(r.id, r.file, now);
       }
       said(r.title, r.id, was);
+    });
+  }
+  function keepOther(id, text) {
+    var m = V.byId[id];
+    if (!m) return Promise.reject(new Error("the map is no longer in the list"));
+    if (!canCopy(m)) return Promise.reject(new Error("a map of this kind cannot be copied"));
+    var r0 = m.mine ? mine[id] : null, was = r0 ? r0.title : m.topic || m.title;
+    return copyOf(m, function() {
+      return text;
+    }, was + " (other version)", false).then(function(r) {
+      return r.title;
     });
   }
   function fromTool(id, text, name2) {
@@ -9471,7 +9482,7 @@
   function __run172() {
     BULK = 2e7;
   }
-  function toSiteMany(items, extra) {
+  function toSiteMany(items2, extra) {
     if (!(repo() && token())) return Promise.reject(new Error("not connected to GitHub"));
     var j = ghJson, post = ghPost, used = {}, more = extra ? extra.blobs() : Promise.resolve(null);
     more.catch(function() {
@@ -9562,7 +9573,7 @@
         });
       });
     };
-    return send(items);
+    return send(items2);
   }
   function toSite(title, ext, text, group, order) {
     return toSiteMany([{ title, ext, text, group, order }]).then(function(a) {
@@ -9616,9 +9627,9 @@
     });
     return p;
   }
-  function savedMine(s, t) {
+  function savedMine(s, t, took) {
     var r = mine[s.id];
-    if (r && r.site) minePut(Object.assign({}, r, { sha: s.sha, saved: t })).catch(function() {
+    if (r && r.site) minePut(Object.assign({}, r, { sha: s.sha, saved: t }, took ? { text: t } : {})).catch(function() {
     });
   }
   function toGh(s) {
@@ -9773,13 +9784,13 @@
     return mineIn.then(function() {
       return folder();
     }).then(function(f) {
-      return f && f.dir.isSameEntry(dir).then(function(same) {
-        return same;
+      return f && f.dir.isSameEntry(dir).then(function(same2) {
+        return same2;
       }, function() {
         return false;
       });
-    }).then(function(same) {
-      return same ? null : folderSet(dir);
+    }).then(function(same2) {
+      return same2 ? null : folderSet(dir);
     }).then(function() {
       return api("/contents/maps/colours?ref=main").then(function(r) {
         return r.status === 404 ? [] : ghJson(r);
@@ -10398,10 +10409,10 @@
       if (!list2 || !list2.offsetParent || !m || m.binned || !canDelete(m, !!(repo() && token()))) return;
       if (V.mapSelected && V.mapSelected()) return;
       e.preventDefault();
-      var items = Array.prototype.slice.call(list2.querySelectorAll(".m2-map:not(.m2-binned)")), i = items.findIndex(function(b) {
+      var items2 = Array.prototype.slice.call(list2.querySelectorAll(".m2-map:not(.m2-binned)")), i = items2.findIndex(function(b) {
         return b.dataset.id === m.id;
       });
-      var next = i < 0 ? null : items[i + 1] || items[i - 1];
+      var next = i < 0 ? null : items2[i + 1] || items2[i - 1];
       if (next) V.go(next.dataset.id);
       binU([m]);
     });
@@ -11538,9 +11549,9 @@
           b.innerHTML = "<span>" + c[1] + "</span>" + (q.sq ? q.sq(c[0]) : "");
           b.addEventListener("click", function(ev) {
             ev.stopPropagation();
-            var same = box3._t === src();
+            var same2 = box3._t === src();
             ddClose();
-            if (same) {
+            if (same2) {
               q.set(c[0]);
               palDrop(q);
             }
@@ -11670,9 +11681,9 @@
       var r = take2(), was = origAll()[id], bare2 = function(o) {
         return JSON.stringify(Object.assign({}, o, { at: 0, sent: 0 }));
       };
-      var same = !!was && bare2(was) === bare2(r);
-      r.at = same ? was.at : Date.now();
-      if (same && was.sent) r.sent = was.sent;
+      var same2 = !!was && bare2(was) === bare2(r);
+      r.at = same2 ? was.at : Date.now();
+      if (same2 && was.sent) r.sent = was.sent;
       if (!origKeep(id, r)) warn("The map\u2019s own colours could not be kept in this browser.");
       origToFolder(id, r);
       if (!r.sent) origPut(r, function() {
@@ -12335,7 +12346,7 @@
   function __run263() {
     moveFix.push(function(set, alone) {
       if (!sbJs || !sbJs.terminal) return;
-      var ids = /* @__PURE__ */ new Set(), keep = /* @__PURE__ */ new Set(), out = [], join = [];
+      var ids = /* @__PURE__ */ new Set(), keep = /* @__PURE__ */ new Set(), out = [], join2 = [];
       set.forEach(function(i) {
         ids.add(nodes2[i].id);
       });
@@ -12356,19 +12367,19 @@
         }
         if (alone) return;
         var j = subIn(boxOf(i), set);
-        if (j >= 0) join.push([i, j]);
+        if (j >= 0) join2.push([i, j]);
       });
       var nb = {};
-      join.forEach(function(q) {
+      join2.forEach(function(q) {
         nb[q[0]] = onBorder(boxOf(q[0]), boxOf(q[1]))[0];
         keep.add(nodes2[q[0]].id);
       });
-      if (join.length) setBoxes(nb);
+      if (join2.length) setBoxes(nb);
       var t2 = shared.text;
       out.forEach(function(id) {
         t2 = sbJs.terminal(t2, id, false);
       });
-      join.forEach(function(q) {
+      join2.forEach(function(q) {
         t2 = sbJs.terminal(t2, nodes2[q[0]].id, true);
       });
       if (t2 !== shared.text) {
@@ -14135,7 +14146,7 @@
     return revMemo.r[id];
   }
   function ntCheck(cls, s, t, skip) {
-    var plain = import_notation2.default.arcHead("graphml", cls) === "none", same = function(q) {
+    var plain = import_notation2.default.arcHead("graphml", cls) === "none", same2 = function(q) {
       return plain ? q.arr[1] === "none" : import_notation2.default.arcKind("graphml", q.arr[1]) === cls;
     };
     var lines = function(f) {
@@ -14151,7 +14162,7 @@
         return q.t === t;
       }) ? "This gate has one input, and it has it." : null;
       if (c === "already") return s >= 0 && t >= 0 && lines(function(q) {
-        return same(q) && (q.s === s && q.t === t || plain && q.s === t && q.t === s);
+        return same2(q) && (q.s === s && q.t === t || plain && q.s === t && q.t === s);
       }) ? "This line is there already." : null;
       if (c === "tagRoom") {
         if (s < 0 || t < 0) return null;
@@ -14163,7 +14174,7 @@
         return rv && rv.rev ? "A reversible process has productions on both sides." : null;
       }
       if (c === "oneCatalysis" || c === "oneNecessary") return t >= 0 && lines(function(q) {
-        return q.t === t && same(q);
+        return q.t === t && same2(q);
       }) ? "A process has one " + cls + " in SBGN (Strict SBGN is ticked in the palette)." : null;
       if (c === "emptyOne") {
         var x = cls === "consumption" ? s : t;
@@ -14491,8 +14502,8 @@
     }));
   }
   function termScaled(b, b0, b1) {
-    var rx = b0[2] ? (b[0] + b[2] / 2 - b0[0]) / b0[2] : 0.5, ry = b0[3] ? (b[1] + b[3] / 2 - b0[1]) / b0[3] : 0.5;
-    return [b1[0] + rx * b1[2] - b[2] / 2, b1[1] + ry * b1[3] - b[3] / 2, b[2], b[3]];
+    var rx2 = b0[2] ? (b[0] + b[2] / 2 - b0[0]) / b0[2] : 0.5, ry = b0[3] ? (b[1] + b[3] / 2 - b0[1]) / b0[3] : 0.5;
+    return [b1[0] + rx2 * b1[2] - b[2] / 2, b1[1] + ry * b1[3] - b[3] / 2, b[2], b[3]];
   }
   var ROWS;
   var props;
@@ -14575,16 +14586,16 @@
     props.querySelector(".m2-ed-prx").hidden = true;
     pcard.hidden = true;
     if (ns.length > 1 || ns.length && shared.selN.length > 1) return propsMany(ns, all, r2);
-    var rx = propRx();
-    if (rx && !propFmt().rx.withNode) {
+    var rx2 = propRx();
+    if (rx2 && !propFmt().rx.withNode) {
       props.hidden = false;
       [".m2-ed-pnode", ".m2-ed-pedge", ".m2-ed-pdef", ".m2-ed-pall", ".m2-ed-pstd"].forEach(function(c) {
         props.querySelector(c).hidden = true;
       });
       props.querySelector(".m2-ed-prx").hidden = false;
       var fr = field("rev");
-      if (all || document.activeElement !== fr) fr.checked = rx.on;
-      rxCounts(rx, all);
+      if (all || document.activeElement !== fr) fr.checked = rx2.on;
+      rxCounts(rx2, all);
       var rk = lineOfRx();
       if (rk >= 0) {
         props.querySelector(".m2-ed-pedge").hidden = false;
@@ -14618,11 +14629,11 @@
     });
     props.querySelector(".m2-ed-pdef").hidden = !pf.def || pf.off("def", i);
     props.querySelector(".m2-ed-pall").hidden = props.querySelector(".m2-ed-pstd").hidden = !pf.hub || !pf.hub(i);
-    if (rx) {
+    if (rx2) {
       props.querySelector(".m2-ed-prx").hidden = false;
       var fr2 = field("rev");
-      if (all || document.activeElement !== fr2) fr2.checked = rx.on;
-      rxCounts(rx, all);
+      if (all || document.activeElement !== fr2) fr2.checked = rx2.on;
+      rxCounts(rx2, all);
     }
     pNow.w = r2(b[2]);
     pNow.h = r2(b[3]);
@@ -14684,12 +14695,12 @@
         if (tr.hidden) return;
         var ps = Ls.map(function(L) {
           return L.pic ? L.pic.name : "";
-        }), same = ps.every(function(p) {
+        }), same2 = ps.every(function(p) {
           return p === ps[0];
         });
-        tr.classList.toggle("m2-mixed", !same);
-        picShow(f, same ? Ls[0].pic : null);
-        if (!same) {
+        tr.classList.toggle("m2-mixed", !same2);
+        picShow(f, same2 ? Ls[0].pic : null);
+        if (!same2) {
           f.parentNode.querySelector(".m2-ed-ppicname").textContent = "mixed";
           f.parentNode.querySelector(".m2-ed-ppicoff").hidden = false;
         }
@@ -14795,11 +14806,11 @@
   function __run51() {
     pcard = props.querySelector(".m2-ed-pcard"), pcardKey = null;
   }
-  function rxCounts(rx, all) {
-    var c = rx && propFmt().rx.counts ? propFmt().rx.counts(rx.rid) : [];
+  function rxCounts(rx2, all) {
+    var c = rx2 && propFmt().rx.counts ? propFmt().rx.counts(rx2.rid) : [];
     pcard.hidden = !c.length;
     if (!c.length) return;
-    var key = rx.rid + "\0" + c.map(function(p) {
+    var key = rx2.rid + "\0" + c.map(function(p) {
       return p.line + "" + p.name;
     }).join("\0");
     if (key !== pcardKey) {
@@ -16082,6 +16093,373 @@
     __run310();
   }
 
+  // editor/src/merge.js
+  function merge3(base, ours, theirs) {
+    if (ours === theirs || theirs === base) return { text: ours, clashes: 0, moved: 0, broken: null };
+    if (ours === base) return { text: theirs, clashes: 0, moved: 0, broken: null };
+    try {
+      return join(read(base), read(ours), read(theirs));
+    } catch (e) {
+      return { text: ours, clashes: 0, moved: 0, broken: String(e && e.message ? e.message : e) };
+    }
+  }
+  function read(text) {
+    if (typeof text !== "string" || !text) throw new Error("an empty version");
+    var doc2 = { path: "", kids: [], s: 0, e: text.length, unit: "" }, stack = [doc2], i = 0, n = text.length, byPath = {};
+    while (i < n) {
+      var lt = text.indexOf("<", i);
+      if (lt < 0) break;
+      if (text.startsWith("<!--", lt)) {
+        i = upTo(text, "-->", lt);
+        continue;
+      }
+      if (text.startsWith("<![CDATA[", lt)) {
+        i = upTo(text, "]]>", lt);
+        continue;
+      }
+      if (text.startsWith("<?", lt)) {
+        i = upTo(text, "?>", lt);
+        continue;
+      }
+      if (text.startsWith("<!", lt)) {
+        var sb = text.indexOf("[", lt), gt0 = text.indexOf(">", lt);
+        i = sb >= 0 && sb < gt0 ? upTo(text, "]>", lt) : gt0 + 1;
+        if (i <= 0) throw new Error("a declaration not closed");
+        continue;
+      }
+      var gt = tagEnd2(text, lt);
+      if (text[lt + 1] === "/") {
+        var top = stack.pop(), nm = text.slice(lt + 2, gt).trim();
+        if (!top || top === doc2 || top.tag !== nm) throw new Error("an end tag " + nm + " that closes nothing open");
+        top.cs = lt;
+        top.e = gt + 1;
+        i = gt + 1;
+        continue;
+      }
+      var raw = text.slice(lt + 1, gt), self2 = raw[raw.length - 1] === "/", tag = (/^[^\s/>]+/.exec(raw) || [""])[0];
+      if (!tag) throw new Error("a tag with no name");
+      var el = { tag, at: attrs(raw), s: lt, oe: gt + 1, cs: gt + 1, e: gt + 1, kids: [], up: stack[stack.length - 1] };
+      el.up.kids.push(el);
+      if (!self2) stack.push(el);
+      i = gt + 1;
+    }
+    if (stack.length !== 1) throw new Error("an element not closed: " + stack[stack.length - 1].tag);
+    var roots = doc2.kids;
+    if (roots.length !== 1) throw new Error("not one root element");
+    var many = {};
+    (function count(p) {
+      p.kids.forEach(function(c) {
+        if (c.at.id != null) {
+          var k = c.tag + "#" + c.at.id;
+          many[k] = (many[k] || 0) + 1;
+        }
+        count(c);
+      });
+    })(doc2);
+    (function name2(p) {
+      var rank = {};
+      p.kids.forEach(function(c) {
+        var id = c.at.id != null ? c.at.id : null;
+        if (id != null) {
+          c.path = c.key = (many[c.tag + "#" + id] > 1 ? p.unit + ">" : "") + c.tag + "#" + id;
+          c.unit = c.key;
+          c.ctx = c.tag;
+        } else {
+          var sig = c.tag + (c.at.key != null ? "[" + c.at.key + "]" : "");
+          rank[sig] = (rank[sig] || 0) + 1;
+          c.path = p.path + "/" + sig + "#" + rank[sig];
+          c.unit = p.unit;
+          c.ctx = (p.ctx ? p.ctx + "/" : "") + c.tag;
+        }
+        if (byPath[c.path] && id != null) {
+          for (var r2 = 2; byPath[c.path + "~" + r2]; r2++) ;
+          c.path = c.key = c.unit = c.path + "~" + r2;
+        }
+        if (byPath[c.path]) throw new Error("the element " + c.path + " found twice");
+        byPath[c.path] = c;
+        name2(c);
+      });
+    })(doc2);
+    return { text, doc: doc2, root: roots[0], byPath, items: items(text, doc2) };
+  }
+  function upTo(t, end, from) {
+    var k = t.indexOf(end, from);
+    if (k < 0) throw new Error("a " + end + " missing");
+    return k + end.length;
+  }
+  function tagEnd2(t, lt) {
+    for (var k = lt + 1, q = ""; k < t.length; k++) {
+      var c = t[k];
+      if (q) {
+        if (c === q) q = "";
+      } else if (c === '"' || c === "'") q = c;
+      else if (c === ">") return k;
+    }
+    throw new Error("a tag not closed");
+  }
+  function attrs(raw) {
+    var o = {}, re = /([^\s=/]+)\s*=\s*("([^"]*)"|'([^']*)')/g, m;
+    while (m = re.exec(raw)) o[m[1]] = m[3] != null ? m[3] : m[4];
+    return o;
+  }
+  function lead(t, at2) {
+    var k = at2;
+    while (k > 0 && /\s/.test(t[k - 1])) k--;
+    return k;
+  }
+  function items(t, doc2) {
+    var out = {};
+    var own2 = function(el) {
+      var s = "", pos = el.s;
+      el.kids.forEach(function(c) {
+        if (c.key) {
+          s += t.slice(pos, lead(t, c.s));
+          pos = c.e;
+        } else {
+          s += t.slice(pos, c.s) + own2(c);
+          pos = c.e;
+        }
+      });
+      return s + t.slice(pos, el.e);
+    };
+    var it = function(el, sig) {
+      var pos = [];
+      (function each(e) {
+        if (e.at) ["x", "y"].forEach(function(ax) {
+          var v = e.at[ax] != null ? parseFloat(e.at[ax]) : null;
+          if (v != null && v === v) pos.push([e.ctx + " " + ax, ax, v]);
+        });
+        e.kids.forEach(function(c) {
+          if (!c.key) each(c);
+        });
+      })(el);
+      return { el, sig, blank: null, pos };
+    };
+    (function walk2(el) {
+      el.kids.forEach(function(c) {
+        if (c.key) out[c.key] = it(c, "in " + (c.up.path || "/") + "\n" + own2(c));
+        walk2(c);
+      });
+    })(doc2);
+    out[""] = it(doc2, own2(doc2));
+    return out;
+  }
+  function rx() {
+    return { TAG: /<([^\s/>!?]+)([^>]*)>/g, XY: /(\s)(x|y)(\s*=\s*)(["'])(-?[\d.]+(?:[eE][-+]?\d+)?)\4/g, GEO: /(\s(?:x|y|w|h|width|height|sizeX|sizeY|left|right|top|bottom|leftF|rightF|topF|bottomF)\s*=\s*)("[^"]*"|'[^']*')/g };
+  }
+  function blank(i) {
+    if (i.blank == null) {
+      var R = rx();
+      i.blank = i.sig.replace(R.TAG, function(m, tag, rest) {
+        return "<" + tag + rest.replace(R.XY, function(mm, sp, ax, eq, q) {
+          return sp + ax + eq + q + q;
+        }) + ">";
+      });
+    }
+    return i.blank;
+  }
+  function alike(a, b) {
+    return a.sig === b.sig || a.pos.length === b.pos.length && blank(a) === blank(b);
+  }
+  function frame(A, B) {
+    var by = {}, F = { x: 0, y: 0, on: {} }, both = [];
+    Object.keys(A.items).forEach(function(k) {
+      var a = A.items[k], b = B.items[k];
+      if (!b || !a.pos.length || !alike(a, b)) return;
+      both.push([a, b]);
+      a.pos.forEach(function(p, i) {
+        var d = Math.round((p[2] - b.pos[i][2]) * 100) / 100, g = by[p[0]] || (by[p[0]] = { ax: p[1], n: 0, c: {} });
+        g.n++;
+        g.c[d] = (g.c[d] || 0) + 1;
+      });
+    });
+    var best = { x: null, y: null };
+    Object.keys(by).forEach(function(t) {
+      var g = by[t], m = null;
+      Object.keys(g.c).forEach(function(d) {
+        if (m == null || g.c[d] > g.c[m] || g.c[d] === g.c[m] && Math.abs(+d) < Math.abs(+m)) m = d;
+      });
+      g.m = +m;
+      if (g.m !== 0 && g.c[m] * 2 >= g.n && (!best[g.ax] || g.n > best[g.ax].n)) best[g.ax] = g;
+    });
+    ["x", "y"].forEach(function(ax) {
+      if (!best[ax]) return;
+      var m = best[ax].m, on2 = {};
+      Object.keys(by).forEach(function(t) {
+        var g = by[t];
+        if (g.ax === ax && Math.abs(g.m - m) < 0.01) on2[t] = true;
+      });
+      var moved = both.filter(function(ab) {
+        return ab[0].pos.some(function(p, i) {
+          return on2[p[0]] && Math.abs(p[2] - ab[1].pos[i][2] - m) < 0.01;
+        });
+      }).length;
+      if (moved * 2 < both.length) return;
+      F[ax] = m;
+      Object.keys(on2).forEach(function(t) {
+        F.on[t] = true;
+      });
+    });
+    return F;
+  }
+  function same(a, b, F) {
+    if (!a || !b) return !a && !b;
+    if (a.sig === b.sig && !F.x && !F.y) return true;
+    if (!alike(a, b)) return false;
+    for (var i = 0; i < a.pos.length; i++) {
+      var p = a.pos[i];
+      if (Math.abs(p[2] - b.pos[i][2] - (F.on[p[0]] ? F[p[1]] : 0)) > 0.01) return false;
+    }
+    return true;
+  }
+  function shifter(F) {
+    if (!F.x && !F.y) return function(s) {
+      return s;
+    };
+    return function(s, el) {
+      if (!el || !el.ctx) return s;
+      var gt = s.indexOf(">");
+      return s.slice(0, gt).replace(rx().XY, function(mm, sp, ax, eq, q, v) {
+        return F.on[el.ctx + " " + ax] && F[ax] ? sp + ax + eq + q + String(+(parseFloat(v) + F[ax]).toFixed(3)) + q : mm;
+      }) + s.slice(gt);
+    };
+  }
+  function join(B, O, T) {
+    var Fo = frame(O, B), Ft = frame(T, B), Fot = frame(O, T), V2 = { o: O, t: T, shift: shifter(Fot) }, keys = {}, side = {}, clashes = 0, moved = 0;
+    [B, O, T].forEach(function(v) {
+      Object.keys(v.items).forEach(function(k) {
+        keys[k] = 1;
+      });
+    });
+    Object.keys(keys).forEach(function(k) {
+      var b = B.items[k], o = O.items[k], t = T.items[k];
+      if (same(t, b, Ft)) side[k] = o ? "o" : null;
+      else if (same(o, b, Fo)) side[k] = t ? "t" : null;
+      else {
+        side[k] = o ? "o" : null;
+        if (same(o, t, Fot)) return;
+        if (o && t && o.sig.replace(rx().GEO, '$1""') === t.sig.replace(rx().GEO, '$1""')) moved++;
+        else clashes++;
+      }
+    });
+    if (side[""] == null) throw new Error("no document");
+    var under2 = {}, placed2 = {};
+    Object.keys(side).forEach(function(k) {
+      if (!k || !side[k]) return;
+      var el = V2[side[k]].items[k].el, p = el.up.path;
+      (under2[p] = under2[p] || []).push(k);
+    });
+    var text = cut2(V2, side, under2, placed2, V2[side[""]].doc, side[""]);
+    Object.keys(side).forEach(function(k) {
+      if (k && side[k] && !placed2[k]) throw new Error("the item " + k + " has no place left");
+    });
+    refs(text, [B, O, T]);
+    return { text, clashes, moved, broken: null };
+  }
+  function cut2(V2, side, under2, placed2, el, w) {
+    var v = V2[w], t = v.text, here2 = (under2[el.path] || []).slice(), slots = [], pieces = [], pos = el.s;
+    var sh = function(x, at2) {
+      return w === "t" && at2 === el.s ? V2.shift(x, el) : x;
+    };
+    el.kids.forEach(function(c) {
+      if (c.key) {
+        pieces.push(sh(t.slice(pos, lead(t, c.s)), pos));
+        slots.push(c.key);
+        pieces.push({ slot: slots.length - 1 });
+        pos = c.e;
+      } else {
+        pieces.push(sh(t.slice(pos, c.s), pos));
+        pieces.push({ done: cut2(V2, side, under2, placed2, c, w) });
+        pos = c.e;
+      }
+    });
+    var tail = t.slice(pos, el.e), str = function(p) {
+      return typeof p === "string" ? p : p.done != null ? p.done : null;
+    };
+    if (!here2.length) return pieces.map(function(p) {
+      var x = str(p);
+      return x == null ? "" : x;
+    }).join("") + sh(tail, pos);
+    var isHere = {}, slotOf = {};
+    here2.forEach(function(k) {
+      isHere[k] = true;
+    });
+    slots.forEach(function(k, i) {
+      slotOf[k] = i;
+    });
+    var R = slots.filter(function(k) {
+      return isHere[k];
+    }), inR = {};
+    R.forEach(function(k) {
+      inR[k] = true;
+    });
+    here2.filter(function(k) {
+      return !inR[k];
+    }).forEach(function(k) {
+      var kv = V2[side[k]], ke = kv.items[k].el, sib = ke.up.kids.filter(function(c) {
+        return c.key;
+      }), j = sib.indexOf(ke), at2 = -1;
+      for (var a = j - 1; a >= 0 && at2 < 0; a--) {
+        var ia = R.indexOf(sib[a].key);
+        if (ia >= 0) at2 = ia + 1;
+      }
+      for (var z = j + 1; z < sib.length && at2 < 0; z++) {
+        var iz = R.indexOf(sib[z].key);
+        if (iz >= 0) at2 = iz;
+      }
+      if (at2 < 0) at2 = R.length;
+      R.splice(at2, 0, k);
+    });
+    var group = {}, g = slots.length ? 0 : "end";
+    R.forEach(function(k) {
+      var si = slotOf[k];
+      if (si != null) g = si;
+      (group[g] = group[g] || []).push(k);
+    });
+    var item = function(k) {
+      var kv = V2[side[k]], ke = kv.items[k].el;
+      if (placed2[k]) throw new Error("the item " + k + " placed twice");
+      placed2[k] = true;
+      return kv.text.slice(lead(kv.text, ke.s), ke.s) + cut2(V2, side, under2, placed2, ke, side[k]);
+    };
+    var out = pieces.map(function(p) {
+      var x = str(p);
+      return x != null ? x : (group[p.slot] || []).map(item).join("");
+    }).join("");
+    if (group.end) {
+      if (el.path && el.cs === el.e) throw new Error("items to place in an element written empty: " + el.tag);
+      var cs = el.path ? el.cs : t.length, ws = lead(t, cs);
+      var rel = ws - pos;
+      out += sh(tail.slice(0, rel), pos) + group.end.map(item).join("") + tail.slice(rel);
+    } else out += sh(tail, pos);
+    return out;
+  }
+  function refs(text, vs) {
+    var R = read(text), ids = {}, now = {};
+    vs.forEach(function(v) {
+      Object.keys(v.byPath).forEach(function(p) {
+        var e = v.byPath[p];
+        if (e.at.id != null) ids[e.at.id] = 1;
+      });
+    });
+    Object.keys(R.byPath).forEach(function(p) {
+      var e = R.byPath[p];
+      if (e.at.id != null) now[e.at.id] = 1;
+    });
+    Object.keys(R.byPath).forEach(function(p) {
+      var e = R.byPath[p];
+      var check = function(v) {
+        String(v).split(/[\s,]+/).forEach(function(x) {
+          if (x && ids[x] && !now[x]) throw new Error("a reference to " + x + ", which is no longer there");
+        });
+      };
+      Object.keys(e.at).forEach(function(a) {
+        if (a !== "id") check(e.at[a]);
+      });
+      if (!e.kids.length) check(text.slice(e.oe, e.cs));
+    });
+  }
+
   // editor/src/outbox.js
   var dbP;
   var box2;
@@ -16488,6 +16866,11 @@
   }
   function changed() {
     edits++;
+    if (passStay) {
+      passStay = false;
+      passing = "";
+      waitShow();
+    }
     if (openSay) {
       if (status.textContent === openSay.t) quiet();
       openSay = null;
@@ -16607,11 +16990,13 @@
   var lastVisit;
   var passing;
   var passTimer;
+  var passStay;
+  var passAfter;
   var sending;
   var lockFree;
   var CLOUD;
   function __run472() {
-    waitFail = false, sendRun = null, retryTimer = null, lastVisit = null, passing = "", passTimer = null, sending = {}, lockFree = null;
+    waitFail = false, sendRun = null, retryTimer = null, lastVisit = null, passing = "", passTimer = null, passStay = false, passAfter = null, sending = {}, lockFree = null;
     CLOUD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 2 20 20"/><path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193"/><path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07"/></svg>';
     addEventListener("online", function() {
       sendWaiting();
@@ -16665,10 +17050,6 @@
       outboxKeep(r).catch(function() {
       });
     } else outboxDone(k, body);
-    if (t.clashSay) {
-      passSay(t.clashSay + " had also changed elsewhere: your version is saved; the other is in its history.");
-      t.clashSay = null;
-    }
     sendOk();
     if (here().some(function(x) {
       return x.id !== t.id;
@@ -16742,11 +17123,13 @@
       cloudOn(b, b.getAttribute("data-id"));
     });
   }
-  function passSay(t) {
+  function passSay(t, stay) {
+    if (passStay && !stay) return;
     passing = t;
+    passStay = !!stay;
     waitShow();
     clearTimeout(passTimer);
-    passTimer = setTimeout(function() {
+    passTimer = stay ? null : setTimeout(function() {
       passing = "";
       waitShow();
     }, 6e3);
@@ -16782,14 +17165,14 @@
           });
           var list2 = here().filter(function(r) {
             return !(on && site && site.id === r.id) && busy.indexOf("atlas-edit-" + r.key) < 0;
-          }), back2 = [], clash = [], sent = 0;
+          }), back2 = [], says = [], sent = 0;
           return list2.reduce(function(p, r) {
             return p.then(function() {
               return sendOne(r).then(function(x) {
                 if (!x) return;
                 sent++;
                 if (lastVisit.indexOf(r.key) >= 0) back2.push(r.key);
-                if (x.clash) clash.push(r.name);
+                if (x.say) says.push(x.say);
                 waitShow();
               });
             });
@@ -16798,7 +17181,7 @@
             lastVisit = lastVisit.filter(function(k) {
               return back2.indexOf(k) < 0;
             });
-            if (clash.length) passSay(clash.join(", ") + " had also changed elsewhere: your version is saved; the other is in its history.");
+            if (says.length) passSay(says.join(" "), true);
             else if (back2.length) passSay("Changes to " + back2.length + (back2.length > 1 ? " maps" : " map") + " from your last visit sent to GitHub.");
           }, function(e) {
             var why = sendWhy(e);
@@ -16820,26 +17203,31 @@
       if (!cur || cur.text !== r.text) return null;
       return ghRead(r.path).then(function(g) {
         g = g || { sha: null, text: null };
-        if (g.text === r.text) return { sha: g.sha };
-        var clash = g.text != null && g.sha !== r.sha && g.text !== r.saved && g.text !== r.also;
+        if (g.text === r.text) return { sha: g.sha, text: r.text };
+        var j = g.text != null && g.sha !== r.sha && g.text !== r.saved && g.text !== r.also ? joined(r.saved, r.text, g.text) : null, t = j ? j.text : r.text;
+        if (t === g.text) return { sha: g.sha, text: t };
         return api("/contents/" + r.path, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: "Moved in the viewer: " + r.path.split("/").pop(), content: b64(r.text), sha: g.sha || void 0, branch: "main" })
+          body: JSON.stringify({ message: "Moved in the viewer: " + r.path.split("/").pop(), content: b64(t), sha: g.sha || void 0, branch: "main" })
         }).then(function(q) {
           if (!q.ok) throw q.status;
           return q.json();
         }).then(function(d) {
-          return { sha: d.content.sha, clash };
+          return { sha: d.content.sha, text: t, j, other: g.text };
         });
       }).then(function(x) {
         learnt(r.path, x.sha);
         forget(r.id);
-        if (r.mine) savedMine({ id: r.id, sha: x.sha }, r.text);
+        if (r.mine) savedMine({ id: r.id, sha: x.sha }, x.text, x.text !== r.text);
         var u = unsaved[r.id];
         if (u && u.text === r.text) delete unsaved[r.id];
         return outboxDone(r.key, r.text).then(function() {
-          return x;
+          if (!x.j || !x.j.real) return x;
+          return otherKept(r.id, r.name, x.j, x.other).then(function(l) {
+            x.say = l;
+            return x;
+          });
         });
       });
     });
@@ -17253,7 +17641,7 @@
     forget(s.id);
     learnt(s.path, "changed");
     delete unsaved[s.id];
-    clashed(s, body, "on GitHub");
+    return joinOpen(s, body);
   }
   var openSay;
   function __run452() {
@@ -17273,32 +17661,67 @@
       warn(openSay.t);
       outboxDone(keyOf(s.id), null).then(waitShow);
     }).catch(function(e) {
-      if (s.path && repo() && token()) return oursOver(s, on && site === s ? src() : t, n);
+      if (s.path && repo() && token()) {
+        s.clashed = false;
+        return joinOpen(s, t);
+      }
       warn("Not saved: " + n + " was changed " + where2 + " since you opened it, so it is not overwritten, and your version could not be kept beside it (" + String(e && e.message ? e.message : e).replace(/\.$/, "") + "). Download the map to keep your changes.");
     });
   }
-  function oursOver(s, t, n) {
-    var r = recOf2(s, t, n), once = function() {
+  function joinOpen(s, body) {
+    var t = on && site === s ? src() : body, r = recOf2(s, t), once = function() {
       return sendOne(r);
     };
     return outboxKeep(r).then(function() {
       return navigator.locks ? navigator.locks.request("atlas-outbox", once) : once();
     }).then(function(x) {
-      if (!x) return;
       if (site === s) {
-        s.sha = x.sha;
-        s.saved = t;
         s.clashed = false;
         stuck = false;
-        if (src() === t) shared.dirty = false;
-        else if (on) {
-          clearTimeout(saveTimer);
-          saveTimer = setTimeout(push, AUTOSAVE);
-        }
-        quiet();
       }
+      if (!x) return;
       sendOk();
-      passSay(n + " had also changed elsewhere: your version is saved; the other is in its history.");
+      if (!(on && site === s)) {
+        if (x.say) passSay(x.say, true);
+        return;
+      }
+      s.sha = x.sha;
+      s.saved = x.text;
+      return settled().then(function() {
+        if (!(on && site === s)) {
+          if (x.say) passSay(x.say, true);
+          return;
+        }
+        var now = src();
+        if (x.text === t) {
+          if (x.say) passSay(x.say, true);
+          if (now === t) shared.dirty = false;
+          else {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(push, AUTOSAVE);
+          }
+          quiet();
+          return;
+        }
+        if (now !== t) {
+          var j2 = joined(t, now, x.text);
+          outboxKeep(Object.assign(recOf2(s, j2.text), j2.broken ? { sha: null, saved: t } : { sha: x.sha, saved: x.text }, { also: null })).catch(function() {
+          });
+        }
+        var m = V.current && V.current.id === s.id ? V.current : V.byId[s.id];
+        clearTimeout(saveTimer);
+        saveTimer = null;
+        shared.dirty = false;
+        if (x.say) passAfter = x.say;
+        if (m) {
+          editUnlock();
+          on = false;
+          editMap(m);
+        } else if (x.say) {
+          passAfter = null;
+          passSay(x.say, true);
+        }
+      });
     }, function(e) {
       if (site === s) {
         s.clashed = false;
@@ -17308,6 +17731,27 @@
       var why = sendWhy(e);
       if (why === "other") warn("Not saved on GitHub (" + e + "). Your changes are kept in this browser.");
       else sendFailed(why);
+    });
+  }
+  function settled() {
+    return new Promise(function(res) {
+      (function w() {
+        if (drawing) setTimeout(w, 100);
+        else res();
+      })();
+    });
+  }
+  function joined(base, ours, theirs) {
+    var m = base == null ? { text: ours, broken: "no version to start from" } : merge3(base, ours, theirs);
+    return { text: m.text, real: !!m.broken || m.clashes > 0, broken: m.broken };
+  }
+  function otherKept(id, n, j, other) {
+    var line2 = function(title) {
+      var kept = title ? "the other version is kept as " + title + "." : "the other version is in its history.";
+      return j.broken ? n + " had also changed elsewhere and the two could not be joined: your version is saved; " + kept : n + " had also changed elsewhere: the changes are joined, yours kept where both changed the same item; " + kept;
+    };
+    return keepOther(id, other).then(line2, function() {
+      return line2(null);
     });
   }
   var good;
@@ -17463,14 +17907,14 @@
     });
     return lay;
   }
-  function layTool(what, ids, same) {
+  function layTool(what, ids, same2) {
     if (!on || V.current !== map || !shared.text) return;
-    if (!same) quiet();
+    if (!same2) quiet();
     var uAt = undo.length, uTop = undo[uAt - 1];
     var m0 = map;
     Promise.all([layout(), sbpy()]).then(function(q) {
       if (!on || map !== m0) return;
-      if (same && (undo.length !== uAt || undo[uAt - 1] !== uTop)) return;
+      if (same2 && (undo.length !== uAt || undo[uAt - 1] !== uTop)) return;
       var L = q[0], N = q[1], out = [], t1 = shared.text, before = boxesBefore(boxOf);
       nodes2.forEach(function(n, k) {
         var p = n.up;
@@ -17486,8 +17930,8 @@
       out.slice().reverse().forEach(function(m) {
         t2 = N.moveInto(t2, [m]);
       });
-      if (!same) remember(false);
-      var keepSel2 = same ? shared.selN.map(function(i) {
+      if (!same2) remember(false);
+      var keepSel2 = same2 ? shared.selN.map(function(i) {
         return nodes2[i].id;
       }) : [];
       setText(t2);
@@ -17605,9 +18049,9 @@
     return import_graphml_edit.default.fmt(v);
   }
   function write(g, p) {
-    var same = docText === shared.text;
+    var same2 = docText === shared.text;
     setText(import_graphml_edit.default.place(shared.text, g, p));
-    if (same) docText = shared.text;
+    if (same2) docText = shared.text;
   }
   function moving(alone) {
     var all = /* @__PURE__ */ new Set();
@@ -17732,11 +18176,11 @@
   function wholeMove(u, before) {
     var b0 = before[nodes2[u].id], b = boxOf(u);
     if (!b0) return false;
-    var dx = b[0] - b0[0], dy = b[1] - b0[1], same = function(k) {
+    var dx = b[0] - b0[0], dy = b[1] - b0[1], same2 = function(k) {
       var p = before[nodes2[k].id], q = boxOf(k), e = 1e-6;
       return !!p && Math.abs(q[0] - p[0] - dx) < e && Math.abs(q[1] - p[1] - dy) < e && Math.abs(q[2] - p[2]) < e && Math.abs(q[3] - p[3]) < e;
     };
-    return same(u) && nodes2[u].kids.every(same);
+    return same2(u) && nodes2[u].kids.every(same2);
   }
   function insetsOf(id, ins, bins) {
     setText(import_graphml_edit.default.insets(shared.text, id, ins, bins));
@@ -18429,7 +18873,7 @@
   function __run193() {
     opening = 0;
   }
-  function start(t, n, h, s, same, g0) {
+  function start(t, n, h, s, same2, g0) {
     if (shared.typing) shared.typing.done(true);
     if (localTimer) local(true);
     var tk = opening, still = function() {
@@ -18441,7 +18885,7 @@
       var sh = F.ownFrame ? null : shiftAhead(o2.g), moved = sh ? [sh[0] ? sh[0] + " right" : "", sh[1] ? sh[1] + " down" : ""].filter(Boolean).join(" and ") : "";
       openSaid = null;
       takenIn = [o2.said, moved ? "Everything moved " + moved + ", as a map here has no negative places." : ""].filter(Boolean).join(" ") || null;
-      begin(o2.g, o2.t, n, h, s, o2.redraw ? null : same, o2.t0 || null, F, o2.own);
+      begin(o2.g, o2.t, n, h, s, o2.redraw ? null : same2, o2.t0 || null, F, o2.own);
     };
     if (!o.then) return go(o);
     quiet();
@@ -18455,7 +18899,7 @@
     takenIn = null;
     openSaid = null;
   }
-  function begin(g, t, n, h, s, same, t0, F, own2) {
+  function begin(g, t, n, h, s, same2, t0, F, own2) {
     var was = takeMap();
     resetMap();
     shared.F = F;
@@ -18513,12 +18957,12 @@
       // drawn with the role classes (drawing.js, V.recolour): Settings' Map colours offered while editing
       layoutOnly: !!(V.chosen && (V.chosen.site || V.chosen).layoutOnly)
     };
-    if (same) {
-      map.width = same.width;
-      map.height = same.height;
-      map.scale = same.scale;
-      x0 = same.x0;
-      y0 = same.y0;
+    if (same2) {
+      map.width = same2.width;
+      map.height = same2.height;
+      map.scale = same2.scale;
+      x0 = same2.x0;
+      y0 = same2.y0;
     }
     V.current = map;
     on = true;
@@ -18534,13 +18978,13 @@
     buttons();
     gN = gE = null;
     mv = null;
-    if (same && same.text === (F.asRead ? t0 : t)) {
-      var grouped = same.svg && same.svg.indexOf(' data-n="') >= 0;
+    if (same2 && same2.text === (F.asRead ? t0 : t)) {
+      var grouped = same2.svg && same2.svg.indexOf(' data-n="') >= 0;
       shared.F.load().then(function() {
         if (on && V.current === map && !edits && !gN && !grouped) render();
       });
       quiet();
-      if (grouped) adopt(same.svg);
+      if (grouped) adopt(same2.svg);
       paint();
       sayOpen();
       shownWhole();
@@ -19039,15 +19483,15 @@
     editPre = p;
     var k = V.keep(m), shownPic = V.img;
     var published = k && k.text ? Promise.resolve(k.text) : p.sitePub;
-    var frame = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : frameOf(p);
+    var frame2 = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : frameOf(p);
     var go = function(t, s) {
-      return Promise.all([published, frame, p.sitePub, frameOf(p)]).then(function(r) {
+      return Promise.all([published, frame2, p.sitePub, frameOf(p)]).then(function(r) {
         if (tk !== opening) return;
         drawMemo = p.memo || null;
         preDoc = p.docs || [];
         if (p.g && p.t === t && p.F.ahead.took) p.F.ahead.took(t, p.g);
         dropDrawing(p);
-        var same = r[1] && V.img === shownPic && V.current === m ? Object.assign({}, r[1], { text: r[0] }) : null;
+        var same2 = r[1] && V.img === shownPic && V.current === m ? Object.assign({}, r[1], { text: r[0] }) : null;
         if (s) {
           s.id = m.id;
           s.v = V.ver(m);
@@ -19055,7 +19499,7 @@
         }
         openTitle = m.title;
         return Promise.resolve(p.base || null).then(function(b) {
-          if (tk === opening) return start(t, file, null, s, same, b);
+          if (tk === opening) return start(t, file, null, s, same2, b);
         }).then(function() {
           openTitle = null;
           if (tk !== opening) return;
@@ -19063,6 +19507,13 @@
           siteRef = r[3] ? baseOf(Fs && Fs.asGraphml ? Fs.asGraphml(r[2]) : r[2], r[3]) : null;
           map.title = m.title;
           document.getElementById("m2-title").textContent = m.title;
+          if (passAfter) {
+            var pa = passAfter;
+            passAfter = null;
+            setTimeout(function() {
+              passSay(pa, true);
+            }, 0);
+          }
         });
       });
     };
@@ -19105,19 +19556,28 @@
     });
     gp.then(function(g) {
       var u = unsaved[m.id], o = outboxGet(k);
-      if (!u && o) u = { text: o.text, site: { sha: o.sha } };
-      var usha = u ? u.site.sha || null : void 0;
+      if (!u && o) u = { text: o.text, site: { sha: o.sha, saved: o.saved }, also: o.also };
+      var usha = u ? u.site.sha || null : void 0, j = null;
       delete unsaved[m.id];
+      if (u && g && g.sha !== usha && g.text !== u.text) {
+        var ub = u.site.saved != null ? u.site.saved : u.site.base;
+        if (g.text !== ub && g.text !== u.also) {
+          j = joined(ub, u.text, g.text);
+          u.text = j.text;
+        }
+      }
       if (u && g && g.text === u.text) {
         u = null;
-        outboxDone(k, g.text).then(waitShow);
+        outboxDone(k, o ? o.text : null).then(waitShow);
       }
       if (u) return go(u.text, g ? { path, sha: g.sha, saved: g.text } : { path, sha: null }).then(function() {
         if (tk !== opening) return;
-        if ((g ? g.sha : null) !== usha && g && site) site.clashSay = m.title;
         shared.dirty = true;
         changed();
         note();
+        if (j && j.real) otherKept(m.id, m.topic || m.title, j, g.text).then(function(l) {
+          passSay(l, true);
+        });
       }, notLoaded);
       if (!g && p.F.ahead.path) return published.then(function(t) {
         return go(t, { path, sha: null });
@@ -19201,15 +19661,16 @@
               })
             ]).then(function(f) {
               if (!on || site !== s0) return;
-              s0.sha = f[0].sha || null;
               s0.pending = false;
               buttons();
               if (f[1] !== (s0.saved != null ? s0.saved : s0.base)) {
                 if (moved) return conflict(s0, keep);
+                s0.sha = f[0].sha || null;
                 stuck = true;
                 warn("Connected, but the map on GitHub was changed elsewhere since you opened it; you made no move, so nothing is lost. Stop editing and open the map again.");
                 return;
               }
+              s0.sha = f[0].sha || null;
               if (s0.id) Promise.resolve(unkeep(s0.id)).then(function() {
                 s0.known = null;
               }, function() {
@@ -19504,7 +19965,7 @@
     if (back2 && kwBy && kwBy.by && kwBy.by.isConnected) kwBy.by.focus();
     kwBy = null;
   }
-  function kindWindow(r, items, done) {
+  function kindWindow(r, items2, done) {
     kwClose();
     var t0 = shared.text, m0 = map;
     kwBox = document.createElement("div");
@@ -19512,7 +19973,7 @@
     kwBox.setAttribute("role", "menu");
     kwBox.setAttribute("aria-label", "Change identity");
     kwBy = r;
-    items.forEach(function(q) {
+    items2.forEach(function(q) {
       var b = document.createElement("button");
       b.type = "button";
       b.setAttribute("role", "menuitemradio");
@@ -19742,8 +20203,8 @@
     if (k === "Macromolecule") return rr(x, y, w, h, parseFloat(pr.radius || 12), true);
     if (k === "SimpleChemical" || k === "StateVariable") return rr(x, y, w, h, Math.min(w, h) / 2, false);
     if (k === "Complex") {
-      var rx = Math.min(parseFloat(pr.radiusX || 15), w / 2), ry = Math.min(parseFloat(pr.radiusY || 15), h / 2);
-      return poly([[x + rx, y], [x + w - rx, y], [x + w, y + ry], [x + w, y + h - ry], [x + w - rx, y + h], [x + rx, y + h], [x, y + h - ry], [x, y + ry]]);
+      var rx2 = Math.min(parseFloat(pr.radiusX || 15), w / 2), ry = Math.min(parseFloat(pr.radiusY || 15), h / 2);
+      return poly([[x + rx2, y], [x + w - rx2, y], [x + w, y + ry], [x + w, y + h - ry], [x + w - rx2, y + h], [x + rx2, y + h], [x, y + h - ry], [x, y + ry]]);
     }
     if (k === "NucleicAcidFeature") {
       var r = Math.min(parseFloat(pr.radius || 12), w / 2, h);
@@ -19984,11 +20445,11 @@
     var tk = d.match(/[a-zA-Z]|-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/g) || [], i = 0, P = [], cur = [0, 0], st = [0, 0], c = "";
     var n = function() {
       return parseFloat(tk[i++]);
-    }, same = function(a2, q) {
+    }, same2 = function(a2, q) {
       return Math.abs(a2[0] - q[0]) < 1e-9 && Math.abs(a2[1] - q[1]) < 1e-9;
     };
     var add = function(q) {
-      if (!P.length || !same(P[P.length - 1], q)) P.push(q);
+      if (!P.length || !same2(P[P.length - 1], q)) P.push(q);
       cur = q;
     };
     var inside2 = function(ts2) {
@@ -20018,33 +20479,33 @@
           add([u * u * q0[0] + 2 * u * t * q1[0] + t * t * q2[0], u * u * q0[1] + 2 * u * t * q1[1] + t * t * q2[1]]);
         });
       } else if (c === "A") {
-        var rx = n(), ry = n();
+        var rx2 = n(), ry = n();
         n();
         var fa = n(), fs = n(), p2 = [n(), n()], p1 = cur;
-        var dx = (p1[0] - p2[0]) / 2, dy = (p1[1] - p2[1]) / 2, lam = dx * dx / (rx * rx) + dy * dy / (ry * ry);
+        var dx = (p1[0] - p2[0]) / 2, dy = (p1[1] - p2[1]) / 2, lam = dx * dx / (rx2 * rx2) + dy * dy / (ry * ry);
         if (lam > 1) {
-          rx *= Math.sqrt(lam);
+          rx2 *= Math.sqrt(lam);
           ry *= Math.sqrt(lam);
         }
-        var co = (fa === fs ? -1 : 1) * Math.sqrt(Math.max(0, (rx * rx * ry * ry - rx * rx * dy * dy - ry * ry * dx * dx) / (rx * rx * dy * dy + ry * ry * dx * dx)));
-        var cxp = co * rx * dy / ry, cyp = -co * ry * dx / rx, cx = cxp + (p1[0] + p2[0]) / 2, cy = cyp + (p1[1] + p2[1]) / 2;
-        var t1 = Math.atan2((dy - cyp) / ry, (dx - cxp) / rx), dt = Math.atan2((-dy - cyp) / ry, (-dx - cxp) / rx) - t1;
+        var co = (fa === fs ? -1 : 1) * Math.sqrt(Math.max(0, (rx2 * rx2 * ry * ry - rx2 * rx2 * dy * dy - ry * ry * dx * dx) / (rx2 * rx2 * dy * dy + ry * ry * dx * dx)));
+        var cxp = co * rx2 * dy / ry, cyp = -co * ry * dx / rx2, cx = cxp + (p1[0] + p2[0]) / 2, cy = cyp + (p1[1] + p2[1]) / 2;
+        var t1 = Math.atan2((dy - cyp) / ry, (dx - cxp) / rx2), dt = Math.atan2((-dy - cyp) / ry, (-dx - cxp) / rx2) - t1;
         if (fs && dt < 0) dt += 2 * Math.PI;
         if (!fs && dt > 0) dt -= 2 * Math.PI;
-        var m = Math.max(2, Math.ceil(Math.abs(dt) / (Math.PI / 180))), th = [], t0 = Math.atan(ry / rx);
+        var m = Math.max(2, Math.ceil(Math.abs(dt) / (Math.PI / 180))), th = [], t0 = Math.atan(ry / rx2);
         for (var k2 = 1; k2 <= m; k2++) th.push(k2 / m);
         for (var j = -4; j <= 4; j++) [t0, -t0].forEach(function(x) {
           th.push((x + j * Math.PI - t1) / dt);
         });
         inside2(th).forEach(function(f) {
           var t = t1 + f * dt;
-          add([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]);
+          add([cx + rx2 * Math.cos(t), cy + ry * Math.sin(t)]);
         });
         add(p2);
       } else if (c === "Z" || c === "z") add(st);
       else i++;
     }
-    if (P.length > 1 && same(P[0], P[P.length - 1])) P.pop();
+    if (P.length > 1 && same2(P[0], P[P.length - 1])) P.pop();
     return P;
   }
   function keyAx(v) {

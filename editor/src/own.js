@@ -485,9 +485,10 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         return r;
       });
     }
-    // The save clash: a map changed elsewhere since this page opened it (on GitHub, or by another tab of the site in
-    // this browser or the folder) is never written over. The reader's version, its text t(), is kept as a map of their own
-    // right under it, named '<name> (your version)', and editing goes on there; no merge. Gives the copy's title
+    // The save clash in this browser or the folder (a map changed by another tab of the site since this page opened it;
+    // on GitHub the versions are joined instead, core.js joinOpen): never written over. The reader's version, its text t(),
+    // is kept as a map of their own right under it, named '<name> (your version)', and editing goes on there; no merge.
+    // Gives the copy's title
     function keepBeside(id, t, said) {   // said(title, id, name): the copy made (its name and list id; the map's name), before it is opened
       var m = V.byId[id]; if (!m) return Promise.reject(new Error('the map is no longer in the list'));
       if (!canCopy(m)) return Promise.reject(new Error('a map of this kind cannot be copied'));
@@ -498,6 +499,14 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         if (now !== r.text) { r.text = now; mine[r.id] = r; minePut(r).catch(function () {}); if (!(repo() && token())) toFolder(r.id, r.file, now); }
         said(r.title, r.id, was);
       });
+    }
+    // A clash on GitHub joined by element (core.js otherKept): the version that lost where both changed the same item,
+    // text, kept silently as a map of the reader's right under the map, '<name> (other version)', not opened. Gives its title
+    function keepOther(id, text) {
+      var m = V.byId[id]; if (!m) return Promise.reject(new Error('the map is no longer in the list'));
+      if (!canCopy(m)) return Promise.reject(new Error('a map of this kind cannot be copied'));
+      var r0 = m.mine ? mine[id] : null, was = r0 ? r0.title : m.topic || m.title;
+      return copyOf(m, function () { return text; }, was + ' (other version)', false).then(function (r) { return r.title; });
     }
     // A tool's text as a new map of the reader's, right under its source (map id) in its group, opened, in every way maps
     // are kept (copyOf), one step of the list's undo (into Deleted, as a copy). name: the tool's, else '<source> (label)'
@@ -1541,9 +1550,9 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       p.then(function () { delete upping[id]; }, function () { delete upping[id]; });
       return p;
     }
-    function savedMine(s, t) {   // a save on GitHub of a reader's map on its way to the site: its sha and text learnt
+    function savedMine(s, t, took) {   // a save on GitHub of a reader's map on its way to the site: its sha and text learnt; took: t is a join of versions, the record's text too
       var r = mine[s.id];
-      if (r && r.site) minePut(Object.assign({}, r, { sha: s.sha, saved: t })).catch(function () {});
+      if (r && r.site) minePut(Object.assign({}, r, { sha: s.sha, saved: t }, took ? { text: t } : {})).catch(function () {});
     }
     function toGh(s) {   // the reader's map edited, not saving on GitHub yet: sent (or its place there taken up), then saved there
       if (!mine[s.id]) return Promise.resolve();
@@ -2335,4 +2344,4 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     }   // connected: the reader's maps kept in this browser go to GitHub
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); }   // the part's statements, in their order
-    export { moveOut, toMove, draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, openZipFolder, origGh, origPut, own, savedMine, toGh, upAll, upRun };
+    export { moveOut, toMove, draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keepOther, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, openZipFolder, origGh, origPut, own, savedMine, toGh, upAll, upRun };
