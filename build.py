@@ -229,13 +229,22 @@ def miriam(e):
 _names = None
 
 
-def name(n):   # a CellDesigner name as text: _space_, _alpha_ and the rest back (cdrender.js NAME, the master)
+def name(n):   # a CellDesigner name as text: _space_, _alpha_, _sub_..._endsub_ and the rest back (cdrender.js plainName, the master)
     global _names
     if _names is None:
-        _names = render('names', None)['names']
-    s = n or ''
-    for text, written in _names:
-        s = s.replace(written, text)
+        _names = render('names', None)
+
+    def named(s):
+        for text, written in _names['names']:
+            s = s.replace(written, text)
+        return s
+
+    def scripted(t, k):
+        w = named('_' + t + '_')
+        t = w if len(w) == 1 else named(t)
+        return ''.join(k['marks'][k['chars'].index(c)] for c in t) if all(c in k['chars'] for c in t) else t
+    s = re.sub(r'_sub_(.*?)_endsub_', lambda m: scripted(m.group(1), _names['sub']), n or '')
+    s = named(re.sub(r'_super_(.*?)_endsuper_', lambda m: scripted(m.group(1), _names['sup']), s))
     return ' '.join(s.replace('_br_', ' ').split())
 
 

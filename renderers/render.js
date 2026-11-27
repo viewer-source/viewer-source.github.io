@@ -7,7 +7,7 @@
 //                                 and the build reads the lines a click lights from it
 //   {"kind":"sbgnml","src":path} -> {"graphml":...}                  (converter/sbgnml_read.js: an SBGN-ML file read into
 //                                 the GraphML the editor edits it as and yrender draws; the converter's reading, copied)
-//   {"kind":"names"}           -> {"names":[[text, written], ...]}  (cdrender.js NAME: CellDesigner's written names)
+//   {"kind":"names"}           -> {"names":[[text, written], ...], "sub", "sup"}  (cdrender.js NAME, SUB, SUP: CellDesigner's written names)
 //   anything that fails           -> {"error": message}
 // A CellDesigner map whose compartments, species or layer texts name a picture in their notes ('Glyph: glyphs/x.png',
 // MINERVA's way) gets the picture drawn in their boxes when that file is beside the map (an SVG of the same name in its
@@ -32,7 +32,7 @@ readline.createInterface({ input: process.stdin }).on('line', function (line) {
   var out;
   try {
     var job = JSON.parse(line);
-    if (job.kind === 'names') { process.stdout.write(JSON.stringify({ names: cd.NAME }) + '\n'); return; }
+    if (job.kind === 'names') { process.stdout.write(JSON.stringify({ names: cd.NAME, sub: cd.SUB, sup: cd.SUP }) + '\n'); return; }
     var text = fs.readFileSync(job.src, 'utf8'), g = !!job.groups;
     if (job.kind === 'sbgnml') out = { graphml: sr.graphml(text, { DOMParser: DP }).text };
     else if (job.kind === 'yed') { var r = yr.render(text, { classes: true, groups: g, sbgn: !!job.sbgn, DOMParser: DP }); out = { svg: r.svg, errors: r.errors }; }

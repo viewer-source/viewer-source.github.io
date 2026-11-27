@@ -65,7 +65,12 @@
   var DOWN = '-1.5707963267948966', LINE = '<celldesigner:line width="1.0" color="ff000000"/>';
   // a name as the converter writes it (cd_name, cdrender's NAME), a line break as CellDesigner's _br_
   function unesc(s) { return s.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'); }   // an attribute's text as the XML parser reads it
-  function cdName(s) { s = String(s).replace(/\r?\n/g, '_br_'); cdr.NAME.forEach(function (n) { s = s.split(n[0]).join(n[1]); }); return s; }
+  function cdName(s) {
+    var back = function (k, a, b) { var m = Array.from(k.marks); return function (r) { return a + Array.from(r).map(function (c) { return k.chars[m.indexOf(c)]; }).join('') + b; }; };
+    s = String(s).replace(/\r?\n/g, '_br_').replace(/[₀-ₜ]+/g, back(cdr.SUB, '_sub_', '_endsub_'))
+      .replace(/[⁰¹²³⁴-⁹⁺⁻⁼⁽⁾ⁿⁱ]+/g, back(cdr.SUP, '_super_', '_endsuper_'));
+    cdr.NAME.forEach(function (n) { s = s.split(n[0]).join(n[1]); }); return s;
+  }
   function esc(s) { return py.escape(s).replace(/"/g, '&quot;'); }
   function fail(s) { throw new Error(s); }
   function refuse(s) { var e = new Error(s); e.refused = true; throw e; }   // a rule of the format, not a fault: the editor says nothing

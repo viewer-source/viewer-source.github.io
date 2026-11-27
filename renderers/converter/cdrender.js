@@ -167,7 +167,18 @@
     ['δ', '_delta_'], ['ε', '_epsilon_'], ['ζ', '_zeta_'], ['η', '_eta_'], ['θ', '_theta_'], ['ι', '_iota_'], ['κ', '_kappa_'], ['λ', '_lambda_'],
     ['μ', '_mu_'], ['ν', '_nu_'], ['ξ', '_xi_'], ['π', '_pi_'], ['ρ', '_rho_'], ['σ', '_sigma_'], ['τ', '_tau_'], ['φ', '_phi_'],
     ['χ', '_chi_'], ['ψ', '_psi_'], ['ω', '_omega_']];
-  function plainName(s) { NAME.forEach(function (q) { s = s.split(q[1]).join(q[0]); }); return s; }
+  // CellDesigner's _sub_..._endsub_ and _super_..._endsuper_ as Unicode sub- and superscripts; a run with a character
+  // that has none is shown as plain text (cd_make.cdName writes the runs back as the markup)
+  var SUB = { chars: '0123456789+-=()aehklmnopstx', marks: '₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎ₐₑₕₖₗₘₙₒₚₛₜₓ' },
+    SUP = { chars: '0123456789+-=()ni', marks: '⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ⁿⁱ' };
+  function scripted(t, k) { var o = ''; for (var c of t) { var i = k.chars.indexOf(c); if (i < 0) return t; o += Array.from(k.marks)[i]; } return o; }
+  function named(s) { NAME.forEach(function (q) { s = s.split(q[1]).join(q[0]); }); return s; }
+  function inner(t) { var w = named('_' + t + '_'); return w.length === 1 ? w : named(t); }   // _sub_beta_endsub_: the code's own underscores are the markup's
+  function plainName(s) {
+    s = String(s).replace(/_sub_(.*?)_endsub_/g, function (m, t) { return scripted(inner(t), SUB); })
+      .replace(/_super_(.*?)_endsuper_/g, function (m, t) { return scripted(inner(t), SUP); });
+    return named(s);
+  }
 
   // ---- cdrender ----
   var FONT = "'Dialog', 'Liberation Sans', Arial, sans-serif";
@@ -928,7 +939,7 @@
     return [svg, { aliases: aliases, reactions: reactions }];
   }
   var api = { render: render, renderHits: renderHits, elements: elements, one: one, Drawing: Drawing, py: py, xml: xml, SQUARE: SQUARE, ANCHOR: ANCHOR, fromFrame: fromFrame, toFrame: toFrame,
-    editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, GATE: GATE, SYMBOL: SYMBOL, ROLE: ROLE, anchorAt: anchorAt, frontBox: frontBox, compartmentShape: compartmentShape, nameLeft: nameLeft, NAME_PLACES: NAME_PLACES, namePoint: namePoint, namePlaceOf: namePlaceOf };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
+    editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, SUB: SUB, SUP: SUP, GATE: GATE, SYMBOL: SYMBOL, ROLE: ROLE, anchorAt: anchorAt, frontBox: frontBox, compartmentShape: compartmentShape, nameLeft: nameLeft, NAME_PLACES: NAME_PLACES, namePoint: namePoint, namePlaceOf: namePlaceOf };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.cdrender = api;
 
   if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {   // node cdrender.js map.xml out.svg
