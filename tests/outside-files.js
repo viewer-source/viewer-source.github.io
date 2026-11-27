@@ -3,8 +3,8 @@
 // on the live site through Add map from file with no token, as a person outside does, never through the build. Per
 // file: added or refused (and the words said), drawn, editing started, everything selected and moved by an arrow
 // key, the text the editor would save read back (m2EditNow): the move changes only numbers, never names, kinds or what
-// is joined to what; a change made on entering edit (a rule kept on purpose, as positive influence taken in as reduced
-// physical stimulation) counts only when the status line says it. OUTSIDE_DUMP=<folder>: the text on entry and after.
+// is joined to what; a change made on entering edit (a rule kept on purpose, as a line at a complex's member put right) counts
+// only when the status line says it. OUTSIDE_DUMP=<folder>: the text on entry and after.
 //   node tests/outside-files.js <data clone> [base address] [--local] [files ...]   (default: the list below, from the
 //   site's data repository cloned at <data clone>)
 // --local: the working tree's editor and renderers routed into the live page.

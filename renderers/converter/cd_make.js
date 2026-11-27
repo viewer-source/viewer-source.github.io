@@ -48,10 +48,9 @@
   // the reactions that may be reversible: every one with a process (cdrender's list of the non-reduced types), never
   // reduced notation, a modulation or a gate's
   var TWO_WAY = FULL.concat(['HETERODIMER_ASSOCIATION', 'DISSOCIATION', 'TRUNCATION']);
-  // reduced notation as SBGN's influences: POSITIVE_INFLUENCE (CellDesigner's open arrowhead, not an SBGN sign) is neither
-  // offered nor kept; sbgn() makes it REDUCED_PHYSICAL_STIMULATION (the open triangle) when a file is opened for editing,
-  // and its dashed UNKNOWN_POSITIVE_INFLUENCE UNKNOWN_REDUCED_PHYSICAL_STIMULATION
-  var REDUCED = ['NEGATIVE_INFLUENCE', 'REDUCED_PHYSICAL_STIMULATION', 'REDUCED_MODULATION', 'REDUCED_TRIGGER'];
+  // reduced notation as SBGN's influences: POSITIVE_INFLUENCE (CellDesigner's open arrowhead, not an SBGN sign) is drawn as
+  // the open triangle and kept as the file has it; a new stimulation is written in the file's own way (stimStyle)
+  var REDUCED = ['NEGATIVE_INFLUENCE', 'REDUCED_PHYSICAL_STIMULATION', 'REDUCED_MODULATION', 'REDUCED_TRIGGER', 'POSITIVE_INFLUENCE'];
   var MODS = ['CATALYSIS', 'INHIBITION', 'PHYSICAL_STIMULATION', 'MODULATION', 'TRIGGER'];
   // inputs a gate needs: AND and OR two, NOT one, the unknown gate one (it has no rule of its own); a gate
   // left with fewer, by a removal, goes as a whole
@@ -531,12 +530,11 @@
       '">\n' + scheme(false) + '\n' + LINE + '\n</celldesigner:modification>';
     return { text: addMods(t, rid, [el], [A]), part: 'm' + R.mods.length };
   }
-  function sbgn(t) {   // -> { text, n }: every (UNKNOWN_)POSITIVE_INFLUENCE (a reaction's type, a gate's output, its inputs' lines) the open triangle
-    var n = 0;
-    // only where CellDesigner writes a type (reactionType, a line's type, a gate's modificationType), never a name or a note
-    var to = function (m, a, u) { n++; return a + (u || '') + 'REDUCED_PHYSICAL_STIMULATION'; };
-    t = t.replace(/(<celldesigner:reactionType>\s*)(UNKNOWN_)?POSITIVE_INFLUENCE(?=\s*<)/g, to).replace(/(\s(?:type|modificationType)=["'])(UNKNOWN_)?POSITIVE_INFLUENCE(?=["'])/g, to);
-    return { text: t, n: n };
+  // the file's way of writing a stimulation between species: POSITIVE_INFLUENCE where most of its reduced stimulations
+  // (a reaction's type, a gate's output, dashed or not) are written so, else REDUCED_PHYSICAL_STIMULATION (SBGN's, also on a tie)
+  function stimStyle(t) {
+    var n = function (k) { return (t.match(new RegExp('(?:<celldesigner:reactionType>\\s*|\\smodificationType=["\'])(?:UNKNOWN_)?' + k + '(?=["\'<\\s])', 'g')) || []).length; };
+    return n('POSITIVE_INFLUENCE') > n('REDUCED_PHYSICAL_STIMULATION') ? 'POSITIVE_INFLUENCE' : 'REDUCED_PHYSICAL_STIMULATION';
   }
   function reactionType(t, rid, type) {
     var R = parts(t, rid), fam = function (x) { return FULL.indexOf(x) >= 0 ? 1 : /INFLUENCE|REDUCED/.test(x) ? 2 : 0; };
@@ -1632,7 +1630,7 @@
     var hd = A.s && /<celldesigner:homodimer>(\d+)</.exec(t.slice(A.s.sp[0], A.s.sp[1]));
     return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box, homodimer: hd ? +hd[1] : 1 };
   }
-  var api = { refs: refs, setRefs: setRefs, idsOf: idsOf, setIds: setIds, picture: picture, pictureOf: pictureOf, backgrounds: backgrounds, background: background, backgroundSet: backgroundSet, backgroundRemove: backgroundRemove, LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, lineWidth: lineWidth, rewidthLine: rewidthLine, stoichiometry: stoichiometry, restoich: restoich, participants: participants, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
+  var api = { refs: refs, setRefs: setRefs, idsOf: idsOf, setIds: setIds, picture: picture, pictureOf: pictureOf, backgrounds: backgrounds, background: background, backgroundSet: backgroundSet, backgroundRemove: backgroundRemove, LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, lineWidth: lineWidth, rewidthLine: rewidthLine, stoichiometry: stoichiometry, restoich: restoich, participants: participants, PROCESS: PROCESS, REDUCED: REDUCED, stimStyle: stimStyle, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
     residueRemove: residueRemove, residueName: residueName, residueMove: residueMove, structuralMove: structuralMove, features: features, STATES: STATES, placesFor: placesFor, ratioAngle: ratioAngle, bounds: bounds, proteinAliases: proteinAliases, joinKin: joinKin, structural: structural, info: info, infoUnit: infoUnit, INFO: INFO, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };

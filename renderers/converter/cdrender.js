@@ -186,6 +186,18 @@
     myristoylated: 'My', palmytoylated: 'Pa', prenylated: 'Pr', sulfated: 'S', protonated: 'H', "don't care": '*', unknown: '?', empty: '' };
   var GATE = { AND: '&amp;', OR: '|', NOT: '!', UNKNOWN: '?' };
   var ROUND = ['SIMPLE_MOLECULE', 'ION', 'DRUG', 'UNKNOWN', 'DEGRADED'];
+  // a class SBGN does not have drawn as the SBGN glyph it stands for, from the file alone (the file keeps its class):
+  // a drug with an identifier of a compound database a simple molecule, any other drug unknown
+  var COMPOUND = /(?:urn:miriam:|identifiers\.org\/)(?:obo\.chebi|chebi|pubchem\.compound|kegg\.compound|drugbank)[:\/]/i;
+  function drawnAs(cls, sp) {
+    if (cls !== 'DRUG') return cls;
+    var found = false;
+    (function walk(e) {   // the identifiers' addresses (rdf:resource) and texts anywhere in the species
+      for (var i = 0; !found && e.attributes && i < e.attributes.length; i++) found = COMPOUND.test(e.attributes[i].value);
+      for (var c = e.firstChild; !found && c; c = c.nextSibling) found = c.nodeType === 1 ? (walk(c), found) : c.nodeType === 3 && COMPOUND.test(c.nodeValue);
+    })(sp || {});
+    return found ? 'SIMPLE_MOLECULE' : 'UNKNOWN';
+  }
   var ROLE = { PROTEIN: 'protein', RECEPTOR: 'protein', ION_CHANNEL: 'protein', TRUNCATED: 'protein', COMPLEX: 'complex', SIMPLE_MOLECULE: 'metabolite',
     ION: 'metabolite', DRUG: 'metabolite', GENE: 'gene', RNA: 'gene', ANTISENSE_RNA: 'gene' };
   var has = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
@@ -293,8 +305,8 @@
     this.W = F(get(md, 'sizeX')); this.H = F(get(md, 'sizeY'));
     this.out = []; this.halo = []; this.lines = [];
     var species = new Map();
-    findall(model, 's:listOfSpecies/s:species').forEach(function (s) { species.set(get(s, 'id'), [get(s, 'name'), find(s, 's:annotation/cd:extension/cd:speciesIdentity')]); });
-    findall(ext, 'cd:listOfIncludedSpecies/cd:species').forEach(function (s) { species.set(get(s, 'id'), [get(s, 'name'), find(s, 'cd:annotation/cd:speciesIdentity')]); });
+    findall(model, 's:listOfSpecies/s:species').forEach(function (s) { species.set(get(s, 'id'), [get(s, 'name'), find(s, 's:annotation/cd:extension/cd:speciesIdentity'), s]); });
+    findall(ext, 'cd:listOfIncludedSpecies/cd:species').forEach(function (s) { species.set(get(s, 'id'), [get(s, 'name'), find(s, 'cd:annotation/cd:speciesIdentity'), s]); });
     this.extra = new Map();   // extras(): per alias, what does not depend on its box
     this.residues = new Map();
     findall(ext, 'cd:listOfProteins/cd:protein').forEach(function (p) {
@@ -319,7 +331,8 @@
     findall(ext, 'cd:listOfComplexSpeciesAliases/cd:complexSpeciesAlias').concat(findall(ext, 'cd:listOfSpeciesAliases/cd:speciesAlias')).forEach(function (a) {
       if (!species.has(get(a, 'species'))) throw new Error('KeyError: ' + get(a, 'species'));
       var sp = species.get(get(a, 'species')), b = find(a, 'cd:bounds');
-      self.alias.set(get(a, 'id'), [text(find(sp[1], 'cd:class')), ['x', 'y', 'w', 'h'].map(function (k) { return F(get(b, k)); }), a, sp[0], sp[1]]);
+      var cls = text(find(sp[1], 'cd:class'));
+      self.alias.set(get(a, 'id'), [drawnAs(cls, sp[2]), ['x', 'y', 'w', 'h'].map(function (k) { return F(get(b, k)); }), a, sp[0], sp[1], cls]);
     });
     this.ext = ext; this.model = model; this.under = []; this.over = [];
     this.hitReactions = new Map(); this.cur = null;
@@ -430,6 +443,7 @@
   };
   D.node = function (i) {
     var A = this.alias.get(i), cls = A[0], x = A[1][0], y = A[1][1], w = A[1][2], h = A[1][3], a = A[2], name = A[3], si = A[4], self = this;
+    this.role_ = ROLE[A[5]] ? A[5] : cls;   // a fill's role by the file's class (a drug drawn as unknown stays a metabolite)
     var pic = has(this.spGlyph, get(a, 'species')) ? this.spGlyph[get(a, 'species')] : null;
     if (pic) { this.out.push(image(pic, x, y, w, h)); return; }   // a species drawn as its picture: no shape, marks or name (MINERVA's way)
     var hd = find(si, 'cd:state/cd:homodimer'), n = hd ? I(text(hd)) : 1;
@@ -450,13 +464,13 @@
     if (cls !== 'COMPLEX') {
       var lines = cls !== 'DEGRADED' ? this.nameLines(name) : [];
       var cy = y + fh / 2 - z * 7 / 12 * (lines.length - 1), mid = cls === 'ION_CHANNEL' ? x + (fw - 20) / 2 : x + fw / 2;
-      lines.forEach(function (line, k2) { self.text(line, mid, cy + z / 3 + z * 7 / 6 * k2, z, 'middle', null, self.CLASSES ? ' class="t-' + (ROLE[cls] || 'white') + '"' : ''); });
+      lines.forEach(function (line, k2) { self.text(line, mid, cy + z / 3 + z * 7 / 6 * k2, z, 'middle', null, self.CLASSES ? ' class="t-' + (ROLE[self.role_ || cls] || 'white') + '"' : ''); });
     } else this.text(this.nameLines(name).join(' '), x + fw / 2, y + fh - 7, z, 'middle', null, this.CLASSES ? ' class="t-complex"' : '');
   };
   D.shape = function (cls, b, fill, alpha, dash) {
     var x = b[0], y = b[1], w = b[2], h = b[3], self = this;
     var style = 'fill="' + fill + '"' + (alpha < 1 ? ' fill-opacity="' + fmt(alpha) + '"' : '') + ' stroke="' + (cls === 'UNKNOWN' ? 'none' : '#000') + '"' + dash;
-    if (this.CLASSES && fill !== 'none') style += ' class="c-' + (ROLE[cls] || 'white') + '"';
+    if (this.CLASSES && fill !== 'none') style += ' class="c-' + (ROLE[this.role_ || cls] || 'white') + '"';
     if (cls === 'ION_CHANNEL' && fill !== 'none') {
       var gap = this.open_ ? 6 : 0;
       [[x, w - 20 - gap], [x + w - 20, 20]].forEach(function (q) { self.out.push('<rect x="' + fmt(q[0]) + '" y="' + fmt(y) + '" width="' + fmt(q[1]) + '" height="' + fmt(h) + '" rx="5" ' + style + '/>'); });
@@ -629,7 +643,7 @@
     });
   };
   var REDUCED_HEAD = { PHYSICAL_STIMULATION: 'stimulation-reduced', REDUCED_PHYSICAL_STIMULATION: 'stimulation-reduced', NEGATIVE_INFLUENCE: 'inhibition',
-    REDUCED_MODULATION: 'modulation', REDUCED_TRIGGER: 'trigger', POSITIVE_INFLUENCE: 'production', CATALYSIS: 'catalysis', INHIBITION: 'inhibition' };
+    REDUCED_MODULATION: 'modulation', REDUCED_TRIGGER: 'trigger', POSITIVE_INFLUENCE: 'stimulation-reduced', CATALYSIS: 'catalysis', INHIBITION: 'inhibition' };
   D.count = function (t, line) {   // a cardinality (the converter's layout.count_box): a box beside the middle of the participant's line, light grey (count in cdrender-rules.md)
     var lens = [], tot = 0, k = 0, i;
     for (i = 0; i + 1 < line.length; i++) { var ax = line[i + 1][0] - line[i][0], ay = line[i + 1][1] - line[i][1]; lens.push(Math.sqrt(ax * ax + ay * ay)); }

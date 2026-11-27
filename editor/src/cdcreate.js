@@ -67,13 +67,14 @@ import { annItem, field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill
       ['TRIGGER', 'Trigger', '<path d="M12 1.5v13.5M7 11.5h10M7.5 15h9l-4.5 7z"/>']].map(function (q) {
       return [q[0], q[1] + (q[0] === 'CATALYSIS' ? ' (onto a reaction)' : ' (onto a reaction, or between species with Reduced notation ticked)'), q[2]];
     });
-    // reduced notation's types, each named as the modifier whose sign draws it (no positive influence: CellDesigner's open
-    // arrowhead is not SBGN's, the file's taken in as the open triangle, cd_make sbgn)
+    // reduced notation's types, each named as the modifier whose sign draws it; a stimulation written as the file writes
+    // it (redIn: POSITIVE_INFLUENCE, CellDesigner's open arrowhead, drawn as the open triangle, where the file uses it)
     CD_RED = [['NEGATIVE_INFLUENCE', 'INHIBITION'], ['REDUCED_PHYSICAL_STIMULATION', 'PHYSICAL_STIMULATION'], ['REDUCED_MODULATION', 'MODULATION'], ['REDUCED_TRIGGER', 'TRIGGER']];
     RED_OF = {}; CD_RED.forEach(function (q) { RED_OF[q[1]] = q[0]; });   // a modifier's type -> its reduced notation type
     CD_NAME = {};   // CellDesigner's names, for the menus and the status line (a gate's by G_ and its kind: UNKNOWN is a species too)
     CD_SP.concat(CD_RX, CD_ADD, CD_MOD).forEach(function (q) { CD_NAME[q[0]] = q[1].replace(/ \(.*\)$/, ''); });
     CD_RED.forEach(function (q) { CD_NAME[q[0]] = CD_NAME[q[1]]; });
+    CD_NAME.POSITIVE_INFLUENCE = CD_NAME.PHYSICAL_STIMULATION;
     CD_GATES.forEach(function (q) { CD_NAME['G_' + q[0]] = q[1]; });
     cdK = function (q) { return ['cd:' + q[0], q[1], q[2]]; };
     }   // the tool kinds, apart from the SBGN palette's
@@ -632,7 +633,7 @@ import { annItem, field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill
       }
       if (isMod) {   // between species: its reduced notation type, with the tick box ticked
         if (!RED_OF[want]) return { no: 'CellDesigner has no catalysis between species: it ends on a reaction’s square (between species, physical stimulation).' };
-        return cdStrict() ? { no: 'A ' + CD_NAME[want].toLowerCase() + ' between species is reduced notation, unticked in the palette; it ends on a reaction’s square.' } : { red: RED_OF[want] };
+        return cdStrict() ? { no: 'A ' + CD_NAME[want].toLowerCase() + ' between species is reduced notation, unticked in the palette; it ends on a reaction’s square.' } : { red: redIn(RED_OF[want]) };
       }
       return { rx: want || 'STATE_TRANSITION' };
     }
@@ -797,11 +798,14 @@ import { annItem, field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill
     }
     // a modulation's kinds (a modifier on a reaction: the five; reduced notation between species: its four, no catalysis),
     // each by the modifier's sign and name; set: [[type, modifier type]], go(type) writes it
-    function cdModIdentity(set, was, go) {
+    function cdModIdentity(set, was, go) {   // a reduced stimulation shown as one choice, whichever way the file writes it
+      var same = function (k) { return k === was || (k === 'REDUCED_PHYSICAL_STIMULATION' && was === 'POSITIVE_INFLUENCE'); };
       return lateItem(['Change identity', subItem(function (r, done) {
-        return kindWindow(r, set.map(function (q) { return { name: CD_NAME[q[1]], own: q[0] === was, go: function () { go(q[0]); } }; }), done);
+        return kindWindow(r, set.map(function (q) { return { name: CD_NAME[q[1]], own: same(q[0]), go: function () { go(redIn(q[0])); } }; }), done);
       })]);
     }
+    // a reduced notation type as this map writes it: a stimulation as its own stimulations are (cd_make.stimStyle)
+    function redIn(k) { return k === 'REDUCED_PHYSICAL_STIMULATION' ? cdMk.stimStyle(shared.cd.now) : k; }
     var CD_MODS;
     function __run19() {   // run at start, in order (__start)
     CD_MODS = CD_MOD.map(function (q) { return [q[0], q[0]]; });

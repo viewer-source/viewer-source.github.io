@@ -421,15 +421,11 @@ import { cdBgItems, cdCardDown, cdCheck, cdClsOf, cdFeat, cdFront, cdHow, cdLine
         // node's size and so meet no line grid, its bend points lined up by the guides alone (state.js fixedEnds)
         fixedEnds: true, places: nodePlaces,
         reads: isCd, entry: cdMap,
-        // opening: CellDesigner's open arrowhead taken in as SBGN's open triangle (cd_make sbgn): the editor works on the
-        // changed text, written at the next save, the change said once the map is drawn; the file as it was stays the
-        // site's base (what GitHub and the site hold)
+        // opening: the file as it is (a positive influence drawn as the open triangle by cdrender, kept in the file)
         open: function (t, g0, still) {
           return cdpy().then(function () { return cdPicsFor(t); }).then(function () {
             if (!still()) return null;
-            var sg = cdMk ? cdMk.sbgn(t) : { n: 0 }, t0 = t, said = null;
-            if (sg.n) { t = sg.text; said = sg.n + (sg.n > 1 ? ' positive influences' : ' positive influence') + ' (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).'; }
-            return { g: cdGraphml(t), t: t, t0: t0, said: said, own: { cd: { base: t, now: t } } };
+            return { g: cdGraphml(t), t: t, own: { cd: { base: t, now: t } } };
           });
         },
         // a reader's own map drawn for the list (core.js drawText) by cdrender; keep: 'adding' when the map is shown next

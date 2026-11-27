@@ -3321,20 +3321,13 @@
       places: nodePlaces,
       reads: isCd,
       entry: cdMap,
-      // opening: CellDesigner's open arrowhead taken in as SBGN's open triangle (cd_make sbgn): the editor works on the
-      // changed text, written at the next save, the change said once the map is drawn; the file as it was stays the
-      // site's base (what GitHub and the site hold)
+      // opening: the file as it is (a positive influence drawn as the open triangle by cdrender, kept in the file)
       open: function(t, g0, still) {
         return cdpy().then(function() {
           return cdPicsFor(t);
         }).then(function() {
           if (!still()) return null;
-          var sg = cdMk ? cdMk.sbgn(t) : { n: 0 }, t0 = t, said = null;
-          if (sg.n) {
-            t = sg.text;
-            said = sg.n + (sg.n > 1 ? " positive influences" : " positive influence") + " (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).";
-          }
-          return { g: cdGraphml(t), t, t0, said, own: { cd: { base: t, now: t } } };
+          return { g: cdGraphml(t), t, own: { cd: { base: t, now: t } } };
         });
       },
       // a reader's own map drawn for the list (core.js drawText) by cdrender; keep: 'adding' when the map is shown next
@@ -3465,6 +3458,7 @@
     CD_RED.forEach(function(q) {
       CD_NAME[q[0]] = CD_NAME[q[1]];
     });
+    CD_NAME.POSITIVE_INFLUENCE = CD_NAME.PHYSICAL_STIMULATION;
     CD_GATES.forEach(function(q) {
       CD_NAME["G_" + q[0]] = q[1];
     });
@@ -4278,7 +4272,7 @@
     }
     if (isMod) {
       if (!RED_OF[want]) return { no: "CellDesigner has no catalysis between species: it ends on a reaction\u2019s square (between species, physical stimulation)." };
-      return cdStrict() ? { no: "A " + CD_NAME[want].toLowerCase() + " between species is reduced notation, unticked in the palette; it ends on a reaction\u2019s square." } : { red: RED_OF[want] };
+      return cdStrict() ? { no: "A " + CD_NAME[want].toLowerCase() + " between species is reduced notation, unticked in the palette; it ends on a reaction\u2019s square." } : { red: redIn(RED_OF[want]) };
     }
     return { rx: want || "STATE_TRANSITION" };
   }
@@ -4530,13 +4524,19 @@
     }), done);
   }
   function cdModIdentity(set, was, go) {
+    var same2 = function(k) {
+      return k === was || k === "REDUCED_PHYSICAL_STIMULATION" && was === "POSITIVE_INFLUENCE";
+    };
     return lateItem(["Change identity", subItem(function(r, done) {
       return kindWindow(r, set.map(function(q) {
-        return { name: CD_NAME[q[1]], own: q[0] === was, go: function() {
-          go(q[0]);
+        return { name: CD_NAME[q[1]], own: same2(q[0]), go: function() {
+          go(redIn(q[0]));
         } };
       }), done);
     })]);
+  }
+  function redIn(k) {
+    return k === "REDUCED_PHYSICAL_STIMULATION" ? cdMk.stimStyle(shared.cd.now) : k;
   }
   var CD_MODS;
   function __run19() {
