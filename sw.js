@@ -29,22 +29,28 @@ function activate() {
   });
 }
 self.addEventListener('message', function (e) {   // the page asks which layout and scope answer it
-  if (e.data === 'kept?' && e.source) e.source.postMessage({ kept: NAME, kill: KILL });
+  if (e.data === 'kept?' && e.source) e.source.postMessage({ kept: NAME });
 });
 
 function keyOf(url) { var u = new URL(url); return u.origin + u.pathname; }
 function keep(req, r) {   // a whole answer kept under its path, with the address it came from
   if (!r || r.status !== 200 || r.type !== 'basic') return Promise.resolve();
-  var c = r.clone();
+  var c = r, idx = /\/index\.json$/.test(new URL(req.url).pathname) ? r.clone() : null;
   return c.blob().then(function (b) {
     var h = new Headers(c.headers);
     h.set(FROM, req.url);
     return caches.open(NAME).then(function (cache) { return cache.put(keyOf(req.url), new Response(b, { status: 200, statusText: c.statusText, headers: h })); });
-  }).then(function () { if (/\/index\.json$/.test(new URL(req.url).pathname)) return prune(r); }).catch(function () {});
+  }).then(function () { if (idx) return prune(idx); }).catch(function () {});
 }
 function kept(url) { return caches.open(NAME).then(function (c) { return c.match(keyOf(url)); }); }
-function network(req) {   // the network's answer, kept; null when it fails
-  return fetch(req).then(function (r) { return keep(req, r).then(function () { return r; }); }, function () { return null; });
+function network(req, e, wait) {   // the network's answer at once, kept beside it (e.waitUntil); null when it fails.
+  // wait: the answer served; a page is kept only when it is the one served (a late one would leave code of another release)
+  var copy, got = fetch(req).then(function (r) { copy = r.clone(); return r; }, function () { return null; });
+  e.waitUntil(got.then(function (r) {
+    if (!r) return;
+    return (wait || Promise.resolve(r)).then(function (served) { if (served === r) return keep(req, copy); });
+  }));
+  return got;
 }
 function late(p, ms) { return Promise.race([p, new Promise(function (res) { setTimeout(function () { res(null); }, ms); })]); }
 function fallback(p, url) {
@@ -56,44 +62,51 @@ self.addEventListener('fetch', function (e) {
   if (KILL || req.method !== 'GET' || u.origin !== location.origin || req.headers.has('range')) return;
   if (req.mode === 'navigate') {
     if (u.pathname !== SCOPE && u.pathname !== SCOPE + 'index.html') return;   // another page of the site: as without the worker
-    var got = network(req);
-    e.respondWith(late(got, WAIT).then(function (r) {
+    var served, said = new Promise(function (res) { served = res; });
+    var got = network(req, e, said);
+    var answer = late(got, WAIT).then(function (r) {
       if (r) return r;
       return kept(req.url).then(function (k) { return k || got.then(function (g) { return g || Response.error(); }); });   // nothing kept: the network's answer, however late
-    }));
+    });
+    answer.then(served, function () { served(null); });
+    e.respondWith(answer);
     return;
   }
   if (u.search && (req.cache === 'default' || req.cache === 'force-cache')) {
     e.respondWith(kept(req.url).then(function (k) {
       if (k && k.headers.get(FROM) === req.url) return k;
-      return fallback(network(req), req.url);
+      return fallback(network(req, e), req.url);
     }));
     return;
   }
-  e.respondWith(fallback(network(req), req.url));
+  e.respondWith(fallback(network(req, e), req.url));
 });
 
 // index.json kept: the files of maps it no longer lists are let go (at most once an hour)
-function prune(r) {
+function prune(r) {   // r: the index's answer (its own body, not read elsewhere)
   if (Date.now() - pruned < 3600000) return Promise.resolve();
   pruned = Date.now();
-  return r.clone().json().then(function (list) {
+  var mark = self.registration.scope + '.pruned';   // the time of the last prune, kept, so a worker restarted does not prune again
+  return caches.open(NAME).then(function (c) { return c.match(mark); }).then(function (m) { return m ? m.text() : '0'; }).then(function (t) {
+    if (Date.now() - (+t || 0) < 3600000) return;
+    return caches.open(NAME).then(function (c) { return c.put(mark, new Response(String(Date.now()))); }).then(function () { return r.json(); }).then(function (list) {
     if (!Array.isArray(list)) return;
     var used = {};
     var add = function (p) { if (typeof p === 'string' && p.charAt(0) === '/') used[p.split('?')[0]] = 1; };
     list.forEach(function (m) {
       if (!m) return;
-      [m.image, m.annotation, m.data, m.file].forEach(add);
-      if (m.sbgn) [m.sbgn.image, m.sbgn.annotation, m.sbgn.file].forEach(add);
+      [m.image, m.annotation, m.data, m.editBase].forEach(add);   // editBase: the working GraphML an SBGN-ML or SBML map is edited from
+      if (m.sbgn) [m.sbgn.image, m.sbgn.annotation, m.sbgn.file, m.sbgn.editBase].forEach(add);
       (m.downloads || []).forEach(function (d) { add(d && d.url); });
     });
     return caches.open(NAME).then(function (c) {
       return c.keys().then(function (ks) {
         return Promise.all(ks.map(function (k) {
           var p = new URL(k.url).pathname;
-          if (/^\/(downloads|atlas-data|data)\//.test(p) && !/^\/atlas-data\/search\.json$/.test(p) && !used[p] && !used[p.replace(/\/$/, '')]) return c.delete(k);
+          if (/^\/(downloads|atlas-data|data)\//.test(p) && !/^\/atlas-data\/search\.json$/.test(p) && !used[p]) return c.delete(k);
         }));
       });
+    });
     });
   }).catch(function () {});
 }
