@@ -846,7 +846,7 @@
     var mark = { UNKNOWN_TRANSITION: '?', KNOWN_TRANSITION_OMITTED: '//' }[typ];
     if (mark) glyph += '<text x="' + fmt(sq[0]) + '" y="' + fmt(sq[1] + 3) + '" font-family="\'Times New Roman\', serif" font-weight="bold" font-size="10" text-anchor="middle">' + mark + '</text>';
     this.lines.push(this.GROUPS ? '<g data-n="' + attr(this.cur) + '|proc">' + glyph + '</g>' : glyph);
-    if (this.cur) this.hit(this.cur).at = [round(sq[0], 1), round(sq[1], 1)];
+    if (this.cur) { this.hit(this.cur).at = [round(sq[0], 1), round(sq[1], 1)]; this.hit(this.cur).ang = round(ang, 1); }
     squares.forEach(function (s) { self.lines.push(s); });
   };
   // a layer's free texts; one whose notes name a picture is that picture in its box, its words not drawn, also on a

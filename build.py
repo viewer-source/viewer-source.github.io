@@ -164,7 +164,8 @@ def graphml(src, out_svg, sbgn=False):
                                  [label[s] for s, t, a in arcs if t == nid and a == 'none' and named(s)],
                                  [label[t] for s, t, a in arcs if s == nid and named(t)],
                                  [label[s] for s, t, a in arcs if t == nid and a != 'none' and named(s)],
-                                 db.references(data['References']) if data.get('References') else [], nid))
+                                 db.references(data['References']) if data.get('References') else [], nid,
+                                 [round(w, 1), round(h, 1), 0]))
             continue
         own = {f: data[f] for f in FIELDS if data.get(f)}
         if not own:
@@ -194,10 +195,11 @@ def record(own):
     return db.record(own)
 
 
-def process(kind, at, ins, outs, by, refs, key):
-    # a process glyph is small: a click a little outside it still finds it; key: its lines' 'r' (LINES)
+def process(kind, at, ins, outs, by, refs, key, sq):
+    # a process glyph is small: a click a little outside it still finds it; key: its lines' 'r' (LINES); sq: the square
+    # as drawn, width, height and turn in degrees round its centre (the band of a selected process outlines it)
     return {'label': '', 'class': kind, 'box': [round(at[0] - 12, 1), round(at[1] - 12, 1), 24, 24], 'props': [],
-            'reaction': {'in': ins, 'out': outs, 'by': by}, 'references': refs, 'r': key}
+            'reaction': {'in': ins, 'out': outs, 'by': by}, 'references': refs, 'r': key, 'sq': sq}
 
 
 # ---------- CellDesigner ----------
@@ -270,7 +272,8 @@ def celldesigner(src, out_svg):
     for rx in model.iter(S + 'reaction'):
         x = rx.find(S + 'annotation/' + C + 'extension')
         refs = db.references(' '.join(ns + ':' + i for ns, i in miriam(rx) if ns in ('pubmed', 'doi')))
-        at = hits['reactions'].get(rx.get('id'), {}).get('at')
+        hr = hits['reactions'].get(rx.get('id'), {})
+        at = hr.get('at')
         if x is None or not at:
             continue
         ins = [sp_name(e) for e in x.iterfind(C + 'baseReactants/' + C + 'baseReactant')] + \
@@ -281,7 +284,7 @@ def celldesigner(src, out_svg):
         by = [' and '.join(alias_name.get(a, '') for a in (m.get('aliases') or '').split(','))
               for m in x.iterfind(C + 'listOfModification/' + C + 'modification')
               if not (m.get('type') or '').startswith('BOOLEAN_LOGIC_GATE')]
-        nodes.append(process('Process', at, ins, outs, by, refs, rx.get('id')))
+        nodes.append(process('Process', at, ins, outs, by, refs, rx.get('id'), [10, 10, hr.get('ang') or 0]))
     LINES[out_svg] = lines_of(svg, lambda e: e.split('|')[0])
     return nodes
 

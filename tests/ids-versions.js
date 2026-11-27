@@ -24,7 +24,8 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var nodeByLabel = function (name) { return page.$$eval('#m2-img [data-n]', function (l, name) {
     var hit = l.filter(function (g) { return Array.from(g.querySelectorAll('text')).map(function (x) { return x.textContent.trim(); }).join(' ') === name; })[0];
     if (!hit) return null; var r = hit.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, name); };
-  var rows = function () { return page.$$eval('.m2-ed-prefl tr', function (l) { return l.slice(1).map(function (r) { return r.querySelector('th').textContent + ' ' + r.querySelector('.m2-ed-ppicname').textContent + (r.querySelector('.m2-ed-px') ? ' x' : ''); }); }); };
+  var rows = async function () { var m = await page.$('.m2-ed-pmore'); if (m && /^\+/.test(await m.textContent())) { await m.click(); await page.waitForTimeout(300); } return rows0(); };   // a folded list opened first
+  var rows0 = function () { return page.$$eval('.m2-ed-prefl tr', function (l) { return l.map(function (r) { return r.querySelector('th').textContent + ' ' + r.querySelector('.m2-ed-ppicname').textContent + (r.querySelector('.m2-ed-px') ? ' x' : ''); }); }); };
   var paste = async function (v) { await page.click('.m2-ed-pplus'); await page.waitForTimeout(200); await page.fill('.m2-ed-pin', v); await page.press('.m2-ed-pin', 'Enter'); await page.waitForTimeout(1200); };
   var undo = async function () { await page.keyboard.press('Control+z'); await page.waitForTimeout(1200); };
   var bagOf = function (t, q) {   // every link in t under the qualifier q, in order
@@ -38,6 +39,14 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
     ok(f.hash + ': PDP found', !!at);
     if (!at) continue;
     await page.keyboard.press('Escape'); await page.mouse.click(at[0], at[1]); await page.waitForTimeout(800);
+    var vis = function () { return page.$$eval('.m2-ed-prefl tr', function (l) { var m = document.querySelector('.m2-ed-pmore'); return l.length + ' ' + (m ? m.textContent : ''); }); };
+    if (f.hash === 'pdh-celldesigner') {
+      ok(f.hash + ': a long list folded to its first row and +N', /^1 \+\d+$/.test(await vis()), await vis());
+      await page.click('.m2-ed-pmore'); await page.waitForTimeout(300);
+      ok(f.hash + ': +N opens the whole list, less in its place', /^\d+ less$/.test(await vis()) && +(await vis()).split(' ')[0] >= 6, await vis());
+      await page.click('.m2-ed-pmore'); await page.waitForTimeout(300);
+      ok(f.hash + ': less folds it again', /^1 \+\d+$/.test(await vis()), await vis());
+    }
     var R = await rows();
     ok(f.hash + ': every member identifier has a cross', R.length >= 6 && R.every(function (x) { return / x$/.test(x); }), JSON.stringify(R));
     await page.click('.m2-ed-px[data-key="uniprot:Q9P2J9"]'); await page.waitForTimeout(1200);

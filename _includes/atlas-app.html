@@ -477,7 +477,7 @@ page, so its styles keep the base they were made on).
   /* Background's rows (cdcreate.js cdBgRows): a click selects that background; the one selected shaded light grey, as a button */
   #m2-editwin tr.m2-ed-pbg[data-k^="bg"]:not([data-k="bgadd"]) { cursor: default; }
   #m2-editwin tr.m2-ed-pbg.m2-ed-pbgsel > th, #m2-editwin tr.m2-ed-pbg.m2-ed-pbgsel > td { background: var(--m2-soft); }
-  #m2-editwin .m2-ed-prefs th[colspan] { padding-top: 8px; }   /* References: a heading as Cardinality's, one row per reference, the paste box under them */
+  #m2-editwin .m2-ed-prefs th[colspan] { padding-top: 8px; }   /* References: a heading as Cardinality's, the row to add under it (when + is pressed), then one row per reference */
   #m2-editwin .m2-ed-prefs .m2-ed-ppic input[type="text"] { flex: 1 1 auto; width: 0; }   /* the box shares its row with Add, inside the panel */
   #m2-editwin .m2-ed-prefs th[colspan] { padding-right: 0; }   /* the heading's + reaches the column's right edge, over the crosses */
   /* + by References or Identifiers, a square button opening the row to add; the cross on each row a quiet sign. Both 22 px
@@ -486,8 +486,12 @@ page, so its styles keep the base they were made on).
     width: 22px; height: 22px; margin: 0; padding: 0; border-radius: 4px; color: #70757a; cursor: pointer; }
   #m2-editwin .m2-ed-prefs button.m2-ed-pplus { float: right; margin-top: -3px; border: 1px solid var(--m2-frame); background: var(--m2-bg); }
   #m2-editwin .m2-ed-prefs button.m2-ed-px { border: 0; background: none; }
+  #m2-editwin .m2-ed-prefs button.m2-ed-pmore { flex: none; width: auto; margin: 0 2px 0 0; padding: 0 4px; border: 0; border-radius: 4px; background: none; color: var(--m2-ed-name); font-size: 12px; line-height: 18px; cursor: pointer; }   /* +N on a folded list's first row, less on the opened one */
+  #m2-editwin .m2-ed-prefs button.m2-ed-pmore:hover { background: var(--m2-soft); }
   #m2-editwin .m2-ed-prefs button.m2-ed-pplus:hover, #m2-editwin .m2-ed-prefs button.m2-ed-px:hover { background: var(--m2-soft); color: #3c4043; }
   #m2-editwin .m2-ed-prefs button.m2-ed-pplus:hover { border-color: #c4c7c9; }
+  #m2-editwin .m2-ed-prefs tr.m2-ed-pnew > th, #m2-editwin .m2-ed-prefs tr.m2-ed-pnew > td { background: var(--m2-soft); transition: background 0.8s; }   /* a row just added, where it landed in the list; faded out after a moment */
+  #m2-editwin .m2-ed-prefs tr.m2-ed-pnew.m2-ed-pfade > th, #m2-editwin .m2-ed-prefs tr.m2-ed-pnew.m2-ed-pfade > td { background: none; }
   #m2-editwin .m2-ed-prefs button svg { display: block; }
   #m2-editwin .m2-ed-prefs tr.m2-ed-padd[hidden] { display: none; }
   #m2-editwin .m2-ed-prefs select.m2-ed-pdb { flex: none; max-width: 84px; }
@@ -782,7 +786,7 @@ page, so its styles keep the base they were made on).
   /* the lines a click lights (lit, drawLit): a soft marker band under them, the map's own lines kept over it (multiply) */
   #m2-hl { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; mix-blend-mode: multiply; display: none; }
   #m2-hl path { fill: none; stroke: #8db4f0; stroke-opacity: .7; stroke-linecap: round; stroke-linejoin: round; }
-  #m2-hl .m2-hl-proc { fill: none; stroke: #8db4f0; stroke-opacity: .7; }
+  #m2-hl .m2-hl-proc { fill: none; stroke: #8db4f0; stroke-opacity: .7; stroke-linejoin: round; }
   .m2-editing #m2-hl { display: none !important; }
   #m2-pin { position: absolute; left: 0; top: 0; width: 24px; height: 32px; margin: -32px 0 0 -12px; pointer-events: none; display: none; filter: drop-shadow(0 1px 1px #0005); }
   .m2-info { grid-column: 3; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); max-height: calc(100vh / var(--zoom, 1) - 140px); overflow-y: auto; overscroll-behavior: contain; overflow-wrap: anywhere; }
@@ -3065,9 +3069,9 @@ page, so its styles keep the base they were made on).
   }
   // the band under what is lit, in the picture's pixels, placed and sized as the picture: 6 screen pixels wide, at
   // least 5 picture pixels (several times a line's width) so zoomed in it still shows round the thicker line; a
-  // selected process's square outlined in the same band, and its antennas lit from each lit line's end nearest the
-  // square to the square (a disc does not fit a square glyph). The band is left out inside the process's square,
-  // where a CellDesigner line runs through to the centre under the white square
+  // selected process's own square outlined in the same band, centred on its border as on a line, at its drawn size
+  // and turn, and its antennas lit from each lit line's end nearest the square to the square. The lines' band is left
+  // out inside the process's square, where a CellDesigner line runs through to the centre under the white square
   var litHtml = null;   // what the band holds, made once per lit; a move or zoom only places it
   function drawLit() {
     if (!lit || !current || document.querySelector('.m2-editing')) { hl.style.display = 'none'; hl.innerHTML = ''; litHtml = null; return; }
@@ -3080,9 +3084,10 @@ page, so its styles keep the base they were made on).
       var on = lit.line ? [lit.line] : lines.filter(function (l) { return l.r === lit.proc.r; }), html = '', mask = '';
       var pn = lit.proc || (nodes || []).filter(function (n) { return n.reaction && n.r === lit.line.r; })[0];
       if (pn) {
-        var b = pn.box, cx = b[0] + b[2] / 2, cy = b[1] + b[3] / 2;
+        var b = pn.box, cx = b[0] + b[2] / 2, cy = b[1] + b[3] / 2, sq = pn.sq || [10, 10, 0];
+        var square = 'x="' + (-sq[0] / 2) + '" y="' + (-sq[1] / 2) + '" width="' + sq[0] + '" height="' + sq[1] + '" transform="translate(' + cx + ' ' + cy + ') rotate(' + sq[2] + ')"';
         html += '<defs><mask id="m2-hl-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="' + current.width + '" height="' + current.height + '">' +
-          '<rect width="' + current.width + '" height="' + current.height + '" fill="#fff"/><rect x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="' + b[3] + '" fill="#000"/></mask></defs>';
+          '<rect width="' + current.width + '" height="' + current.height + '" fill="#fff"/><rect ' + square + ' fill="#000"/></mask></defs>';
         mask = ' mask="url(#m2-hl-mask)"';
       }
       html += '<g' + mask + '>';
@@ -3097,17 +3102,11 @@ page, so its styles keep the base they were made on).
         if (e) html += '<path d="M' + e[0] + ' ' + e[1] + 'L' + cx + ' ' + cy + '"/>';
       });
       html += '</g>';
-      if (lit.proc) html += '<rect class="m2-hl-proc"/>';
+      if (lit.proc) html += '<rect class="m2-hl-proc" ' + square + '/>';
       hl.innerHTML = html; litHtml = lit;
     }
     var bw = Math.max(6 * k / z, 5);
-    hl.querySelectorAll('path').forEach(function (p) { p.setAttribute('stroke-width', bw); });
-    var q = hl.querySelector('.m2-hl-proc');
-    if (q) {
-      var pb = lit.proc.box;
-      q.setAttribute('x', pb[0]); q.setAttribute('y', pb[1]); q.setAttribute('width', pb[2]); q.setAttribute('height', pb[3]);
-      q.setAttribute('stroke-width', bw);
-    }
+    hl.querySelectorAll('path, .m2-hl-proc').forEach(function (p) { p.setAttribute('stroke-width', bw); });
   }
   function pick(vx, vy) {
     if (!nodes) return;

@@ -2375,8 +2375,8 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     var inW, inH, field, pNow;
     function __run44() {   // run at start, in order (__start)
     props.innerHTML = '<p>Properties</p>' + table(ROWS, ' m2-ed-pnode') + table(EROWS, ' m2-ed-pedge') + table(RROWS, ' m2-ed-prx') + '<table class="m2-ed-ptab m2-ed-pcard" hidden></table>' +
-      '<table class="m2-ed-ptab m2-ed-prefs" hidden><tbody class="m2-ed-prefl"></tbody><tbody><tr class="m2-ed-padd" hidden><td colspan="2"><span class="m2-ed-ppic"><select class="m2-ed-pdb" aria-label="Database of the IDs typed"></select><input type="text" class="m2-ed-pin" aria-label="IDs or links to add" placeholder="IDs or links" spellcheck="false" autocomplete="off"><button type="button" class="m2-ed-pgo">Add</button></span></td></tr>' +
-      '<tr class="m2-ed-psay" hidden><td colspan="2"></td></tr></tbody></table>' +
+      '<table class="m2-ed-ptab m2-ed-prefs" hidden><tbody class="m2-ed-prefh"></tbody><tbody><tr class="m2-ed-padd" hidden><td colspan="2"><span class="m2-ed-ppic"><select class="m2-ed-pdb" aria-label="Database of the IDs typed"></select><input type="text" class="m2-ed-pin" aria-label="IDs or links to add" placeholder="IDs or links" spellcheck="false" autocomplete="off"><button type="button" class="m2-ed-pgo">Add</button></span></td></tr>' +
+      '<tr class="m2-ed-psay" hidden><td colspan="2"></td></tr></tbody><tbody class="m2-ed-prefl"></tbody></table>' +   // the row to add under the heading, over the list it adds to
       '<button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button>' +
       '<button type="button" class="m2-ed-pall" title="Every glyph of this kind on the map (every process, or every logic gate) takes this one\u2019s size and antenna">Apply to all of this kind</button>' +
       '<button type="button" class="m2-ed-pstd" title="The standard size and antenna of processes and logic gates, at the map\u2019s scale (Style, Standard sizes)">Standard size</button>';
@@ -2562,9 +2562,9 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // format's part reads and writes them: refs and ids { of() -> { id, title, kind (ids), items: [{ key, db, val, q,
     // own (refs), about }] }, set(id, add, del) }, keys as db:id (pubmed:19461003, doi:10.1038/nature08124,
     // uniprot:Q15831, hgnc:11389, chebi:CHEBI:15346, go:GO:0016573, mesh:D012345)
-    var prefs, prefsKey, prefsSay, prefsRid, prefsFor, REF_DB, ID_DBS, ANN_DB;
+    var prefs, prefsKey, prefsSay, prefsRid, prefsFor, prefsNew, REF_DB, ID_DBS, ANN_DB, prefsOpen;   // prefsNew: [the item, the keys just added], shaded a moment where they landed   // prefsOpen: the whole list shown, not its first row and +N (kept from item to item until the page reloads)
     function __run62() {   // run at start, in order (__start)
-    prefs = props.querySelector('.m2-ed-prefs'); prefsKey = null; prefsSay = null; prefsRid = null; prefsFor = null;   // prefsSay: [the item, what the last Add said]
+    prefs = props.querySelector('.m2-ed-prefs'); prefsKey = null; prefsSay = null; prefsRid = null; prefsFor = null; prefsOpen = false; prefsNew = null;   // prefsSay: [the item, what the last Add said]
     REF_DB = { pubmed: 'PubMed', doi: 'DOI', uniprot: 'UniProt', hgnc: 'HGNC', 'hgnc.symbol': 'HGNC symbol', chebi: 'ChEBI', go: 'GO', mesh: 'MeSH', ncbigene: 'NCBI Gene', 'entrez.gene': 'NCBI Gene', ensembl: 'Ensembl', refseq: 'RefSeq', 'pubchem.compound': 'PubChem', hmdb: 'HMDB', kegg: 'KEGG', 'kegg.compound': 'KEGG', reactome: 'Reactome', ec: 'EC', 'ec-code': 'EC', taxonomy: 'Taxonomy' };
     ID_DBS = { protein: ['hgnc.symbol', 'uniprot'], gene: ['hgnc.symbol'], molecule: ['chebi'], phenotype: ['go', 'mesh'], compartment: ['go', 'mesh'] };
     // each database: its key's id as checked (identifiers.org's patterns), what a plain value of it looks like, the form
@@ -2581,7 +2581,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     };
     var pin = prefs.querySelector('.m2-ed-pin');
     var enterAt = 0, pressAt = 0;
-    prefs.querySelector('.m2-ed-prefl').addEventListener('pointerdown', function () { pressAt = Date.now(); }, true);
+    ['.m2-ed-prefh', '.m2-ed-prefl'].forEach(function (q) { prefs.querySelector(q).addEventListener('pointerdown', function () { pressAt = Date.now(); }, true); });   // the + and the crosses
     pin.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') { pin.value = ''; refsClose(); }   // the row closed, nothing added (the panel's keys then blur it)
       else if (e.key === 'Enter' && !e.isComposing) { enterAt = Date.now(); e.preventDefault(); e.stopPropagation(); var R = annNow(); if (R && R.at === prefsFor) refsAdd(); }   // the panel's own Enter (leave the field) not run: the box keeps the cursor while something is left in it   // also when the box is as it was (a database chosen after a refusal)
@@ -2608,6 +2608,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     prefs.querySelector('.m2-ed-pgo').addEventListener('click', refsAdd);
     prefs.addEventListener('click', function (e) {
       if (e.target.closest && e.target.closest('.m2-ed-pplus')) { refsOpen(); return; }
+      if (e.target.closest && e.target.closest('.m2-ed-pmore')) { prefsOpen = !prefsOpen; prefsKey = null; refsShow(); return; }
       var x = e.target.closest && e.target.closest('.m2-ed-px'), R = annNow();
       if (!x || !R) return;
       prefsSay = null;
@@ -2697,6 +2698,10 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       pin.value = P.bad.join(' ');   // what was not read stays to be put right, the row open
       if (!P.bad.length) refsClose();
       prefsSay = [R.at, said.join('; ') + '.'];
+      if (add.length) {   // what was just added in sight: the whole list open, the new rows shaded where they landed, faded after a moment
+        prefsOpen = true; var mark = prefsNew = [R.at, add];
+        setTimeout(function () { if (prefsNew !== mark) return; prefsNew = null; prefs.querySelectorAll('.m2-ed-pnew').forEach(function (r) { r.classList.add('m2-ed-pfade'); }); }, 1200);
+      }
       var sym = add.filter(function (k) { return k.indexOf('hgnc.symbol:') === 0; }), ni = nodes2.findIndex(function (n) { return n.id === R.id; });
       var nm = R.kind === 'protein' && sym.length === 1 && ni >= 0 && !nameNow(ni) ? sym[0].slice(12) : null;   // one HGNC symbol added to a protein with no name names it too, in the same step
       if (add.length && !R.api.set(R.id, add, [], nm)) prefsSay = [R.at, 'Not written: the file did not take them.'];
@@ -2715,15 +2720,20 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         pin.placeholder = 'IDs or links'; pin.setAttribute('aria-label', 'IDs or links to add');
       }
       if (prefsSay && prefsSay[0] !== R.at) prefsSay = null;   // what the last Add said, for its own item only
-      var key = R.at + '\u0000' + R.title + '\u0000' + R.items.map(function (x) { return x.key + '\u0001' + x.q + (x.own ? '' : '!'); }).join('\u0000') + '\u0000' + (prefsSay ? prefsSay[1] : '');
+      var key = prefsOpen + '\u0000' + R.at + '\u0000' + R.title + '\u0000' + R.items.map(function (x) { return x.key + '\u0001' + x.q + (x.own ? '' : '!'); }).join('\u0000') + '\u0000' + (prefsSay ? prefsSay[1] : '');
       if (key === prefsKey) return;
       prefsKey = key;
       var order = R.dbs.concat(R.items.map(function (x) { return x.db; })), rows = R.items.map(function (x, j) { return [x, j]; }).sort(function (a, b) { return (order.indexOf(a[0].db) - order.indexOf(b[0].db)) || a[1] - b[1]; }).map(function (r) { return r[0]; });   // grouped by database, the item's own first in the list's order, each group as the file has it
-      prefs.querySelector('.m2-ed-prefl').innerHTML = '<tr><th colspan="2">' + escHtml(R.title) + '<button type="button" class="m2-ed-pplus" title="Add ' + (R.kind ? 'identifiers' : 'references') + '" aria-label="Add ' + (R.kind ? 'identifiers' : 'references') + '">' + signPlus() + '</button></th></tr>' + rows.map(function (x) {
+      prefs.querySelector('.m2-ed-prefh').innerHTML = '<tr><th colspan="2">' + escHtml(R.title) + '<button type="button" class="m2-ed-pplus" title="Add ' + (R.kind ? 'identifiers' : 'references') + '" aria-label="Add ' + (R.kind ? 'identifiers' : 'references') + '">' + signPlus() + '</button></th></tr>';
+      prefs.querySelector('.m2-ed-prefl').innerHTML = rows.map(function (x, j) {
+        if (!prefsOpen && j > 0) return '';   // a long list folded to its first row, +N opening the rest
+        var more = j || rows.length < 2 ? '' : '<button type="button" class="m2-ed-pmore" title="' + (prefsOpen ? 'Show the first only' : 'Show all ' + rows.length) + '">' + (prefsOpen ? 'less' : '+' + (rows.length - 1)) + '</button>';
         var name = REF_DB[x.db] || x.db || 'Link', tip = name + ' ' + x.val + (x.own ? '' : ', ' + x.q + (x.about ? ': about the map as a model, kept as written' : ', kept as written'));
-        return '<tr title="' + escAttr(tip) + '"><th>' + escHtml(name) + '</th><td><span class="m2-ed-ppic"><span class="m2-ed-ppicname">' + escHtml(x.val) + (x.about ? ' <span class="m2-ed-pabout">about the map</span>' : '') + '</span>' +
+        return '<tr title="' + escAttr(tip) + '"' + (prefsNew && prefsNew[0] === R.at && prefsNew[1].indexOf(x.key) >= 0 ? ' class="m2-ed-pnew"' : '') + '><th>' + escHtml(name) + '</th><td><span class="m2-ed-ppic"><span class="m2-ed-ppicname">' + escHtml(x.val) + (x.about ? ' <span class="m2-ed-pabout">about the map</span>' : '') + '</span>' + more +
           (x.own ? '<button type="button" class="m2-ed-px" data-key="' + escAttr(x.key) + '" title="Remove ' + escAttr(name + ' ' + x.val) + '" aria-label="Remove">' + signX() + '</button>' : '') + '</span></td></tr>';
       }).join('');
+      var fresh = prefsNew && prefs.querySelector('.m2-ed-pnew');
+      if (fresh) fresh.scrollIntoView({ block: 'nearest' });
       var say = prefs.querySelector('.m2-ed-psay');
       say.hidden = !prefsSay; say.firstChild.textContent = prefsSay ? prefsSay[1] : '';
     }
