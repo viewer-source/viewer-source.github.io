@@ -2634,8 +2634,9 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       return R;
     }
     // an identifier the Identifiers section takes out: any db:id under bqbiol:is (an HGNC symbol, NCBI Gene, Ensembl as
-    // much as the five it adds); one under another qualifier (hasVersion, bqmodel) is shown as written
-    function idOwn(q, key) { return q === 'bqbiol:is' && /^[\w.]+:\S+$/.test(key || '') && !/^https?:/i.test(key); }
+    // much as the five it adds) or under bqbiol:hasVersion (a family's members); one under another qualifier (bqmodel,
+    // isDescribedBy) is shown as written
+    function idOwn(q, key) { return (q === 'bqbiol:is' || q === 'bqbiol:hasVersion') && /^[\w.]+:\S+$/.test(key || '') && !/^https?:/i.test(key); }
     // the signs of + and the cross, drawn so they sit in the middle of their square
     function signPlus() { return '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M6 1.5v9M1.5 6h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>'; }
     function signX() { return '<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>'; }

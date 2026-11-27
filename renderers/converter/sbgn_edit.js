@@ -3124,8 +3124,9 @@
   // touched.
   //   idsOf(g, st, id) -> [{ q, key, link }]: every link of the glyph's own description in st (q its qualifier as
   //     written), every db:id under bqbiol:is replaced by the Identity property where it is set
-  //   setIds(g, id, keys) -> g with the property set to keys (an array)
-  var BQM = 'http://biomodels.net/model-qualifiers/', IDS = 'Identity', IDS_DB = ['uniprot', 'hgnc', 'hgnc.symbol', 'chebi', 'go', 'mesh'], IDS_LINK = { uniprot: 'uniprot:', hgnc: 'hgnc:', 'hgnc.symbol': 'hgnc.symbol:', chebi: '', go: '', mesh: 'mesh:' };
+  //   setIds(g, id, keys, opt, local) -> g with the property set to keys (an array); local 'hasVersion': a family's
+  //     members, the property Identity versions, written under bqbiol:hasVersion the same way
+  var BQM = 'http://biomodels.net/model-qualifiers/', IDS = 'Identity', ID_Q = { is: 'Identity', hasVersion: 'Identity versions' }, IDS_DB = ['uniprot', 'hgnc', 'hgnc.symbol', 'chebi', 'go', 'mesh'], IDS_LINK = { uniprot: 'uniprot:', hgnc: 'hgnc:', 'hgnc.symbol': 'hgnc.symbol:', chebi: '', go: '', mesh: 'mesh:' };
   function idKeyOf(link) {   // refKeyOf's db:id with CellDesigner's obo. names as identifiers.org's, ChEBI's and GO's prefix in the id, HGNC's not
     var m = /^https?:\/\/identifiers\.org\/(CHEBI|GO):(.+)$/i.exec(link), k = m ? m[1].toLowerCase() + ':' + m[2] : refKeyOf(link);
     if (!k) return null;
@@ -3138,31 +3139,35 @@
   function idMine(x) { return x.mine && !!x.key && /^[\w.]+:\S+$/.test(x.key); }   // any db:id under bqbiol:is (an HGNC symbol too): the property holds it, so it can be taken out
   function idLink(key) { var c = key.indexOf(':'), db = key.slice(0, c); return IDS_DB.indexOf(db) >= 0 ? 'http://identifiers.org/' + IDS_LINK[db] + key.slice(c + 1) : refLink(key); }
   function idsOf(t, st, id, opt) {
-    var G = gml(t, opt), d = refData(G, id, refKey(G, IDS)), S = sbgn(st, opt), g = S.glyph[id], desc = g ? refDesc(g.el) : null, out = [];
+    var G = gml(t, opt), S = sbgn(st, opt), g = S.glyph[id], desc = g ? refDesc(g.el) : null, out = [], d = {};
+    Object.keys(ID_Q).forEach(function (l) { d[l] = refData(G, id, refKey(G, ID_Q[l])); });
     if (desc) kids(desc).forEach(function (q) {
       if (q.namespaceURI !== BQB && q.namespaceURI !== BQM) return;
-      var qn = (q.namespaceURI === BQB ? 'bqbiol:' : 'bqmodel:') + q.localName;
+      var qn = (q.namespaceURI === BQB ? 'bqbiol:' : 'bqmodel:') + q.localName, l = q.namespaceURI === BQB && ID_Q[q.localName] ? q.localName : null;
       Array.prototype.forEach.call(q.getElementsByTagNameNS(RDF_NS, 'li'), function (li) {
-        var u = li.getAttributeNS(RDF_NS, 'resource') || '', x = { q: qn, link: u, key: idKeyOf(u), mine: qn === 'bqbiol:is' };
-        if (!d || !idMine(x)) out.push(x);
+        var u = li.getAttributeNS(RDF_NS, 'resource') || '', x = { q: qn, link: u, key: idKeyOf(u), mine: !!l };
+        if (!l || !d[l] || !idMine(x)) out.push(x);
       });
     });
-    if (d) (d.textContent || '').split(/\s+/).filter(Boolean).forEach(function (k) { out.push({ q: 'bqbiol:is', link: idLink(k), key: k }); });
+    Object.keys(ID_Q).forEach(function (l) { if (d[l]) (d[l].textContent || '').split(/\s+/).filter(Boolean).forEach(function (k) { out.push({ q: 'bqbiol:' + l, link: idLink(k), key: k }); }); });
     return out;
   }
-  function setIds(t, id, keys, opt) { return setProp(t, id, IDS, keys.join(' '), true, opt); }
+  function setIds(t, id, keys, opt, local) { return setProp(t, id, ID_Q[local || 'is'], keys.join(' '), true, opt); }
   function idsOut(st, gtext, opt) {
-    if (gtext.indexOf('"' + IDS + '"') < 0) return st;   // nothing changed here: the file's own as read
-    var G = gml(gtext, opt), k = refKey(G, IDS), S = sbgn(st, opt), T = null, crlf = st.indexOf('\r\n') >= 0;
-    Object.keys(S.glyph).forEach(function (id) {
-      var d0 = G.node[id] && refData(G, id, k);
-      if (!d0) return;
-      var want = (d0.textContent || '').split(/\s+/).filter(Boolean), g = S.glyph[id].el, desc = refDesc(g), L = refLinks(desc, 'is', idKeyOf);
-      var have = L.filter(function (x) { return x.mine; }).map(function (x) { return x.key; }).filter(Boolean);   // under bqbiol:is only (a bqmodel:is one is not the glyph's identity)
-      var gone = L.filter(function (x) { return idMine(x) && want.indexOf(x.key) < 0; }), add = want.filter(function (x) { return have.indexOf(x) < 0; });
-      if (gone.length || add.length) T = linksPut(T || new Tags(st, S.doc), st, g, desc, L, gone, add, 'is', idLink, crlf);
+    Object.keys(ID_Q).forEach(function (l) {
+      if (gtext.indexOf('"' + ID_Q[l] + '"') < 0) return;   // nothing changed here: the file's own as read
+      var G = gml(gtext, opt), k = refKey(G, ID_Q[l]), S = sbgn(st, opt), T = null, crlf = st.indexOf('\r\n') >= 0;
+      Object.keys(S.glyph).forEach(function (id) {
+        var d0 = G.node[id] && refData(G, id, k);
+        if (!d0) return;
+        var want = (d0.textContent || '').split(/\s+/).filter(Boolean), g = S.glyph[id].el, desc = refDesc(g), L = refLinks(desc, l, idKeyOf);
+        var have = L.filter(function (x) { return x.mine; }).map(function (x) { return x.key; }).filter(Boolean);   // under bqbiol only (a bqmodel:is one is not the glyph's identity)
+        var gone = L.filter(function (x) { return idMine(x) && want.indexOf(x.key) < 0; }), add = want.filter(function (x) { return have.indexOf(x) < 0; });
+        if (gone.length || add.length) T = linksPut(T || new Tags(st, S.doc), st, g, desc, L, gone, add, l, idLink, crlf);
+      });
+      if (T) st = T.text();
     });
-    return T ? T.text() : st;
+    return st;
   }
   // ---------- lines at a complex's members, put right on opening ----------
   // A complex's member has no lines of its own (SBGN PD 2.1, 2.3.4: a subunit has no incoming or outgoing arcs). A copy

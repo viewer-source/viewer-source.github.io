@@ -1372,8 +1372,11 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var t;
       try { t = take(from); } catch (e) { from.length = 0; from.rb = []; from.ts = []; tookShift = null; warn('Undo history lost: ' + e + '.'); return; }
       clearTimeout(timer); keyDue = null; keyRun = null;   // the keys' run undone: nothing settled on top of it
-      var was = undoText();
-      step(to, was); setText(fromUndo(t)); shared.lastChange = { name: from === undo ? 'undo' : 'redo', ids: [] }; nudgeAt = 0; shared.cdGate = null; parse(true); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null; shared.dirty = true; render(); paint(); changed();
+      var was = undoText(), selN = shared.selN.map(function (i) { return nodes2[i] && nodes2[i].id; }), selE = shared.selE.map(function (k) { return edges2[k] && edges2[k].id; });
+      step(to, was); setText(fromUndo(t)); shared.lastChange = { name: from === undo ? 'undo' : 'redo', ids: [] }; nudgeAt = 0; shared.cdGate = null; parse(true); shared.selP = []; shared.part = null;
+      shared.selN = []; nodes2.forEach(function (q, i) { if (selN.indexOf(q.id) >= 0) shared.selN.push(i); });   // what was selected stays so where the step left it (by id: places in the lists may change), so Properties stays on it
+      shared.selE = []; edges2.forEach(function (q, k) { if (selE.indexOf(q.id) >= 0) shared.selE.push(k); });
+      shared.dirty = true; render(); paint(); changed();
     }
 
     // the drawing: the renderer in the browser; the map keeps its place on screen when the drawing's edges change

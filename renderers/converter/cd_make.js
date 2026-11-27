@@ -1568,7 +1568,11 @@
   function refUrn(k) { var c = k.indexOf(':'), db = k.slice(0, c), v = k.slice(c + 1); return 'urn:miriam:' + db + ':' + (db === 'doi' ? encodeURIComponent(v) : v); }
   function idUrn(k) { var c = k.indexOf(':'), db = k.slice(0, c); if (!ID_NS[db]) fail('No identifier ' + k + '.'); return 'urn:miriam:' + ID_NS[db] + ':' + k.slice(c + 1).replace(/:/g, '%3A'); }
   function setRefs(t, rid, add, del) { return setLinks(t, function (t) { return rxRdf(t, rid); }, 'bqbiol:isDescribedBy', add, del, refUrn); }
-  function setIds(t, id, add, del) { return setLinks(t, function (t) { return itemRdf(t, id); }, 'bqbiol:is', add, del, idUrn); }
+  function setIds(t, id, add, del) {   // a family's members under bqbiol:hasVersion: a new one goes with them; del from either
+    var loc = function (t) { return itemRdf(t, id); }, hv = linksOf(t, loc(t)).some(function (r) { return r.q === 'bqbiol:hasVersion' && r.key; });
+    t = setLinks(t, loc, 'bqbiol:is', hv ? [] : add, del, idUrn);
+    return setLinks(t, loc, 'bqbiol:hasVersion', hv ? add : [], del, idUrn);
+  }
   function setLinks(t, loc, qual, add, del, urnOf) {   // loc(t): where the item's RDF is (ownRdf), found again after each change
     var own = linksOf(t, loc(t)).filter(function (r) { return r.q === qual && r.key; }), open = '<' + qual + '[\\s>]';
     var gone = own.filter(function (r) { return (del || []).some(function (k) { return sameKey(k, r.key); }); });

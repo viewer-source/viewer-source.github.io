@@ -2229,14 +2229,23 @@
     return { id, kind, title: "Identifiers", items: sbIdsMemo[3].map(annItem) };
   }
   function sbIdsSet(id, add, del, name2) {
-    var own2 = sbJs.idsOf(shared.text, shared.sb.base, id).filter(function(x) {
-      return idOwn(x.q, x.key) && del.indexOf(x.key) < 0;
-    }).map(function(x) {
-      return x.key;
+    var L = sbJs.idsOf(shared.text, shared.sb.base, id), t2 = shared.text;
+    var hv = L.some(function(x) {
+      return x.q === "bqbiol:hasVersion" && idOwn(x.q, x.key);
+    }) ? "hasVersion" : "is";
+    ["is", "hasVersion"].forEach(function(l) {
+      var mine2 = L.filter(function(x) {
+        return x.q === "bqbiol:" + l && idOwn(x.q, x.key);
+      }).map(function(x) {
+        return x.key;
+      });
+      var keep = mine2.filter(function(k) {
+        return del.indexOf(k) < 0;
+      }), more = l === hv ? add.filter(function(k) {
+        return keep.indexOf(k) < 0;
+      }) : [];
+      if (keep.length !== mine2.length || more.length) t2 = sbJs.setIds(t2, id, keep.concat(more), void 0, l);
     });
-    var t2 = sbJs.setIds(shared.text, id, own2.concat(add.filter(function(k) {
-      return own2.indexOf(k) < 0;
-    })));
     if (name2) t2 = sbJs.label(t2, id, name2);
     return commit(t2, { name: "identifiers changed", ids: [id], sel: [id], selE: [] });
   }
@@ -14933,7 +14942,7 @@
     return R;
   }
   function idOwn(q, key) {
-    return q === "bqbiol:is" && /^[\w.]+:\S+$/.test(key || "") && !/^https?:/i.test(key);
+    return (q === "bqbiol:is" || q === "bqbiol:hasVersion") && /^[\w.]+:\S+$/.test(key || "") && !/^https?:/i.test(key);
   }
   function signPlus() {
     return '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M6 1.5v9M1.5 6h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
@@ -18269,17 +18278,27 @@
     clearTimeout(timer);
     keyDue = null;
     keyRun = null;
-    var was = undoText();
+    var was = undoText(), selN = shared.selN.map(function(i) {
+      return nodes2[i] && nodes2[i].id;
+    }), selE = shared.selE.map(function(k) {
+      return edges2[k] && edges2[k].id;
+    });
     step(to, was);
     setText(fromUndo(t));
     shared.lastChange = { name: from === undo ? "undo" : "redo", ids: [] };
     nudgeAt = 0;
     shared.cdGate = null;
     parse(true);
-    shared.selN = [];
     shared.selP = [];
-    shared.selE = [];
     shared.part = null;
+    shared.selN = [];
+    nodes2.forEach(function(q, i) {
+      if (selN.indexOf(q.id) >= 0) shared.selN.push(i);
+    });
+    shared.selE = [];
+    edges2.forEach(function(q, k) {
+      if (selE.indexOf(q.id) >= 0) shared.selE.push(k);
+    });
     shared.dirty = true;
     render();
     paint();

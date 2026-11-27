@@ -46,7 +46,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var plus = async function () { if (await page.$eval('.m2-ed-padd', function (r) { return r.hidden; })) { await page.click('.m2-ed-pplus'); await page.waitForTimeout(200); } };   // the row to add opened by the + by the heading
   var paste = async function (v) { await plus(); await page.fill('.m2-ed-pin', v); await page.press('.m2-ed-pin', 'Enter'); await page.waitForTimeout(1200); };
   var cross = async function (k) { await page.click('.m2-ed-px[data-key="' + k + '"]'); await page.waitForTimeout(1200); };
-  var undo = async function () { await page.mouse.click(10, 880); await page.keyboard.press('Control+z'); await page.waitForTimeout(1200); };
+  var undo = async function () { await page.evaluate(function () { if (document.activeElement) document.activeElement.blur(); }); await page.keyboard.press('Control+z'); await page.waitForTimeout(1200); };   // no click: Properties stays open after an undo, a click there could land in a field
   var es = function () { return page.$$eval('#m2-img [data-e]', function (l) { return Array.from(new Set(l.map(function (x) { return x.getAttribute('data-e'); }))); }); };
   var glyphs = function (t, cls) { var re = new RegExp('<(?:\\w+:)?glyph\\b[^>]*class="' + cls + '"[^>]*>', 'g'); return (t.match(re) || []).map(function (g) { return /\bid="([^"]+)"/.exec(g)[1]; }); };
   var shown = function (id) { return page.$('#m2-img [data-n="' + id + '"]').then(function (h) { return !!h; }); };
@@ -91,9 +91,9 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   ok(mac + ': a plain symbol added as HGNC symbol, the row closed', (await rowNow()).indexOf('closed') === 0 && /identifiers\.org\/hgnc\.symbol:ALDOA"/.test(t2), await rowNow());
   ok(mac + ': a name already there kept', (await page.evaluate(function (id) { var g = new DOMParser().parseFromString(window.m2EditNow().text, 'application/xml').querySelector('glyph[id="' + id + '"] > label'); return g ? g.getAttribute('text') : ''; }, mac)) === name0);
   await page.click('.m2-ed-pplus'); await page.waitForTimeout(200);
-  ok(mac + ': + again chooses UniProt, the first it has none of', (await rowNow()) === 'open focus uniprot', await rowNow());
+  ok(mac + ': + again keeps HGNC symbol (a family: its members have both)', (await rowNow()) === 'open focus hgnc.symbol', await rowNow());
   await page.keyboard.press('Escape');
-  await paste('8816');
+  await plus(); await page.selectOption('.m2-ed-pdb', 'uniprot'); await page.fill('.m2-ed-pin', '8816'); await page.press('.m2-ed-pin', 'Enter'); await page.waitForTimeout(1200);
   R = await rows();
   ok(mac + ': an HGNC number not read, the symbol asked for', R && /not read: 8816 \(UniProt is/.test(R.say) && (await now()) === t2, JSON.stringify(R));
   await page.fill('.m2-ed-pin', 'PDPK1'); await page.press('.m2-ed-pin', 'Enter'); await page.waitForTimeout(1200);
@@ -111,7 +111,8 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   await paste('uniprot:P53396');
   R = await rows();
   var own = R.items.filter(function (x) { return / x$/.test(x); }).map(function (x) { return x.split(' ').slice(0, -2).join(' '); });
-  ok(mac + ': rows grouped, HGNC symbols then UniProt, each as added', JSON.stringify(own) === JSON.stringify(['HGNC symbol', 'HGNC symbol', 'UniProt', 'UniProt']), JSON.stringify(R.items));
+  var dbs = R.items.map(function (x) { return x.split(' ').slice(0, -2).join(' '); }), runs = dbs.filter(function (d, j) { return j === 0 || d !== dbs[j - 1]; });
+  ok(mac + ': rows grouped, HGNC symbols, then UniProt, then the rest, each database once', runs[0] === 'HGNC symbol' && runs[1] === 'UniProt' && new Set(runs).size === runs.length && R.items.indexOf('HGNC symbol PDPK1 x') > R.items.indexOf('HGNC symbol ALDOA x'), JSON.stringify(R.items));
   for (var u = 0; u < 6; u++) await undo();
   ok('SBGN-ML: undone, the file as it was', (await now()) === t0);
 
@@ -120,7 +121,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var c0 = await now(), nodes = await page.$$eval('#m2-img [data-n]', function (l) { return Array.from(new Set(l.map(function (x) { return x.getAttribute('data-n'); }))); });
   var info = await page.evaluate(function (a) { return a[1].map(function (id) { try { return [id, window.cd_make.idsOf(a[0], id).cls]; } catch (e) { return [id, null]; } }); }, [c0, nodes]);
   var prot = (info.filter(function (x) { return x[1] === 'PROTEIN'; })[0] || [])[0], mol = (info.filter(function (x) { return x[1] === 'SIMPLE_MOLECULE'; })[0] || [])[0];
-  var cdIds = function (t, id) { return page.evaluate(function (a) { return window.cd_make.idsOf(a[0], a[1]).links.filter(function (x) { return x.q === 'bqbiol:is'; }).map(function (x) { return x.link; }); }, [t, id]); };
+  var cdIds = function (t, id) { return page.evaluate(function (a) { return window.cd_make.idsOf(a[0], a[1]).links.filter(function (x) { return x.q === 'bqbiol:is' || x.q === 'bqbiol:hasVersion'; }).map(function (x) { return x.link; }); }, [t, id]); };   // a family's go with its members (hasVersion)
   await click(await nodeAt(prot));
   R = await rows();
   ok(prot + ': Identifiers shown for a protein, HGNC symbol chosen', R && R.title === 'Identifiers' && (await hint()) === 'HGNC symbol or UniProt (HGNC symbol)', JSON.stringify(R));
@@ -128,7 +129,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   await paste('https://www.uniprot.org/uniprotkb/Q15831/entry hgnc.symbol:SMAD7');   // a prefix says its own database, whatever is chosen
   R = await rows();
   var L = await cdIds(await now(), prot);
-  ok(prot + ': written under bqbiol:is as CellDesigner names them', L.indexOf('urn:miriam:uniprot:Q15831') >= 0 && L.indexOf('urn:miriam:hgnc.symbol:SMAD7') >= 0 && R.items.length === had + 2, JSON.stringify(L) + ' ' + JSON.stringify(R));
+  ok(prot + ': written as CellDesigner names them (a family: under hasVersion with its members)', L.indexOf('urn:miriam:uniprot:Q15831') >= 0 && L.indexOf('urn:miriam:hgnc.symbol:SMAD7') >= 0 && R.items.length === had + 2, JSON.stringify(L) + ' ' + JSON.stringify(R));
   await cross('hgnc.symbol:SMAD7');
   ok(prot + ': the cross takes the HGNC symbol out', (await cdIds(await now(), prot)).indexOf('urn:miriam:hgnc.symbol:SMAD7') < 0);
   if (mol) {

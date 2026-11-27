@@ -196,8 +196,13 @@ import { liveOff, sizeOff } from './live.js';
       return { id: id, kind: kind, title: 'Identifiers', items: sbIdsMemo[3].map(annItem) };
     }
     function sbIdsSet(id, add, del, name) {   // the glyph's own (any db:id under bqbiol:is) less del, with add; name: its label set in the same step
-      var own = sbJs.idsOf(shared.text, shared.sb.base, id).filter(function (x) { return idOwn(x.q, x.key) && del.indexOf(x.key) < 0; }).map(function (x) { return x.key; });
-      var t2 = sbJs.setIds(shared.text, id, own.concat(add.filter(function (k) { return own.indexOf(k) < 0; })));
+      var L = sbJs.idsOf(shared.text, shared.sb.base, id), t2 = shared.text;   // a family's members under bqbiol:hasVersion: a new one goes with them
+      var hv = L.some(function (x) { return x.q === 'bqbiol:hasVersion' && idOwn(x.q, x.key); }) ? 'hasVersion' : 'is';
+      ['is', 'hasVersion'].forEach(function (l) {
+        var mine = L.filter(function (x) { return x.q === 'bqbiol:' + l && idOwn(x.q, x.key); }).map(function (x) { return x.key; });
+        var keep = mine.filter(function (k) { return del.indexOf(k) < 0; }), more = l === hv ? add.filter(function (k) { return keep.indexOf(k) < 0; }) : [];
+        if (keep.length !== mine.length || more.length) t2 = sbJs.setIds(t2, id, keep.concat(more), undefined, l);
+      });
       if (name) t2 = sbJs.label(t2, id, name);
       return commit(t2, { name: 'identifiers changed', ids: [id], sel: [id], selE: [] });
     }
