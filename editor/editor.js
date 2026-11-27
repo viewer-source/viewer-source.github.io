@@ -5753,7 +5753,7 @@
     window.addEventListener("pointerdown", cdBgDown, true);
     window.addEventListener("pointerup", cdBgUp, true);
     window.addEventListener("keydown", function(e) {
-      if (!cdBg || !cdPal() || !on || V.current !== map || V.typing() || /input|textarea|select/i.test(document.activeElement.tagName) || document.querySelector(".m2-cx")) return;
+      if (!cdBg || shared.selN.length || shared.selE.length || shared.selP.length || shared.svSel || !cdPal() || !on || V.current !== map || V.typing() || /input|textarea|select/i.test(document.activeElement.tagName) || document.querySelector(".m2-cx")) return;
       if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -5762,7 +5762,10 @@
     }, true);
     var cdEscFor;
     window.addEventListener("keydown", function(e) {
-      if (e.key === "Escape") cdEscFor = !!document.querySelector(".m2-cx");
+      if (e.key === "Escape") {
+        var hb = document.getElementById("m2-ed-help-box");
+        cdEscFor = !!document.querySelector(".m2-cx") || !!(hb && !hb.hidden) || !!tool || !!link;
+      }
     }, true);
     document.addEventListener("keydown", function(e) {
       if (cdBg && e.key === "Escape" && !e.defaultPrevented && !cdEscFor) {
@@ -5933,6 +5936,9 @@
   function cdBgOwn(P) {
     return !!(cdBg && cdPal() && on && V.current === map && P && cdBgIn(cdBg.box, P) && cdBgFree(P));
   }
+  function cdBgIs(ref) {
+    return !!cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join();
+  }
   function cdBgDelete() {
     var ref = cdBg && cdBg.ref;
     cdBg = null;
@@ -5980,7 +5986,7 @@
       cdBgDo(ref, function(t, n) {
         return cdMk.backgroundSet(t, n, { name: r.note });
       });
-      if (cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join()) cdBg.ref = { name: r.note, box: ref.box.slice() };
+      if (cdBgIs(ref)) cdBg.ref = { name: r.note, box: ref.box.slice() };
       paint();
     }, function(e) {
       warn("Background image not replaced: " + String(e && e.message ? e.message : e).replace(/\.?$/, "."));
@@ -6001,7 +6007,7 @@
       cdBgDo(ref, function(t, n) {
         return cdMk.backgroundSet(t, n, { box: nb });
       });
-      if (cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join()) {
+      if (cdBgIs(ref)) {
         cdBg.ref = { name: ref.name, box: nb };
         cdBg.box = nb.slice();
       }
@@ -6010,6 +6016,10 @@
   }
   function cdBgMarks(out) {
     if (!cdBg) return;
+    if (shared.selN.length || shared.selE.length || shared.selP.length || shared.svSel) {
+      cdBg = null;
+      return;
+    }
     if (!cdBg.drag) {
       var g = cdPal() && on && V.current === map ? cdBgFind(cdBg.ref) : null;
       if (!g && cdBg.at === (shared.cd && shared.cd.now) && cdPal() && on && V.current === map) g = cdBg.ref;
@@ -6030,7 +6040,7 @@
     if (e.button !== 0 || !cdPal() || !V.view.contains(e.target) || !editing(e) || tool || link) return;
     var P = at(e);
     if (!cdBg) {
-      if (!e.shiftKey && !shared.selN.length && !shared.selE.length && !shared.selP.length && !shared.svSel && cdBgFree(P) && cdBgAt(P)) cdTap = { x: e.clientX, y: e.clientY, P };
+      if (!e.shiftKey && !shared.selN.length && !shared.selE.length && !shared.selP.length && !shared.svSel && cdBgAt(P) && cdBgFree(P)) cdTap = { x: e.clientX, y: e.clientY, P };
       return;
     }
     var b = cdBg.box, tol = Math.max(5, 8 / V.z), o = 3.3;
@@ -6070,7 +6080,7 @@
           nb[3] = b0[1] + b0[3] - nb[1];
         } else if (hy === 2) nb[3] = Math.max(1, b0[3] + dy);
         if (corner && ev.shiftKey) {
-          var k = Math.max(nb[2] / b0[2], nb[3] / b0[3]);
+          var kw = nb[2] / b0[2], kh = nb[3] / b0[3], k = Math.abs(kw - 1) >= Math.abs(kh - 1) ? kw : kh;
           nb[2] = b0[2] * k;
           nb[3] = b0[3] * k;
           if (hx === 0) nb[0] = b0[0] + b0[2] - nb[2];
@@ -6146,7 +6156,7 @@
       });
       r.querySelector("button").addEventListener("click", function(e) {
         e.currentTarget.blur();
-        if (cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join()) cdBg = null;
+        if (cdBgIs(ref)) cdBg = null;
         cdBgDo(ref, cdMk.backgroundRemove);
       });
     });

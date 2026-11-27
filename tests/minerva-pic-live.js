@@ -181,6 +181,11 @@ var SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" heigh
   await page.keyboard.press('Escape'); await page.waitForTimeout(500);
   ok('5. Esc: let go, the handles gone, the row no longer shaded', (await handles()) === 0 && !(await bgRows())[0][2]);
   await page.mouse.click(fp[0], fp[1]); await page.waitForTimeout(600);
+  await page.keyboard.press('Control+a'); await page.waitForTimeout(600);
+  var tA = await now(); await page.keyboard.press('Delete'); await page.waitForTimeout(2000);
+  ok('5. Select all after the background: Delete deletes the selection, the background stays', /Glyph: glyphs\/tissue\.png/.test(await now()) && !/id="sa_n8"/.test(await now()) && (await now()) !== tA);
+  await undo(); await page.keyboard.press('Escape'); await page.waitForTimeout(400);
+  await page.mouse.click(fp[0], fp[1]); await page.waitForTimeout(600);
   var c8 = await box('sa_n8'); await page.mouse.click(c8[0] + 6, c8[1] + 6); await page.waitForTimeout(600);
   var pm = await page.$eval('#m2-editwin .m2-ed-pmap', function (x) { return x.hidden; });
   ok('5. a click on a species over it: the species selected, the background let go', pm === true && (await page.$eval('#m2-editwin .m2-ed-props', function (x) { return !x.hidden; })), pm);
@@ -191,7 +196,7 @@ var SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" heigh
   var br = hr.reduce(function (a, q) { return !a || q[0] + q[1] > a[0] + a[1] ? q : a; }, null), b0r = await bgBox();
   await page.keyboard.down('Shift'); await page.mouse.move(br[0], br[1]); await page.mouse.down(); await page.mouse.move(br[0] - 80, br[1] - 5, { steps: 8 }); await page.mouse.up(); await page.keyboard.up('Shift'); await page.waitForTimeout(2000);
   var b1r = await bgBox(), rat = function (q) { return +/w="([^"]+)"/.exec(q)[1] / +/h="([^"]+)"/.exec(q)[1]; };
-  ok('5. Shift on a corner handle: resized, its proportions kept', b1r !== b0r && Math.abs(rat(b1r) / rat(b0r) - 1) < 0.01, b0r + ' -> ' + b1r);
+  ok('5. Shift on a corner handle dragged left: smaller, its proportions kept', +/w="([^"]+)"/.exec(b0r)[1] - +/w="([^"]+)"/.exec(b1r)[1] > 20 && Math.abs(rat(b1r) / rat(b0r) - 1) < 0.01, b0r + ' -> ' + b1r);
   await undo();
   var fp2 = await freeIn() || fp;
   it = await menu(fp2[0], fp2[1], '__none__');

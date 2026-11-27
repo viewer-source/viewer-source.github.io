@@ -439,7 +439,7 @@ import { field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confett
     V.view.addEventListener('pointerleave', function () { if (cdOver) { cdOver = null; paint(); } });
     }
     function cdOverMarks(out) {
-      cdBgMarks(out);   // a background being moved or resized
+      cdBgMarks(out);   // the background selected
       var i = cdOver && cdPal() && !link && cdAdd() === 'p' ? nodes2.findIndex(function (n) { return n.id === cdOver; }) : -1;
       if (i < 0) { cdOver = null; return; }
       cdMainLine(out, i);
@@ -1585,11 +1585,11 @@ import { field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confett
     window.addEventListener('pointerdown', cdBgDown, true);
     window.addEventListener('pointerup', cdBgUp, true);
     window.addEventListener('keydown', function (e) {   // Delete or Backspace removes it (one undo step), before the editor's own keys
-      if (!cdBg || !cdPal() || !on || V.current !== map || V.typing() || /input|textarea|select/i.test(document.activeElement.tagName) || document.querySelector('.m2-cx')) return;
+      if (!cdBg || shared.selN.length || shared.selE.length || shared.selP.length || shared.svSel || !cdPal() || !on || V.current !== map || V.typing() || /input|textarea|select/i.test(document.activeElement.tagName) || document.querySelector('.m2-cx')) return;
       if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); e.stopImmediatePropagation(); cdBgDelete(); }
     }, true);
     var cdEscFor;   // a menu or list open when Esc came: that Esc is theirs (they close first, the selection stays)
-    window.addEventListener('keydown', function (e) { if (e.key === 'Escape') cdEscFor = !!document.querySelector('.m2-cx'); }, true);
+    window.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var hb = document.getElementById('m2-ed-help-box'); cdEscFor = !!document.querySelector('.m2-cx') || !!(hb && !hb.hidden) || !!tool || !!link; } }, true);   // a menu, the help box, a palette tool or a line in hand closes first
     document.addEventListener('keydown', function (e) {   // Esc lets it go, once a menu, list or window open has taken its own Esc
       if (cdBg && e.key === 'Escape' && !e.defaultPrevented && !cdEscFor) { cdBg = null; paint(); }
     });
@@ -1682,6 +1682,7 @@ import { field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confett
       paint();
     }
     function cdBgOwn(P) { return !!(cdBg && cdPal() && on && V.current === map && P && cdBgIn(cdBg.box, P) && cdBgFree(P)); }   // a right click on the selected one, off the network
+    function cdBgIs(ref) { return !!cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join(); }   // that background the one selected
     function cdBgDelete() { var ref = cdBg && cdBg.ref; cdBg = null; if (ref) cdBgDo(ref, cdMk.backgroundRemove); else paint(); }
     function cdBgOwnItems() {
       var ref = cdBg.ref;
@@ -1702,7 +1703,7 @@ import { field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confett
       return cdPicKeep(f).then(function (r) {
         if (!cdStill(m0)) return;
         cdBgDo(ref, function (t, n) { return cdMk.backgroundSet(t, n, { name: r.note }); });
-        if (cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join()) cdBg.ref = { name: r.note, box: ref.box.slice() };   // still selected
+        if (cdBgIs(ref)) cdBg.ref = { name: r.note, box: ref.box.slice() };   // still selected
         paint();
       }, function (e) { warn('Background image not replaced: ' + String(e && e.message ? e.message : e).replace(/\.?$/, '.')); });
     }
@@ -1714,7 +1715,7 @@ import { field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confett
         if (!d || !g2 || !on || V.current !== m0) return;
         var nb = cdFitBox(g2.box, d).map(function (v) { return Math.round(v * 100) / 100; });
         cdBgDo(ref, function (t, n) { return cdMk.backgroundSet(t, n, { box: nb }); });
-        if (cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join()) { cdBg.ref = { name: ref.name, box: nb }; cdBg.box = nb.slice(); }
+        if (cdBgIs(ref)) { cdBg.ref = { name: ref.name, box: nb }; cdBg.box = nb.slice(); }
         paint();
       });
     }
@@ -1722,6 +1723,7 @@ import { field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confett
     // adding, a remove); after an undo of a move, followed to the box it has again when it is the only one of its picture
     function cdBgMarks(out) {
       if (!cdBg) return;
+      if (shared.selN.length || shared.selE.length || shared.selP.length || shared.svSel) { cdBg = null; return; }   // something else selected (Select all, a menu's selection): let go
       if (!cdBg.drag) {
         var g = cdPal() && on && V.current === map ? cdBgFind(cdBg.ref) : null;
         if (!g && cdBg.at === (shared.cd && shared.cd.now) && cdPal() && on && V.current === map) g = cdBg.ref;   // just added: the text naming it not read yet
@@ -1738,7 +1740,7 @@ import { field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confett
       if (e.button !== 0 || !cdPal() || !V.view.contains(e.target) || !editing(e) || tool || link) return;
       var P = at(e);
       if (!cdBg) {
-        if (!e.shiftKey && !shared.selN.length && !shared.selE.length && !shared.selP.length && !shared.svSel && cdBgFree(P) && cdBgAt(P)) cdTap = { x: e.clientX, y: e.clientY, P: P };   // taken on release (cdBgUp), so a drag still moves the map or draws an area
+        if (!e.shiftKey && !shared.selN.length && !shared.selE.length && !shared.selP.length && !shared.svSel && cdBgAt(P) && cdBgFree(P)) cdTap = { x: e.clientX, y: e.clientY, P: P };   // taken on release (cdBgUp), so a drag still moves the map or draws an area
         return;
       }
       var b = cdBg.box, tol = Math.max(5, 8 / V.z), o = 3.3;
@@ -1757,8 +1759,8 @@ import { field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confett
         else {
           if (hx === 0) { nb[0] = Math.min(b0[0] + dx, b0[0] + b0[2] - 1); nb[2] = b0[0] + b0[2] - nb[0]; } else if (hx === 2) nb[2] = Math.max(1, b0[2] + dx);
           if (hy === 0) { nb[1] = Math.min(b0[1] + dy, b0[1] + b0[3] - 1); nb[3] = b0[1] + b0[3] - nb[1]; } else if (hy === 2) nb[3] = Math.max(1, b0[3] + dy);
-          if (corner && ev.shiftKey) {   // its proportions kept: the larger change of the two, the opposite corner still
-            var k = Math.max(nb[2] / b0[2], nb[3] / b0[3]);
+          if (corner && ev.shiftKey) {   // its proportions kept: the larger change of the two (growing or shrinking), the opposite corner still
+            var kw = nb[2] / b0[2], kh = nb[3] / b0[3], k = Math.abs(kw - 1) >= Math.abs(kh - 1) ? kw : kh;
             nb[2] = b0[2] * k; nb[3] = b0[3] * k;
             if (hx === 0) nb[0] = b0[0] + b0[2] - nb[2];
             if (hy === 0) nb[1] = b0[1] + b0[3] - nb[3];
@@ -1806,7 +1808,7 @@ import { field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confett
         var ns = r.querySelector('.m2-ed-ppicname'); ns.textContent = nm; ns.title = g.name;
         if (sel && sel.n === g.n) r.classList.add('m2-ed-pbgsel');
         r.addEventListener('click', function (e) { if (!e.target.closest('button')) cdBgSelect(ref); });
-        r.querySelector('button').addEventListener('click', function (e) { e.currentTarget.blur(); if (cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join()) cdBg = null; cdBgDo(ref, cdMk.backgroundRemove); });
+        r.querySelector('button').addEventListener('click', function (e) { e.currentTarget.blur(); if (cdBgIs(ref)) cdBg = null; cdBgDo(ref, cdMk.backgroundRemove); });
       });
       var a = row(bs.length ? '' : 'Background', '<button type="button" class="m2-ed-pbgadd">Upload</button>');
       a.dataset.k = 'bgadd'; a.title = 'A PNG or SVG under the whole map, as MINERVA draws its backgrounds';

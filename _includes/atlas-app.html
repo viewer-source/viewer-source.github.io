@@ -1724,10 +1724,6 @@ page, so its styles keep the base they were made on).
     [/^Download (PNG|SVG)$/, ''],
     [/^Download (\d+ maps )?as MINERVA zip$/, 'Download as MINERVA zip'],
     [/^(Set|Replace) image…$/, 'Set or replace image'],
-    [/^Replace background image( \(.+\))?…$/, 'Replace background image'],   // the file's name after it when a map has several
-    [/^Move and resize background( \(.+\))?$/, 'Move and resize background'],
-    [/^Fit background to image( \(.+\))?$/, 'Fit background to image'],
-    [/^Remove background image( \(.+\))?$/, 'Remove background image'],
     [/^Download /, 'Download <its format>'],
     [/^Turn (process|logic gate)$/, 'Turn process or logic gate'],
     [/^Make main (reactant|product)$/, 'Make main reactant or product'],
@@ -1744,7 +1740,7 @@ page, so its styles keep the base they were made on).
     [/^Unit of information ct:/, 'Unit of information ct:mRNA or ct:gene']
   ];
   var MENU_PAGE = ['Switch to viewer or edit', '|', 'New SBGN-ML map', 'New CellDesigner map', '|', 'Full screen with tools', '|', 'Download <its format>', 'Download PNG', 'Download SVG', 'Copy image as PNG', 'Copy image as SVG', '|', 'Open in Newt', 'Open in MINERVA'];
-  var MENU_MAPTOOLS = ['Snap map to grid', 'Repack all complexes', 'Show grid', 'Snap to grid', 'Add background image…', 'Replace background image', 'Move and resize background', 'Fit background to image', 'Remove background image', 'Remove all bend points'];
+  var MENU_MAPTOOLS = ['Snap map to grid', 'Repack all complexes', 'Show grid', 'Snap to grid', 'Add background image…', 'Remove all bend points'];
   var MENU_LISTNEW = ['New SBGN-ML map', 'New CellDesigner map', 'Add map from file', 'Add group', 'Restore example maps'];
   var MENU_LISTVIEW = ['Open all groups', 'Close all groups', 'Show or hide file extensions'];
   var MENUS = [
@@ -1763,6 +1759,7 @@ page, so its styles keep the base they were made on).
     { id: 'edit-glyph', head: 'Map, edit mode', name: 'Other node, complex', items: ['Change identity', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
     { id: 'edit-sv', cd: false, head: 'Map, edit mode', name: 'State variable or unit of information (SBGN-ML)', items: ['Delete'] },
     { id: 'edit-cd-species', cd: true, head: 'Map, edit mode', name: 'Species (CellDesigner)', items: ['Add state variable', 'Add structural state', 'Add unit of information', 'Change identity', 'Make multimer or monomer', 'Set or replace image', 'Fit box to image', 'Remove image', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-cd-background', cd: true, head: 'Map, edit mode', name: 'Background image (CellDesigner)', items: ['Set or replace image', 'Fit box to image', '|', 'Delete'] },
     { id: 'edit-cd-residue', cd: true, head: 'Map, edit mode', name: 'Residue (CellDesigner)', items: ['Edit', 'Change state', '|', 'Delete'] },
     { id: 'edit-cd-unit', cd: true, head: 'Map, edit mode', name: 'Unit of information or structural state (CellDesigner)', items: ['Edit', 'Change unit', '|', 'Delete'] },
     { id: 'edit-compartment', head: 'Map, edit mode', name: 'Inside a compartment', items: ['Name at <place>', 'Bring forward', 'Send backward', 'Set or replace image', 'Fit box to image', 'Remove image', '|', 'Select all of this kind', '|', 'Delete', '|'].concat(MENU_MAPTOOLS, '|', MENU_PAGE) },
