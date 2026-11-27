@@ -1983,8 +1983,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         warn('The token was not accepted (' + e + ').'); ghForm(true);
       });
     });
-    // Disconnect from GitHub: a change of setup, not of the map, so never one click: a window says what it does and
-    // Cancel is the default (Enter, Esc, a click beside it); once done, the red line says it until the token is pasted again
+    // Switch where maps are saved (from GitHub): a change of setup, not of the map, so never one click: a window offers
+    // a folder or this browser and Cancel is the default (Enter, Esc, a click beside it); once done, the red line says it until the token is pasted again
     offSay = null;
     box.querySelector('#m2-ed-gh-off').addEventListener('click', function () { askOff(disconnect); });
     box.querySelector('#m2-ed-this').addEventListener('click', editShown);
@@ -2002,55 +2002,81 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
     function askOff(go) {
       var veil = document.createElement('div'), w = document.createElement('div'), back = document.activeElement;
-      veil.className = 'm2-me-veil'; w.className = 'm2-ask';
+      veil.className = 'm2-me-veil'; w.className = 'm2-ask m2-ask-switch m2-ipop-beside';
       w.setAttribute('role', 'alertdialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-labelledby', 'm2-ask-h');
-      // with a folder possible (Chrome, Edge): Copy maps to a folder, then disconnect (own.js moveOut), the maps then kept
-      // there; GitHub left as it is either way. Cancel stays the default
-      var n = canFolder ? toMove().length : 0;
-      w.innerHTML = '<h3 id="m2-ask-h">Disconnect from GitHub?</h3>' +
-        (n ? '<p>To go on working with your maps on this computer, copy them to a folder first: the ' + n + ' maps on GitHub, with their colours and pictures, are written into a folder you choose and kept there from then on. Nothing on GitHub is changed or deleted. When you connect again, what you changed in the folder is saved back to GitHub.</p>' +
-          '<p>Disconnecting without copying: your moves are no longer saved to ' + (repo() || 'the site') + '. They are kept in this browser only, and lost if its site data is cleared.</p>'
-          : '<p>Your moves will no longer be saved to ' + (repo() || 'the site') + ' or shown on the site. They are kept in this browser only, and lost if its site data is cleared.' + (canFolder ? '' : ' To copy your maps to a folder on this computer, open the site in Chrome or Edge.') + '</p>') +
-        '<p>The token is removed from this browser. To save to the site again, you paste it again.</p>' +
-        '<p class="m2-ask-say" hidden></p>' +
-        '<div class="m2-ask-row"><button type="button" class="m2-ask-no">Cancel</button>' + (n ? '<button type="button" class="m2-ask-copy">Copy to a folder, then disconnect</button><button type="button" class="m2-ask-yes">Disconnect without copying</button>' : '<button type="button" class="m2-ask-yes">Disconnect</button>') + '</div>';
+      // two choices of where the maps are saved from now on, each a card with one line and a circled i (its text in the
+      // shared info window, set beside this window by .m2-ipop-beside): a folder (own.js moveOut copies the maps there,
+      // then the token goes) or this browser; GitHub left as it is either way. Cancel stays the default
+      var n = canFolder ? toMove().length : 0, esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); };
+      var info = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="7.2" stroke-width="1.1"/><path d="M8 7.3v4.2" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="4.6" r="1.2" fill="currentColor" stroke="none"/></svg>';
+      var card = function (cls, name, line, text, off) {
+        return '<div class="m2-ask-opt m2-ipop-row"><button type="button" class="' + cls + '"' + (off ? ' disabled' : '') + '><b>' + name + '</b><span>' + line + '</span></button>' +
+          '<button type="button" class="m2-ask-i m2-itip" aria-label="About ' + name + '" data-info="' + esc(text) + '" aria-expanded="false">' + info + '</button></div>';
+      };
+      var keep = 'GitHub is left as it is: connect again and what you changed goes back to it.';
+      w.innerHTML = '<div class="m2-ask-pick"><h3 id="m2-ask-h">Switch where maps are saved</h3><p class="m2-ask-now">Now: GitHub' + (repo() ? ' (' + esc(repo()) + ')' : '') + '</p>' +
+        (canFolder && !n ? '' : card('m2-ask-copy', 'Work from a folder', canFolder ? 'Saved to a folder on this computer' : 'Chrome or Edge only',
+          (n ? 'Your ' + n + ' maps, with their colours and pictures, are copied into a folder you choose. ' : 'The maps are copied into a folder you choose. ') +
+          'From then on every change is saved there automatically, and yEd or CellDesigner can open the same files. ' + keep + ' Chrome and Edge only: other browsers cannot save into a folder.', !canFolder)) +
+        card('m2-ask-yes', 'Work in this browser', 'Saved in this browser only',
+          'Every change is kept in this browser, on this computer only, and lost if the browser\'s site data is cleared. ' + keep + ' The token is removed from this browser; to save to GitHub again, paste it again.') +
+        '<p class="m2-ask-say" hidden></p><button type="button" class="m2-ask-no">Cancel</button></div>' +
+        '<div class="m2-ask-busy" hidden><h3></h3><div class="m2-ask-bar"><i></i></div><p class="m2-ask-say"></p></div>' +
+        '<div class="m2-ask-done" hidden><h3></h3><p>Every change is saved in this folder.<br>GitHub is left as it was.</p><button type="button" class="m2-ask-ok">OK</button></div>';
       veil.appendChild(w); document.body.appendChild(veil);
-      var busy = false;
+      var busy = false, cardOpen = false;
       var close = function (yes) {
         if (busy) return;   // copying: the window stays until it is done or refused
-        veil.remove(); window.removeEventListener('keydown', key, true);
+        veil.remove(); window.removeEventListener('keydown', key, true); document.removeEventListener('pointerdown', seen, true);
         if (back && back.isConnected && back.focus) back.focus();
         if (yes) go();
       };
-      var no = w.querySelector('.m2-ask-no'), yes = w.querySelector('.m2-ask-yes'), cp = w.querySelector('.m2-ask-copy'), say = w.querySelector('.m2-ask-say');
-      var order = [no, cp, yes].filter(Boolean);
-      var key = function (e) {   // the page behind takes no keys; Esc and Enter on Cancel close it unchanged
+      var pick = w.querySelector('.m2-ask-pick'), wait = w.querySelector('.m2-ask-busy'), done = w.querySelector('.m2-ask-done');
+      var no = w.querySelector('.m2-ask-no'), yes = w.querySelector('.m2-ask-yes'), cp = w.querySelector('.m2-ask-copy'), say = pick.querySelector('.m2-ask-say');
+      var order = function () { return Array.prototype.filter.call(w.querySelectorAll('button'), function (b) { return b.offsetParent && !b.disabled; }); };
+      var popped = function () { return !!document.querySelector('.m2-ipop'); };
+      // a press while a circled i's window is open closes that window only (its own listener); registered before it, so
+      // the window is still there when this reads it
+      var seen = function () { cardOpen = popped(); };
+      document.addEventListener('pointerdown', seen, true);
+      var key = function (e) {   // the page behind takes no keys; Esc closes a circled i's window first, then this one
+        if (e.key === 'Escape' && popped()) return;
         e.stopImmediatePropagation();
         if (e.key === 'Escape') { e.preventDefault(); close(false); }
-        else if (e.key === 'Tab') { e.preventDefault(); order[(order.indexOf(document.activeElement) + (e.shiftKey ? order.length - 1 : 1)) % order.length].focus(); }
+        else if (e.key === 'Tab') { e.preventDefault(); var o = order(); if (o.length) o[(o.indexOf(document.activeElement) + (e.shiftKey ? o.length - 1 : 1)) % o.length].focus(); }
       };
       no.addEventListener('click', function () { close(false); });
       yes.addEventListener('click', function () { close(true); });
-      if (cp) cp.addEventListener('click', function () {
+      w.querySelector('.m2-ask-ok').addEventListener('click', function () { close(false); });
+      if (cp && canFolder) cp.addEventListener('click', function () {
         window.showDirectoryPicker({ id: 'atlas-maps', mode: 'readwrite' }).then(function (dir) {
-          busy = true; order.forEach(function (b) { b.disabled = true; }); say.hidden = false; say.classList.remove('m2-ask-bad');
+          busy = true; say.hidden = true; say.classList.remove('m2-ask-bad');
+          pick.hidden = true; wait.hidden = false; wait.querySelector('h3').textContent = 'Copying to “' + dir.name + '”';
+          var bar = wait.querySelector('.m2-ask-bar i'), line = wait.querySelector('.m2-ask-say');
+          bar.style.width = '0'; line.textContent = '';
+          var tell = function (t) {
+            var m = /^Copying (\d+) of (\d+)/.exec(t);
+            if (m) { bar.style.width = (100 * (+m[1] - 1) / +m[2]) + '%'; line.textContent = m[1] + ' of ' + m[2] + ' maps'; }
+            else { bar.style.width = '100%'; line.textContent = t.replace(/^Copying the pictures: .*/, 'The pictures'); }
+          };
           var cur = V.current && V.current.id;
           if (on) { var st = box.querySelector('#m2-ed-stop'); if (st && !st.hidden) st.click(); }   // editing stopped first, a save waiting sent, so the copy has every move
-          return Promise.resolve(saveTimer ? push() : saving).catch(function () {}).then(function () { return moveOut(dir, function (t) { say.textContent = t; }); }).then(function (res) {
-            busy = false; close(false);
+          return Promise.resolve(saveTimer ? push() : saving).catch(function () {}).then(function () { return moveOut(dir, tell); }).then(function (res) {
             disconnect();
             offSay = null; buttons(); quiet(); localBox(); V.refreshMine();   // the list without the site's entries, their copies in their place
-            status.textContent = 'Disconnected from GitHub: ' + res.n + ' maps copied to the folder ' + res.dir.name + ' and kept there from now on; GitHub is unchanged. Connect again to save what you change back to GitHub.';   // the list without the site's entries, their copies in their place
+            status.textContent = 'Working from the folder ' + res.dir.name + ': ' + res.n + ' maps copied there, every change saved there; GitHub is unchanged. Connect again to save what you change back to GitHub.';
             if (cur && res.ids[cur]) setTimeout(function () { V.go(res.ids[cur]); }, 0);   // the map shown: its copy in its place
+            wait.hidden = true; done.hidden = false; done.querySelector('h3').textContent = 'Working from “' + res.dir.name + '”';
+            busy = false; done.querySelector('.m2-ask-ok').focus();
           });
         }).catch(function (e) {
           if (e && e.name === 'AbortError') return;   // no folder chosen: the window as it was
-          busy = false; order.forEach(function (b) { b.disabled = false; });
+          busy = false; wait.hidden = true; pick.hidden = false;
           say.hidden = false; say.classList.add('m2-ask-bad');
           say.textContent = 'Not copied, still connected to GitHub: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '. Files already written stay in the folder; copying again goes on from them.';
         });
       });
-      veil.addEventListener('pointerdown', function (e) { if (e.target === veil) close(false); });
+      veil.addEventListener('pointerdown', function (e) { if (e.target === veil && !cardOpen) close(false); });
       window.addEventListener('keydown', key, true);
       no.focus();
     }

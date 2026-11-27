@@ -94,7 +94,10 @@ var KEEP = ['colour-test', 'glycolysis-graphml', 'colour-glycolysis-sbgn', 'tag-
   // the copy
   refuse = null; puts = [];
   await askOff(); await page.click('.m2-ask-copy');
-  await page.waitForSelector('.m2-ask', { state: 'detached', timeout: 120000 });
+  await page.waitForSelector('.m2-ask-done:not([hidden])', { timeout: 120000 });
+  var doneSaid = await page.$eval('.m2-ask-done', function (e) { return e.textContent; });
+  ok('2. the window says where it now works, OK closes it', /Working from .* Every change is saved in this folder/.test(doneSaid), doneSaid);
+  await page.click('.m2-ask-ok'); await page.waitForSelector('.m2-ask', { state: 'detached', timeout: 5000 });
   await page.waitForTimeout(2500);
   var rs = (await recs()).filter(function (r) { return r.from; }), fl = await inFolder();
   ok('2. copied: four copies, their files in the folder (the one stopped before reused, not doubled)', rs.length === 4 && fl.filter(function (n) { return /\.(xml|graphml|sbgn)$/.test(n); }).length === 4, fl.join(' '));
@@ -104,7 +107,7 @@ var KEEP = ['colour-test', 'glycolysis-graphml', 'colour-glycolysis-sbgn', 'tag-
   var after = await ids(), tt = await titles();
   ok('2. each map listed once, from the folder', after.length === 4 && after.every(function (x) { return /^mine-/.test(x); }) && !twice(tt).length, after.join(' ') + ' | ' + tt.join(' / '));
   var red = await page.$eval('#m2-ed-status', function (s) { return s.textContent; }).catch(function () { return ''; });
-  ok('2. said: copied, GitHub unchanged', /4 maps copied to the folder/.test(red), red);
+  ok('2. said: copied, GitHub unchanged', /4 maps copied there/.test(red), red);
 
   // a reload: still once each, read from the folder; a file changed there as another program would
   await open(); await list();
@@ -146,7 +149,7 @@ var KEEP = ['colour-test', 'glycolysis-graphml', 'colour-glycolysis-sbgn', 'tag-
   ok('5. the builds of the saves: the site\'s maps in the copies\' places, each once', !twice(after).length && !after.some(function (x) { return /^mine-/.test(x); }) && after.indexOf('colour-test') >= 0 && after.indexOf('tag-celldesigner') >= 0 && !(await recs()).length, after.join(' '));
   // a second time in the folder: one copy changed both there and on GitHub (both kept), one GitHub refuses (not back yet)
   await askOff(); await page.click('.m2-ask-copy');
-  await page.waitForSelector('.m2-ask', { state: 'detached', timeout: 120000 }); await page.waitForTimeout(2500);
+  await page.waitForSelector('.m2-ask-done:not([hidden])', { timeout: 120000 }); await page.click('.m2-ask-ok'); await page.waitForTimeout(2500);
   var rs2 = (await recs()).filter(function (r) { return r.from; });
   var bothC = rs2.filter(function (r) { return r.from.site === 'colour-glycolysis-sbgn'; })[0], failC = rs2.filter(function (r) { return r.from.site === 'colour-test'; })[0];
   ok('6. copied again', !!bothC && !!failC, JSON.stringify(rs2.map(function (r) { return r.from.site; })));

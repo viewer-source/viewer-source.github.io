@@ -69,6 +69,25 @@ var prot = function () { return (files[P].match(/<celldesigner:class>PROTEIN</g)
   ok('2. Enter (on Cancel): closed, still connected', !(await dlg()) && (await tok()) === 'test-token');
   await page.click('#m2-ed-gh-off'); await page.waitForTimeout(300); await page.mouse.click(20, 880); await page.waitForTimeout(200);
   ok('2. a click beside: closed, still connected', !(await dlg()) && (await tok()) === 'test-token');
+  // the circled i: its text in a window beside the dialog, level with its card; a click anywhere closes that window
+  // only, the dialog stays; with none open, a click beside closes the dialog
+  await page.click('#m2-ed-gh-off'); await page.waitForTimeout(300);
+  var bx = async function (sel) { return page.$eval(sel, function (e) { var r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom }; }).catch(function () { return null; }); };
+  ok('2. two cards of one height, each with a circled i', await page.evaluate(function () {
+    var c = Array.prototype.map.call(document.querySelectorAll('.m2-ask-opt > button:first-child'), function (b) { return b.offsetHeight; });
+    return c.length >= 1 && c.every(function (h) { return h === c[0]; }) && document.querySelectorAll('.m2-ask-opt .m2-itip').length === c.length;
+  }));
+  await page.click('.m2-ask-opt:last-child .m2-itip'); await page.waitForTimeout(200);
+  var d = await bx('.m2-ask'), p = await bx('.m2-ipop'), o = await bx('.m2-ask-opt:last-child');
+  ok('2. the circled i: its text beside the dialog, level with its card, not over it', !!(d && p && o) && p.l >= d.r && Math.abs(p.t - o.t) < 2, JSON.stringify([d, p, o]));
+  await page.mouse.click(20, 880); await page.waitForTimeout(200);
+  ok('2. a click beside with the text open: the text closed, the dialog kept', !(await page.$('.m2-ipop')) && !!(await dlg()));
+  await page.click('.m2-ask-opt:last-child .m2-itip'); await page.waitForTimeout(200); await page.click('.m2-ask-opt:last-child .m2-itip'); await page.waitForTimeout(200);
+  ok('2. the circled i again closes its text', !(await page.$('.m2-ipop')) && !!(await dlg()));
+  await page.click('.m2-ask-opt:last-child .m2-itip'); await page.waitForTimeout(200); await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+  ok('2. Esc with the text open: the text closed, the dialog kept', !(await page.$('.m2-ipop')) && !!(await dlg()));
+  await page.mouse.click(20, 880); await page.waitForTimeout(200);
+  ok('2. then a click beside closes the dialog, still connected', !(await dlg()) && (await tok()) === 'test-token');
   await page.click('#m2-ed-gh-off'); await page.waitForTimeout(300); await page.click('.m2-ask-yes'); await page.waitForTimeout(500);
   ok('2. Disconnect: token gone, said in red, the token field shown', !(await dlg()) && !(await tok()) && /Disconnected from GitHub/.test(await status()) &&
     (await page.$eval('#m2-ed-status', function (e) { return e.classList.contains('m2-ed-warn'); })) && !!(await page.$('#m2-ed-gh-token:visible')), await status());
