@@ -4535,8 +4535,11 @@
       }), done);
     })]);
   }
+  var redSeen;
   function redIn(k) {
-    return k === "REDUCED_PHYSICAL_STIMULATION" ? cdMk.stimStyle(shared.cd.now) : k;
+    if (k !== "REDUCED_PHYSICAL_STIMULATION") return k;
+    if (!redSeen || redSeen[0] !== shared.cd.now) redSeen = [shared.cd.now, cdMk.stimStyle(shared.cd.now)];
+    return redSeen[1];
   }
   var CD_MODS;
   function __run19() {
@@ -4796,7 +4799,7 @@
     }).replace(/&#(\d+);/g, function(m, d) {
       return String.fromCodePoint(+d);
     }).replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
-    return window.cdrender.plainName(s).replace(/_br_/g, " ");
+    return window.cdrender.plainName(s, true).replace(/_br_/g, " ");
   }
   function cdRename(id, v) {
     cdApply(function(t) {

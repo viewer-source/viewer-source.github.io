@@ -805,7 +805,12 @@ import { annItem, field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill
       })]);
     }
     // a reduced notation type as this map writes it: a stimulation as its own stimulations are (cd_make.stimStyle)
-    function redIn(k) { return k === 'REDUCED_PHYSICAL_STIMULATION' ? cdMk.stimStyle(shared.cd.now) : k; }
+    var redSeen;   // the last text and its style: a drag asks on every move
+    function redIn(k) {
+      if (k !== 'REDUCED_PHYSICAL_STIMULATION') return k;
+      if (!redSeen || redSeen[0] !== shared.cd.now) redSeen = [shared.cd.now, cdMk.stimStyle(shared.cd.now)];
+      return redSeen[1];
+    }
     var CD_MODS;
     function __run19() {   // run at start, in order (__start)
     CD_MODS = CD_MOD.map(function (q) { return [q[0], q[0]]; });
@@ -959,7 +964,7 @@ import { annItem, field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill
       if (s === A.id && !shown) return '';
       s = s.replace(/&#x([0-9a-f]+);/gi, function (m, h) { return String.fromCodePoint(parseInt(h, 16)); }).replace(/&#(\d+);/g, function (m, d) { return String.fromCodePoint(+d); })
         .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-      return window.cdrender.plainName(s).replace(/_br_/g, ' ');
+      return window.cdrender.plainName(s, true).replace(/_br_/g, ' ');
     }
     function cdRename(id, v) { cdApply(function (t) { return cdMk.rename(t, id, v); }, [id]); }
 

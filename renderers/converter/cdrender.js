@@ -174,10 +174,11 @@
   function scripted(t, k) { var o = ''; for (var c of t) { var i = k.chars.indexOf(c); if (i < 0) return t; o += Array.from(k.marks)[i]; } return o; }
   function named(s) { NAME.forEach(function (q) { s = s.split(q[1]).join(q[0]); }); return s; }
   function inner(t) { var w = named('_' + t + '_'); return w.length === 1 ? w : named(t); }   // _sub_beta_endsub_: the code's own underscores are the markup's
-  function plainName(s) {
-    s = String(s).replace(/_sub_(.*?)_endsub_/g, function (m, t) { return scripted(inner(t), SUB); })
-      .replace(/_super_(.*?)_endsuper_/g, function (m, t) { return scripted(inner(t), SUP); });
-    return named(s);
+  // raw: a run with no sub- or superscript form kept as its markup (a name field, so a name saved again is the file's)
+  function plainName(s, raw) {
+    var run = function (k) { return function (m, t) { var v = scripted(inner(t), k); return raw && v === inner(t) && t ? m : v; }; };
+    s = String(s).replace(/_sub_(.*?)_endsub_/g, run(SUB)).replace(/_super_(.*?)_endsuper_/g, run(SUP));
+    return raw ? s.split(/(_(?:sub|super|endsub|endsuper)_)/).map(function (p, i) { return i % 2 ? p : named(p); }).join('') : named(s);
   }
 
   // ---- cdrender ----
@@ -192,9 +193,9 @@
   function drawnAs(cls, sp) {
     if (cls !== 'DRUG') return cls;
     var found = false;
-    (function walk(e) {   // the identifiers' addresses (rdf:resource) and texts anywhere in the species
+    (function walk(e) {   // the identifiers' addresses (rdf:resource) and texts in the species, its notes left out
       for (var i = 0; !found && e.attributes && i < e.attributes.length; i++) found = COMPOUND.test(e.attributes[i].value);
-      for (var c = e.firstChild; !found && c; c = c.nextSibling) found = c.nodeType === 1 ? (walk(c), found) : c.nodeType === 3 && COMPOUND.test(c.nodeValue);
+      for (var c = e.firstChild; !found && c; c = c.nextSibling) found = c.nodeType === 1 ? (c.localName !== 'notes' && walk(c), found) : c.nodeType === 3 && COMPOUND.test(c.nodeValue);
     })(sp || {});
     return found ? 'SIMPLE_MOLECULE' : 'UNKNOWN';
   }
@@ -448,6 +449,7 @@
     if (pic) { this.out.push(image(pic, x, y, w, h)); return; }   // a species drawn as its picture: no shape, marks or name (MINERVA's way)
     var hd = find(si, 'cd:state/cd:homodimer'), n = hd ? I(text(hd)) : 1;
     var paint = find(a, 'cd:usualView/cd:paint'), c = colour(paint ? get(paint, 'color') : 'ffffffff', '#ffffff'), fill = c[0], alpha = c[1];   // a paint that is no colour: white, as none
+    if (A[5] === 'DRUG' && cls === 'UNKNOWN' && /^#f{6}$/i.test(fill)) fill = '#dddddd';   // drawn as unknown, with no outline: a white one would not show
     var hyp = find(si, 'cd:hypothetical');
     var dash = hyp && text(hyp) === 'true' ? ' stroke-dasharray="5,3"' : '';
     var sl = find(a, 'cd:usualView/cd:singleLine');
@@ -478,9 +480,6 @@
     else if (cls === 'TRUNCATED') {
       var v = [x + 5, y, x + w, y + h * 0.6, x + w - 8, y + h * 0.4, y + h, x + 5, x, y + h - 5, y + 5, x + 5, y].map(fmt);
       this.out.push('<path d="M' + v[0] + ' ' + v[1] + ' H' + v[2] + ' V' + v[3] + ' L' + v[4] + ' ' + v[5] + ' V' + v[6] + ' H' + v[7] + ' A5 5 0 0 1 ' + v[8] + ' ' + v[9] + ' V' + v[10] + ' A5 5 0 0 1 ' + v[11] + ' ' + v[12] + ' Z" ' + style + '/>');
-    } else if (cls === 'DRUG') {
-      this.out.push('<rect x="' + fmt(x) + '" y="' + fmt(y) + '" width="' + fmt(w) + '" height="' + fmt(h) + '" rx="' + fmt(h / 2) + '" ' + style + '/>');
-      this.out.push('<rect x="' + fmt(x + 4) + '" y="' + fmt(y + 4) + '" width="' + fmt(w - 8) + '" height="' + fmt(h - 8) + '" rx="' + fmt(h / 2 - 4) + '" fill="none" stroke="#000"/>');
     } else if (cls === 'GENE') this.out.push('<rect x="' + fmt(x) + '" y="' + fmt(y) + '" width="' + fmt(w) + '" height="' + fmt(h) + '" ' + style + '/>');
     else if (cls === 'DEGRADED') {
       var cx = x + w / 2, cy = y + h / 2;
@@ -774,7 +773,7 @@
     var seq = [G].concat(gbend.map(function (p) { return fromFrame(G, B, p); }), [B]), L = seq.length;
     seq[L - 1] = B = this.clip(pa, B, Bb[1], seq[L - 2]);
     var u = unit(B[0] - seq[L - 2][0], B[1] - seq[L - 2][1]);
-    var ot = get(top[0], 'modificationType'), stop = this.head(GATE_HEAD[ot] || REDUCED_HEAD[ot] || 'stimulation', B, u);
+    var ot = get(top[0], 'modificationType'), o0 = String(ot).replace(/^UNKNOWN_/, ''), stop = this.head(GATE_HEAD[ot] || REDUCED_HEAD[o0] || 'stimulation', B, u);   // a dashed output's head as its plain type's
     var u0 = unit(seq[1][0] - G[0], seq[1][1] - G[1]);
     this.open(this.cur + '|a');
     this.path([[G[0] + 6 * u0[0], G[1] + 6 * u0[1]]].concat(seq.slice(1, -1), [stop]), col, wd, false, false, true);

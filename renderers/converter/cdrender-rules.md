@@ -109,7 +109,7 @@ an unknown entity has no outline in CellDesigner (group labels drawn as unknown 
 
 - `if cls == 'ION_CHANNEL' and fill != 'none':`: a channel and its 20 wide gate: touching when closed, apart when open
 - `elif cls == 'TRUNCATED':`: a protein whose right end is cut: square corners there, a notch in from the bottom
-- `elif cls == 'DRUG':`: a stadium with a second line 4 inside
+- A drug is drawn as a simple molecule or as unknown (drawnAs: a compound database's identifier in the file), never as CellDesigner's stadium
 - `elif cls == 'DEGRADED':`: a circle of 3/8 the box, a slash across the whole box
 
 ## states
