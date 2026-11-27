@@ -9,7 +9,8 @@
 //      its other files and record in .viewer/minerva/; not opened again on the visit after.
 //   5. With a token (GitHub played here): one commit with the maps, their pages, the pictures in maps/glyphs/, the
 //      other files and the record in maps/minerva/<record>/; a picture of the same name already there as another file
-//      numbered, the map's notes following it.
+//      numbered, the map's notes following it. The group packed whole as a MINERVA zip: the project's mapping.xml back
+//      in it, read from the record on GitHub (the map matched to its record by its id on the site).
 //   node tests/minerva-zip-live.js <folder of the zips> [base address] [--local]
 // The zips: pathwayforge sources/minerva/ (AD_UC_comparison.zip, asthma_map_bg.zip, HIDmap_v14.zip; open projects). --local: the editor
 // and the viewer of the working tree routed into the live page (run styles/update.sh first).
@@ -42,7 +43,7 @@ function zipOf(entries) {   // a stored zip made here: [[name, text]]
   var cdText = cp.execFileSync('unzip', ['-p', path.join(zips, 'AD_UC_comparison.zip'), 'AD_UC_comparison.xml'], { maxBuffer: 1 << 26 }).toString();
   var UNDRAWN = zipOf([['top.xml', fs.readFileSync(path.join(here, '..', 'notes', 'check-files', 'not-gate-one-input-v01.xml'), 'utf8')], ['submaps/broken.xml', '<?xml version="1.0"?><sbml xmlns:celldesigner="http://www.sbml.org/2001/ns/celldesigner"><model><annotation><celldesigner:extension>']]);
   var BADZIP = zipOf([['top.xml', cdText], ['submaps/AF14 Th0.xml', '<?xml version="1.0"?><sbgn xmlns="http://sbgn.org/libsbgn/0.3"><map/></sbgn>']]);
-  var b = await chromium.launch(), ctx = await b.newContext({ viewport: { width: 1400, height: 900 } }), page = await ctx.newPage(), errs = [], said = [];
+  var b = await chromium.launch(), ctx = await b.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true }), page = await ctx.newPage(), errs = [], said = [];
   page.on('pageerror', function (e) { errs.push(e.message); });
   page.on('dialog', function (d) { said.push(d.message()); d.accept().catch(function () {}); });
   if (local) {
@@ -144,6 +145,16 @@ function zipOf(entries) {   // a stored zip made here: [[name, text]]
     if (rest === '/contents/maps/glyphs') return json(200, Object.keys(files).filter(function (p) { return /^maps\/glyphs\/[^/]+$/.test(p); }).map(function (p) { return { name: p.slice(12), path: p, type: 'file', sha: 'sha-of-another-picture' }; }));
     if (rest === '/git/ref/heads/main') return json(200, { object: { sha: 'c' + commits } });
     if (/^\/git\/commits\/c\d+$/.test(rest)) return json(200, { tree: { sha: 't' + commits } });
+    if (/^\/git\/trees\/[^/]+$/.test(rest) && meth === 'GET') {   // the committed files as trees: the root t<n>, a folder T:<path>
+      var tsha = decodeURIComponent(rest.slice(11)), dir = /^t\d+$/.test(tsha) ? '' : tsha.slice(2).replace(/~/g, '/') + '/', deep = u.searchParams.get('recursive') === '1', seenT = {}, tree = [];
+      Object.keys(files).filter(function (p) { return p.indexOf(dir) === 0; }).forEach(function (p) {
+        var r = p.slice(dir.length), k = r.indexOf('/');
+        if (deep || k < 0) tree.push({ path: r, type: 'blob', sha: 'F:' + p });
+        if (k > 0 && !seenT[r.slice(0, k)]) { seenT[r.slice(0, k)] = 1; tree.push({ path: r.slice(0, k), type: 'tree', sha: 'T:' + (dir + r.slice(0, k)).replace(/\//g, '~') }); }
+      });
+      return json(200, { tree: tree, truncated: false });
+    }
+    if (/^\/git\/blobs\/F:/.test(rest) && meth === 'GET') { var fp = decodeURIComponent(rest.slice(13)); return files[fp] == null ? json(404, {}) : json(200, { content: Buffer.from(files[fp]).toString('base64'), encoding: 'base64' }); }
     if (rest === '/git/blobs' && meth === 'POST') { var bl = JSON.parse(r.postData()), id = 'b' + Object.keys(blobs).length; blobs[id] = bl.encoding === 'base64' ? Buffer.from(bl.content, 'base64') : bl.content; return json(201, { sha: id }); }
     if (rest === '/git/trees' && meth === 'POST') { var tid = 'n' + Object.keys(trees).length; trees[tid] = JSON.parse(r.postData()).tree; return json(201, { sha: tid }); }
     if (rest === '/git/commits' && meth === 'POST') { trees['c:' + (commits + 1)] = trees[JSON.parse(r.postData()).tree]; return json(201, { sha: 'c' + (commits + 1) }); }
@@ -164,6 +175,17 @@ function zipOf(entries) {   // a stored zip made here: [[name, text]]
   ok('5. the other files and the record in maps/minerva/<record>/', rj && rj.zip === 'AD_UC_comparison.zip' && rj.maps.length === 1 && 'maps/' + rj.maps[0].id + '.xml' === map[0] && rj.maps[0].path === 'AD_UC_comparison.xml' && Buffer.isBuffer(files[recp[0].replace('record.json', 'submaps/mapping.xml')]), JSON.stringify(rj));
   ok('5. its top level shown', await page.$eval('#m2-list .m2-map.m2-on .m2-name', function (x) { return x.textContent; }).catch(function () { return ''; }) === 'AD_UC_comparison');
   ok('5. the group named after the zip', (await groups()).some(function (g) { return /^AD_UC_comparison/.test(g); }));
+  var gAD = (await groups()).filter(function (g) { return /^AD_UC_comparison/.test(g); })[0];
+  await page.evaluate(function () { return new Promise(function (res) { setTimeout(res, 61000); }); });   // the records read a minute ago read again
+  await page.click('#m2-list .m2-group[data-group="' + gAD + '"]', { button: 'right' }); await page.waitForTimeout(400);
+  var it5 = await page.$$eval('.m2-cx button', function (l) { return l.map(function (x) { return x.textContent; }); });
+  var dl5 = page.waitForEvent('download', { timeout: 120000 }).catch(function () { return null; });
+  if (it5.indexOf('Download as MINERVA zip') >= 0) await page.click('.m2-cx button:text-is("Download as MINERVA zip")'); else await page.keyboard.press('Escape');
+  var d5 = await dl5, z5 = d5 && path.join(require('os').tmpdir(), 'mzl5-' + Date.now() + '.zip'); if (d5) await d5.saveAs(z5);
+  var n5 = z5 ? cp.spawnSync('python3', ['-I', '-c', 'import sys,zipfile; print("|".join(zipfile.ZipFile(sys.argv[1]).namelist()))', z5], { encoding: 'utf8' }).stdout.trim().split('|') : [];
+  if (z5) fs.rmSync(z5, { force: true });
+  ok('5. the group packed whole: its mapping.xml back from the record on GitHub', n5[0] === 'AD_UC_comparison.xml' && n5.indexOf('submaps/mapping.xml') >= 0, n5.length + ' files ' + n5.slice(0, 3).join(' | ') + ' / ' + said.join(' | ') + ' / ' + it5.join(' | '));
+  said = said.filter(function (x) { return !/^Downloaded as a MINERVA zip/.test(x); });   // what the pack says of the pictures it made
   ok('no message box, no script errors (token)', !said.length && !errs.length, said.concat(errs).join(' | '));
   await b.close();
   console.log(bad ? bad + ' WRONG' : 'all ok'); process.exit(bad ? 1 : 0);

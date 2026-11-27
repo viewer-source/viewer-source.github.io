@@ -85,7 +85,7 @@ function py(args) { return cp.spawnSync('python3', ['-I', path.join(forge, 'scri
   refused('a GraphML map', [{ path: 'a.xml', text: '<?xml version="1.0"?><graphml xmlns="http://graphml.graphdrawing.org/xmlns"/>', title: 'Glycolysis' }], 'the map Glycolysis is GraphML: only CellDesigner maps go into a MINERVA zip');
   refused('an SBGN-ML map', [{ path: 'a.xml', text: '<sbgn xmlns="http://sbgn.org/libsbgn/0.3"><map/></sbgn>', title: 'B' }], 'the map B is SBGN-ML');
   refused('two maps of one file name', [{ path: 'submaps/a.xml', text: sp, title: 'one' }, { path: 'submaps/A.xml', text: sp, title: 'two' }], 'two maps would be submaps/A.xml in the zip');
-  refused('a picture in a folder of glyphs/', [{ path: 'a.xml', text: sp.replace('glyphs/a', 'glyphs/x/a'), title: 'x' }], 'MINERVA reads pictures as glyphs/<name>.png');
+  refused('a picture in a folder of glyphs/', [{ path: 'a.xml', text: sp.replace('glyphs/a', 'glyphs/x/a'), title: 'x' }], 'MINERVA reads images as glyphs/<name>.png');
   // an SVG's pixels: 2 a map unit, at most 8000 on a side, the box's proportions
   ok('an SVG drawn at 2 pixels a map unit', M.svgPixels([300, 100]).join() === '600,200');
   ok('an SVG capped at 8000 px, its proportions kept', M.svgPixels([10000, 2500]).join() === '8000,2000');

@@ -123,7 +123,7 @@ var GRAPHML = fs.readFileSync(path.join(__dirname, 'rules-cases', 'base.graphml'
   await page.evaluate(function (svg) {
     return new Promise(function (res) {
       var q = indexedDB.open('atlas-edit-drafts');
-      q.onsuccess = function () { var tx = q.result.transaction('folder', 'readwrite'); tx.objectStore('folder').put({ id: 'mz-pictures', glyphs: { 'glyphs/svgcell.svg': new Blob([svg], { type: 'image/svg+xml' }) }, at: Date.now() }, 'minerva:mz-pictures'); tx.oncomplete = res; tx.onerror = res; };
+      q.onsuccess = function () { var tx = q.result.transaction('folder', 'readwrite'); tx.objectStore('folder').put({ id: 'mz-pictures', glyphs: { 'glyphs/svgcell.svg': new Blob([svg], { type: 'image/svg+xml' }) }, at: Date.now() }, 'minerva:mz-pictures'); tx.oncomplete = function () { q.result.close(); res(); }; tx.onerror = function () { q.result.close(); res(); }; };   // closed, else the page's next opening of the database waits on it
       q.onerror = res;
     });
   }, SVG);
@@ -157,7 +157,7 @@ var GRAPHML = fs.readFileSync(path.join(__dirname, 'rules-cases', 'base.graphml'
     ok('6. the smallest text, 6 units, readable: letters about 8 px tall', txH >= 6 && txH <= 11, 'text ' + txH + ' px');
     ok('6. the compartment\'s Z-Index written in the zip, after its Glyph line, and said', /Glyph: glyphs\/svgcell\.png\nZ-Index: -2\n/.test(xml) && said.some(function (s) { return /Z-Index/.test(s); }), said.join(' | '));
   }
-  var stored = await page.evaluate(function () { return new Promise(function (res) { var q = indexedDB.open('atlas-edit-drafts'); q.onsuccess = function () { var all = q.result.transaction('mine').objectStore('mine').getAll(); all.onsuccess = function () { res(all.result.filter(function (r) { return r && r.title === 'svg cell'; }).map(function (r) { return r.text; })[0] || null); }; all.onerror = function () { res('err'); }; }; q.onerror = function () { res('no db'); }; }); }).catch(function (e) { return String(e); });
+  var stored = await page.evaluate(function () { return new Promise(function (res) { var q = indexedDB.open('atlas-edit-drafts'); q.onsuccess = function () { var all = q.result.transaction('mine').objectStore('mine').getAll(); all.onsuccess = function () { q.result.close(); res(all.result.filter(function (r) { return r && r.title === 'svg cell'; }).map(function (r) { return r.text; })[0] || null); }; all.onerror = function () { res('err'); }; }; q.onerror = function () { res('no db'); }; }); }).catch(function (e) { return String(e); });
   ok('6. the map kept here unchanged by the pack', stored === CD, stored ? stored.length + ' chars' : String(stored));
   // 7
   await page.click('#m2-list .m2-map:has(.m2-name:text-is("svg cell"))'); await page.waitForTimeout(300);

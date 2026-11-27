@@ -8528,6 +8528,9 @@
     storedAll = null;
     recsNow = null;
     recIds = null;
+    recErr = null;
+    mgMemo = null;
+    packing = false;
     try {
       packedGroups = JSON.parse(localStorage.getItem("atlas-minerva-groups") || "[]");
     } catch (e) {
@@ -8559,7 +8562,7 @@
     return f.arrayBuffer().then(function(a) {
       var d = new Uint8Array(a), png = d.length > 8 && d[0] === 137 && d[1] === 80 && d[2] === 78 && d[3] === 71;
       var svg = !png && /<svg[\s>]/i.test(new TextDecoder().decode(d.subarray(0, 65536)));
-      if (!png && !svg) throw new Error(f.name + " is not a image MINERVA can take here: PNG or SVG only");
+      if (!png && !svg) throw new Error(f.name + " is not an image MINERVA can take here: PNG or SVG only");
       var stem2 = f.name.replace(/\.[^.]*$/, "").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^[-.]+|-+$/g, "") || "image", ext = png ? ".png" : ".svg", other = png ? ".svg" : ".png";
       var gh2 = repo() && token(), look = gh2 ? siteGlyphs() : localGlyphs();
       return bytesSha(d).then(function(sha) {
@@ -8636,15 +8639,18 @@
       });
     });
   }
-  function picRead(n) {
+  function picRead(n, quiet2) {
     var svg = n.replace(/\.png$/i, ".svg"), names = svg !== n ? [svg, n] : [n];
     return names.reduce(function(q, m) {
       return q.then(function(b) {
-        return b || picFrom(m);
+        return b || picFrom(m, quiet2);
       });
     }, Promise.resolve(null));
   }
-  function picFrom(n) {
+  function picFrom(n, quiet2) {
+    var follow2 = quiet2 ? function(x, b) {
+      return b;
+    } : followTo;
     var type = /\.svg$/i.test(n) ? "image/svg+xml" : "image/png", blob = function(d) {
       return d ? new Blob([d], { type }) : null;
     };
@@ -8674,19 +8680,19 @@
       }).then(function(h) {
         return h && h.getFile();
       }).then(function(fl) {
-        return fl ? follow(n, blob(fl), "folder") : null;
+        return fl ? follow2(n, blob(fl), "folder") : null;
       }).catch(function() {
         return null;
       });
     }).then(function(b) {
       return b || storedPic(n).then(function(d) {
-        return d && follow(n, blob(d), "browser");
+        return d && follow2(n, blob(d), "browser");
       }).catch(function() {
         return null;
       });
     });
   }
-  function follow(n, b, from) {
+  function followTo(n, b, from) {
     var gh2 = repo() && token(), to = gh2 ? "gh" : V.folderName() && from === "browser" ? "folder" : null;
     if (to && !followed[n]) {
       followed[n] = 1;
@@ -8782,7 +8788,9 @@
     var rec = { id: p.rec, zip: p.zip, size: p.size, maps, glyphs: blobs(p.glyphs), kept: blobs(p.kept), at: Date.now() };
     return V.draftDo("readwrite", function(st) {
       return st.put(rec, "minerva:" + rec.id);
-    }, "folder").catch(function(e) {
+    }, "folder").then(function() {
+      storedAll = null;
+    }).catch(function(e) {
       warn("The images of " + p.zip + " were not kept in this browser: " + (e && e.message ? e.message : e));
     }).then(function() {
       return folderProject(p, maps);
@@ -8823,10 +8831,26 @@
   }
   var recsNow;
   var recIds;
+  var recErr;
+  var mgMemo;
+  var packing;
   var packedGroups;
   function projRecs() {
     if (recsNow) return recsNow;
     var gh2 = repo() && token();
+    if (!gh2) recErr = null;
+    var claimed = {};
+    var asListed = function(x) {
+      var c = mine[x.id];
+      if (!c && x.file) {
+        var k = Object.keys(mine).filter(function(i) {
+          return mine[i].file === x.file && !claimed[i];
+        })[0];
+        c = k ? mine[k] : null;
+      }
+      if (c) claimed[c.id] = 1;
+      return { id: c ? c.site || c.id : x.id, also: x.id, path: x.path };
+    };
     var bytesOfBlob = function(b) {
       return function() {
         return b.arrayBuffer().then(function(a) {
@@ -8835,11 +8859,6 @@
       };
     };
     var fromGh = function() {
-      var dir = function(p) {
-        return api("/contents/" + p.split("/").map(encodeURIComponent).join("/") + "?ref=main").then(function(r) {
-          return r.status === 404 ? [] : ghJson(r);
-        });
-      };
       var blobOf = function(sha) {
         return function() {
           return api("/git/blobs/" + sha).then(ghJson).then(function(d) {
@@ -8849,32 +8868,40 @@
           });
         };
       };
-      var walk2 = function(p, base, out) {
-        return dir(p).then(function(l) {
-          return (Array.isArray(l) ? l : []).reduce(function(q, x) {
-            return q.then(function() {
-              return x.type === "dir" ? walk2(p + "/" + x.name, base + x.name + "/", out) : out[base + x.name] = x.sha;
-            });
-          }, Promise.resolve()).then(function() {
-            return out;
-          });
+      var under2 = function(sha, name2) {
+        return api("/git/trees/" + sha).then(ghJson).then(function(t) {
+          return (t.tree || []).filter(function(f) {
+            return f.path === name2 && f.type === "tree";
+          })[0] || null;
         });
       };
-      return dir("maps/minerva").then(function(l) {
-        return Promise.all((Array.isArray(l) ? l : []).filter(function(x) {
-          return x.type === "dir";
-        }).map(function(x) {
-          return walk2("maps/minerva/" + x.name, "", {}).then(function(files) {
-            if (!files["record.json"]) return null;
-            return blobOf(files["record.json"])().then(function(d) {
-              var r = JSON.parse(new TextDecoder().decode(d)), kept = {};
-              (r.kept || []).forEach(function(k) {
-                if (files[k]) kept[k] = blobOf(files[k]);
-              });
-              return { id: x.name, maps: r.maps || [], kept };
-            }).catch(function() {
-              return null;
+      return api("/git/ref/heads/main").then(ghJson).then(function(ref) {
+        return api("/git/commits/" + ref.object.sha).then(ghJson);
+      }).then(function(c) {
+        return under2(c.tree.sha, "maps");
+      }).then(function(m) {
+        return m && under2(m.sha, "minerva");
+      }).then(function(d) {
+        return d ? api("/git/trees/" + d.sha + "?recursive=1").then(ghJson) : { tree: [] };
+      }).then(function(tr) {
+        if (tr.truncated) throw new Error("the records are too many to read at once");
+        var recs = {};
+        (tr.tree || []).forEach(function(x) {
+          if (x.type !== "blob") return;
+          var k = x.path.indexOf("/");
+          if (k > 0) (recs[x.path.slice(0, k)] = recs[x.path.slice(0, k)] || {})[x.path.slice(k + 1)] = x.sha;
+        });
+        return Promise.all(Object.keys(recs).map(function(id) {
+          var files = recs[id];
+          if (!files["record.json"]) return null;
+          return blobOf(files["record.json"])().then(function(d) {
+            var r = JSON.parse(new TextDecoder().decode(d)), kept = {};
+            (r.kept || []).forEach(function(k) {
+              if (files[k]) kept[k] = blobOf(files[k]);
             });
+            return { id, maps: r.maps || [], kept };
+          }).catch(function() {
+            return null;
           });
         }));
       });
@@ -8890,15 +8917,80 @@
           Object.keys(r.kept || {}).forEach(function(k) {
             kept[k] = bytesOfBlob(r.kept[k]);
           });
-          return { id: r.id, maps: r.maps.map(function(m) {
-            var c = mine[m.id];
-            return { id: c && c.site ? c.site : m.id, also: m.id, path: m.path };
-          }), kept };
+          return { id: r.id, maps: r.maps.map(asListed), kept };
         });
+      }).catch(function() {
+        return [];
       });
     };
-    recsNow = (gh2 ? fromGh() : fromBrowser()).then(function(l) {
-      l = (l || []).filter(Boolean);
+    var fromFolder = function() {
+      if (!V.folderName()) return Promise.resolve([]);
+      var file = function(d, path) {
+        return path.split("/").slice(0, -1).reduce(function(q, x) {
+          return q.then(function(h) {
+            return h.getDirectoryHandle(x);
+          });
+        }, Promise.resolve(d)).then(function(h) {
+          return h.getFileHandle(path.split("/").pop());
+        }).then(function(h) {
+          return h.getFile();
+        });
+      };
+      return folder().then(function(f) {
+        return f && f.dir.getDirectoryHandle(".viewer").then(function(v) {
+          return v.getDirectoryHandle("minerva");
+        });
+      }).then(function(m) {
+        if (!m) return [];
+        var it = m.values(), out = [];
+        return function next() {
+          return it.next().then(function(x) {
+            if (x.done) return out;
+            if (x.value.kind === "directory") out.push(x.value);
+            return next();
+          });
+        }().then(function(ds) {
+          return Promise.all(ds.map(function(d) {
+            return file(d, "record.json").then(function(fl) {
+              return fl.text();
+            }).then(function(tx) {
+              var r = JSON.parse(tx), kept = {};
+              (r.kept || []).forEach(function(k) {
+                kept[k] = function() {
+                  return file(d, k).then(function(fl) {
+                    return fl.arrayBuffer();
+                  }).then(function(a) {
+                    return new Uint8Array(a);
+                  });
+                };
+              });
+              return { id: d.name, maps: (r.maps || []).map(asListed), kept };
+            }).catch(function() {
+              return null;
+            });
+          }));
+        });
+      }).catch(function() {
+        return [];
+      });
+    };
+    var got = Promise.all([gh2 ? fromGh().then(function(l) {
+      recErr = null;
+      return l;
+    }, function(e) {
+      recErr = e;
+      return [];
+    }) : Promise.resolve([]), fromBrowser(), fromFolder()]);
+    recsNow = got.then(function(ls) {
+      var seen = {}, l = [];
+      ls.forEach(function(x) {
+        (x || []).filter(Boolean).forEach(function(r) {
+          if (!seen[r.id]) {
+            seen[r.id] = 1;
+            l.push(r);
+          }
+        });
+      });
       recIds = {};
       l.forEach(function(r) {
         r.maps.forEach(function(m) {
@@ -8906,15 +8998,18 @@
           if (m.also) recIds[m.also] = r;
         });
       });
+      mgMemo = null;
       V.refreshMine();
+      if (recErr) recsNow = null;
       return l;
-    }).catch(function() {
-      return [];
     });
     setTimeout(function() {
       recsNow = null;
     }, 6e4);
     return recsNow;
+  }
+  function sameMap(x, m) {
+    return x.id === m.id || x.also === m.id || !!mine[m.id] && !!mine[m.id].site && mine[m.id].site === x.id;
   }
   function recOf(m) {
     return recIds && (recIds[m.id] || mine[m.id] && mine[m.id].site && recIds[mine[m.id].site]) || null;
@@ -8927,25 +9022,32 @@
   }
   function minervaGroup(g) {
     if (!g) return false;
-    var ms = inGroup(g);
-    return packedGroups.indexOf(g) >= 0 || ms.some(function(m) {
+    memoNow();
+    if (!(g in mgMemo.g)) mgMemo.g[g] = packedGroups.indexOf(g) >= 0 || inGroup(g).some(function(m) {
       return recOf(m) || m.mine && mine[m.id] && /Glyph:/.test(mine[m.id].text || "");
     });
+    return mgMemo.g[g];
   }
   function cdOf(m) {
     return m.mine ? !!mine[m.id] && isCd(mine[m.id].text) : fmtOf(m) === "CellDesigner";
   }
+  function memoNow() {
+    if (!mgMemo || mgMemo.maps !== V.maps) mgMemo = { maps: V.maps, g: /* @__PURE__ */ Object.create(null), first: /* @__PURE__ */ Object.create(null) };
+  }
+  function firstOf(g) {
+    memoNow();
+    if (!(g in mgMemo.first)) mgMemo.first[g] = inGroup(g)[0] || null;
+    return mgMemo.first[g];
+  }
   function isTop(m) {
-    if (!m || m.binned || !m.group || !recIds) return false;
-    var ms = inGroup(m.group);
-    return ms[0] === m && minervaGroup(m.group);
+    return !!m && !m.binned && !!m.group && !!recIds && firstOf(m.group) === m && minervaGroup(m.group);
   }
   function canTop(m) {
-    return !!m && !m.binned && !!m.group && !!recIds && inGroup(m.group)[0] !== m && minervaGroup(m.group) && movable(m);
+    return !!m && !m.binned && !!m.group && !!recIds && firstOf(m.group) !== m && minervaGroup(m.group) && movable(m);
   }
   function zipPath(m, rec, top) {
     var at2 = rec && rec.maps.filter(function(x) {
-      return x.id === m.id || x.also === m.id || mine[m.id] && mine[m.id].site === x.id;
+      return sameMap(x, m);
     })[0];
     var base = at2 ? at2.path.split("/").pop() : m.mine && mine[m.id] && mine[m.id].file ? mine[m.id].file.replace(/\.[^.]*$/, "") + ".xml" : bare(mapName(m)).replace(/[\/\\:*?"<>|]+/g, "-") + ".xml";
     return top ? base : "submaps/" + base;
@@ -8966,11 +9068,18 @@
       }, "image/png");
     });
   }
+  function svgSize(s) {
+    var n = function(a) {
+      var v = s && s.getAttribute(a) || "";
+      return /%/.test(v) ? 0 : parseFloat(v) || 0;
+    }, vb = (s && s.getAttribute("viewBox") || "").split(/[\s,]+/).map(Number);
+    return n("width") && n("height") ? [n("width"), n("height")] : vb.length === 4 && vb[2] > 0 && vb[3] > 0 ? [vb[2], vb[3]] : [300, 150];
+  }
   function svgPng(blob, px) {
     return blob.text().then(function(t) {
       var doc2 = new DOMParser().parseFromString(t, "image/svg+xml"), s = doc2.documentElement;
       if (!s || s.localName !== "svg" || doc2.getElementsByTagName("parsererror").length) throw new Error("not an SVG that can be read");
-      if (!s.getAttribute("viewBox")) s.setAttribute("viewBox", "0 0 " + (parseFloat(s.getAttribute("width")) || 300) + " " + (parseFloat(s.getAttribute("height")) || 150));
+      if (!s.getAttribute("viewBox")) s.setAttribute("viewBox", "0 0 " + svgSize(s).join(" "));
       s.setAttribute("width", px[0]);
       s.setAttribute("height", px[1]);
       s.setAttribute("preserveAspectRatio", "none");
@@ -9004,6 +9113,9 @@
     });
   }
   function packZip(ms, whole, name2) {
+    if (packing) return alert("A MINERVA zip is being made: wait for its download.");
+    packing = true;
+    storedAll = null;
     var said = [], fitted = [];
     ms = ms.filter(function(m) {
       return m && !m.binned;
@@ -9013,14 +9125,22 @@
       return m !== first;
     }));
     return projRecs().then(function() {
+      if (recErr) throw new Error("the projects' records could not be read from GitHub (" + (recErr.message || recErr) + "): try again in a moment");
       return Promise.all(ms.map(function(m) {
         return textNow(m);
       }));
     }).then(function(texts) {
+      var taken = { "submaps/mapping.xml": 1 }, renamed2 = [];
       var maps = ms.map(function(m, i) {
-        return { m, text: texts[i], title: mapName(m), path: zipPath(m, recOf(m), i === 0) };
+        var p0 = zipPath(m, recOf(m), i === 0), p = p0;
+        for (var k = 2; taken[p.toLowerCase()]; k++) p = p0.replace(/\.xml$/i, "") + "-" + k + ".xml";
+        taken[p.toLowerCase()] = 1;
+        if (p !== p0) renamed2.push(p);
+        return { m, text: texts[i], title: mapName(m), path: p };
       });
-      var plan = packPlan(maps), kept = {}, missing = [], top = recOf(ms[0]);
+      if (renamed2.length) said.push("Maps of a name taken numbered in the zip: " + renamed2.join(", ") + " (MINERVA names a submap by it).");
+      var top = recOf(ms[0]) || ms.map(recOf).filter(Boolean)[0] || null;
+      var plan = packPlan(maps), kept = {}, missing = [];
       var others = ms.map(recOf).filter(function(r, i, a) {
         return r && r !== top && a.indexOf(r) === i;
       });
@@ -9028,7 +9148,7 @@
         kept = top.kept;
         missing = top.maps.filter(function(x) {
           return !ms.some(function(m) {
-            return x.id === m.id || x.also === m.id;
+            return sameMap(x, m);
           });
         }).map(function(x) {
           return x.path;
@@ -9057,20 +9177,19 @@
           return named.indexOf(x) < 0;
         })).reduce(function(q, gname) {
           return q.then(function() {
-            return picRead(gname);
+            return picRead(gname, true);
           }).then(function(b) {
             var n = plan.filter(function(x) {
               return x.name === gname;
             })[0];
             if (!b) {
-              if (n) throw new Error(gname + " is named in " + n.maps.join(", ") + " but is not kept here");
+              if (n) throw new Error(gname + " is named in " + n.maps.join(", ") + " but was not found where the maps are kept, or could not be read");
               return;
             }
             if (/svg/.test(b.type)) {
               var box2 = n && n.box || null;
               return (box2 ? Promise.resolve(svgPixels(box2)) : b.text().then(function(t) {
-                var w = /\swidth="([\d.]+)/.exec(t), h = /\sheight="([\d.]+)/.exec(t);
-                return svgPixels([w ? +w[1] : 300, h ? +h[1] : 150]);
+                return svgPixels(svgSize(new DOMParser().parseFromString(t, "image/svg+xml").documentElement));
               })).then(function(px) {
                 return svgPng(b, px);
               }).then(
@@ -9101,12 +9220,12 @@
           });
         }, Promise.resolve()).then(function() {
           Object.keys(pics).forEach(function(x) {
-            if (pics[x].length > 5 * 1048576) said.push(x + " is " + (pics[x].length / 1048576).toFixed(1) + " MB: MINERVA takes it in a zip, but its own editor refuses a image over 5 MB.");
+            if (pics[x].length > 5 * 1048576) said.push(x + " is " + (pics[x].length / 1048576).toFixed(1) + " MB: MINERVA takes it in a zip, but its own editor refuses an image over 5 MB.");
           });
           var e = packEntries(maps.map(function(x) {
             return { path: x.path, text: x.text };
           }), pics, keptBytes, missing);
-          if (fitted.length) said.push(fitted.length + " image" + (fitted.length > 1 ? "s" : "") + " made in the proportions of " + (fitted.length > 1 ? "their boxes" : "its box") + ", as here (MINERVA keeps a image's own): " + fitted.join(", ") + ".");
+          if (fitted.length) said.push(fitted.length + " image" + (fitted.length > 1 ? "s" : "") + " made in the proportions of " + (fitted.length > 1 ? "their boxes" : "its box") + ", as here (MINERVA keeps an image's own): " + fitted.join(", ") + ".");
           if (e.z.length) said.push("Z-Index of the compartments with images set from what holds what in: " + e.z.join(", ") + ".");
           if (e.gone.length) said.push("Links to maps no longer in the group left out: " + e.gone.join(", ") + ".");
           return zip(e.entries);
@@ -9122,14 +9241,20 @@
       setTimeout(function() {
         URL.revokeObjectURL(u);
       }, 1e4);
+      packing = false;
       if (g && packedGroups.indexOf(g) < 0 && whole) {
         packedGroups.push(g);
         packedSaved();
+        mgMemo = null;
         V.refreshMine();
       }
       if (said.length) alert("Downloaded as a MINERVA zip.\n\n" + said.join("\n"));
     }, function(e) {
+      packing = false;
       alert("Not downloaded as a MINERVA zip: " + (e && e.message ? e.message : e));
+    }).catch(function(e) {
+      packing = false;
+      warn("After the MINERVA zip: " + (e && e.message ? e.message : e));
     });
   }
   var picker;
@@ -14810,7 +14935,7 @@
     });
     shared.copies = [];
   }
-  function follow2(o, n) {
+  function follow(o, n) {
     var seg = [];
     for (var i = 1; i < o.length; i++) {
       var a = o[i - 1], b = o[i], L = Math.hypot(b[0] - a[0], b[1] - a[1]), a1 = n[i - 1], b1 = n[i], L1 = Math.hypot(b1[0] - a1[0], b1[1] - a1[1]);
@@ -14913,7 +15038,7 @@
       if (!gs) return;
       var o = line(k, restBox, restPt), n = line(k, null, null, pp);
       if (!o || !n) return;
-      var F0 = follow2(o, n), pair = function(str, closed) {
+      var F0 = follow(o, n), pair = function(str, closed) {
         if (!closed) str = withBends(str, o.slice(1, -1));
         var v = str.match(/-?[\d.]+(?:e-?\d+)?/g) || [], k2 = 0, P = [];
         for (var i = 0; i + 1 < v.length; i += 2) P.push([+v[i], +v[i + 1]]);

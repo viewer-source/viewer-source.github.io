@@ -1050,7 +1050,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     // with a token, the folder's glyphs/, the projects this browser keeps. A Blob of its type, or null
     var held, ghPics, storedAll;
     function __run30() {   // run at start, in order (__start)
-    held = {}; ghPics = null; storedAll = null; recsNow = null; recIds = null;
+    held = {}; ghPics = null; storedAll = null; recsNow = null; recIds = null; recErr = null; mgMemo = null; packing = false;
     try { packedGroups = JSON.parse(localStorage.getItem('atlas-minerva-groups') || '[]'); } catch (e) { packedGroups = []; }
     if (!Array.isArray(packedGroups)) packedGroups = [];
     cdPicSource(picRead, function (t) { return glyphsNamed(t.replace(/&(lt|gt|quot|apos|amp);/g, function (m, e) { return { lt: '<', gt: '>', quot: '"', apos: "'", amp: '&' }[e]; })); }, picKeep);
@@ -1072,7 +1072,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       return f.arrayBuffer().then(function (a) {
         var d = new Uint8Array(a), png = d.length > 8 && d[0] === 0x89 && d[1] === 0x50 && d[2] === 0x4e && d[3] === 0x47;
         var svg = !png && /<svg[\s>]/i.test(new TextDecoder().decode(d.subarray(0, 65536)));
-        if (!png && !svg) throw new Error(f.name + ' is not a image MINERVA can take here: PNG or SVG only');
+        if (!png && !svg) throw new Error(f.name + ' is not an image MINERVA can take here: PNG or SVG only');
         var stem = f.name.replace(/\.[^.]*$/, '').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[-.]+|-+$/g, '') || 'image', ext = png ? '.png' : '.svg', other = png ? '.svg' : '.png';
         var gh = repo() && token(), look = gh ? siteGlyphs() : localGlyphs();
         return bytesSha(d).then(function (sha) {
@@ -1102,7 +1102,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       var inBrowser = V.draftDo('readonly', function (st) { return st.get('minerva:mz-pictures'); }, 'folder').then(function (r) {
         r = r || { id: 'mz-pictures', glyphs: {} }; r.glyphs[file] = blob; r.at = Date.now(); storedAll = null;
         return V.draftDo('readwrite', function (st) { return st.put(r, 'minerva:mz-pictures'); }, 'folder');
-      }).catch(function (e) { throw new Error('the image was not kept in this browser: ' + (e && e.message ? e.message : e)); });   // refused: else the note names a image gone after a reload
+      }).catch(function (e) { throw new Error('the image was not kept in this browser: ' + (e && e.message ? e.message : e)); });   // refused: else the note names an image gone after a reload
       return inBrowser.then(function () { return picToFolder(file, d); });
     }
     function picToFolder(file, d) {
@@ -1118,11 +1118,12 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         .then(function (d) { return d.getFileHandle(name, { create: true }); }).then(function (h) { return h.createWritable(); })
         .then(function (w) { return w.write(data).then(function () { return w.close(); }); });
     }
-    function picRead(n) {
+    function picRead(n, quiet) {   // quiet: read only, the picture not copied where the maps are now (a pack writes nothing)
       var svg = n.replace(/\.png$/i, '.svg'), names = svg !== n ? [svg, n] : [n];
-      return names.reduce(function (q, m) { return q.then(function (b) { return b || picFrom(m); }); }, Promise.resolve(null));
+      return names.reduce(function (q, m) { return q.then(function (b) { return b || picFrom(m, quiet); }); }, Promise.resolve(null));
     }
-    function picFrom(n) {
+    function picFrom(n, quiet) {
+      var follow = quiet ? function (x, b) { return b; } : followTo;
       var type = /\.svg$/i.test(n) ? 'image/svg+xml' : 'image/png', blob = function (d) { return d ? new Blob([d], { type: type }) : null; };
       if (Object.prototype.hasOwnProperty.call(held, n)) return Promise.resolve(blob(held[n]));
       var tok = repo() && token();
@@ -1138,7 +1139,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     }
     // a picture found below where the maps are kept now (a token connected, a folder chosen after it was put on): copied
     // there once per page, so the build and the folder have it as they have the map naming it
-    function follow(n, b, from) {
+    function followTo(n, b, from) {
       var gh = repo() && token(), to = gh ? 'gh' : V.folderName() && from === 'browser' ? 'folder' : null;
       if (to && !followed[n]) {
         followed[n] = 1;
@@ -1192,6 +1193,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       var blobs = function (o) { var r = {}; Object.keys(o).forEach(function (k) { r[k] = new Blob([o[k]]); }); return r; };
       var rec = { id: p.rec, zip: p.zip, size: p.size, maps: maps, glyphs: blobs(p.glyphs), kept: blobs(p.kept), at: Date.now() };
       return V.draftDo('readwrite', function (st) { return st.put(rec, 'minerva:' + rec.id); }, 'folder')   // beside the folder's record, under keys of their own: no new store, so the database keeps its version
+        .then(function () { storedAll = null; })   // the last read of the store no longer holds it
         .catch(function (e) { warn('The images of ' + p.zip + ' were not kept in this browser: ' + (e && e.message ? e.message : e)); })
         .then(function () { return folderProject(p, maps); });
     }
@@ -1219,31 +1221,39 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     // The projects opened from zips (their records: which map came from which path of the zip, the zip's other files),
     // read where the maps are kept: with a token GitHub's maps/minerva/<record>/, else this browser (its key minerva:mz-...).
     // [{ id, maps: [{ id, path }], kept: { path: () => bytes } }], read once a minute at most
-    var recsNow, recIds, packedGroups;
+    var recsNow, recIds, recErr, mgMemo, packing, packedGroups;
     function projRecs() {
       if (recsNow) return recsNow;
       var gh = repo() && token();
+      if (!gh) recErr = null;   // GitHub not read: an earlier failure there no longer refuses a pack
+      // a record's map as this list has it: by its id where this browser opened the zip, else (another browser, data
+      // cleared: the folder's maps added under new ids) by its file name, each of the list's maps taken once
+      var claimed = {};
+      var asListed = function (x) {
+        var c = mine[x.id];
+        if (!c && x.file) { var k = Object.keys(mine).filter(function (i) { return mine[i].file === x.file && !claimed[i]; })[0]; c = k ? mine[k] : null; }
+        if (c) claimed[c.id] = 1;
+        return { id: c ? c.site || c.id : x.id, also: x.id, path: x.path };
+      };
       var bytesOfBlob = function (b) { return function () { return b.arrayBuffer().then(function (a) { return new Uint8Array(a); }); }; };
-      var fromGh = function () {
-        var dir = function (p) { return api('/contents/' + p.split('/').map(encodeURIComponent).join('/') + '?ref=main').then(function (r) { return r.status === 404 ? [] : ghJson(r); }); };
+      var fromGh = function () {   // maps/minerva/ as one tree (from the root's, as a listing stops at 1,000), then each record.json
         var blobOf = function (sha) { return function () { return api('/git/blobs/' + sha).then(ghJson).then(function (d) { return Uint8Array.from(atob((d.content || '').replace(/\s/g, '')), function (c) { return c.charCodeAt(0); }); }); }; };
-        var walk = function (p, base, out) {   // every file below maps/minerva/<record>/, by its path in the zip
-          return dir(p).then(function (l) {
-            return (Array.isArray(l) ? l : []).reduce(function (q, x) {
-              return q.then(function () { return x.type === 'dir' ? walk(p + '/' + x.name, base + x.name + '/', out) : (out[base + x.name] = x.sha); });
-            }, Promise.resolve()).then(function () { return out; });
-          });
-        };
-        return dir('maps/minerva').then(function (l) {
-          return Promise.all((Array.isArray(l) ? l : []).filter(function (x) { return x.type === 'dir'; }).map(function (x) {
-            return walk('maps/minerva/' + x.name, '', {}).then(function (files) {
-              if (!files['record.json']) return null;
-              return blobOf(files['record.json'])().then(function (d) {
-                var r = JSON.parse(new TextDecoder().decode(d)), kept = {};
-                (r.kept || []).forEach(function (k) { if (files[k]) kept[k] = blobOf(files[k]); });
-                return { id: x.name, maps: r.maps || [], kept: kept };
-              }).catch(function () { return null; });
-            });
+        var under = function (sha, name) { return api('/git/trees/' + sha).then(ghJson).then(function (t) { return (t.tree || []).filter(function (f) { return f.path === name && f.type === 'tree'; })[0] || null; }); };
+        return api('/git/ref/heads/main').then(ghJson).then(function (ref) { return api('/git/commits/' + ref.object.sha).then(ghJson); })
+          .then(function (c) { return under(c.tree.sha, 'maps'); }).then(function (m) { return m && under(m.sha, 'minerva'); }).then(function (d) {
+          return d ? api('/git/trees/' + d.sha + '?recursive=1').then(ghJson) : { tree: [] };
+        }).then(function (tr) {
+          if (tr.truncated) throw new Error('the records are too many to read at once');
+          var recs = {};
+          (tr.tree || []).forEach(function (x) { if (x.type !== 'blob') return; var k = x.path.indexOf('/'); if (k > 0) (recs[x.path.slice(0, k)] = recs[x.path.slice(0, k)] || {})[x.path.slice(k + 1)] = x.sha; });
+          return Promise.all(Object.keys(recs).map(function (id) {
+            var files = recs[id];
+            if (!files['record.json']) return null;
+            return blobOf(files['record.json'])().then(function (d) {
+              var r = JSON.parse(new TextDecoder().decode(d)), kept = {};
+              (r.kept || []).forEach(function (k) { if (files[k]) kept[k] = blobOf(files[k]); });
+              return { id: id, maps: r.maps || [], kept: kept };
+            }).catch(function () { return null; });   // one record that cannot be read left out: the others still count
           }));
         });
       };
@@ -1251,36 +1261,62 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         return V.draftDo('readonly', function (st) { return st.getAll(); }, 'folder').then(function (all) {
           return (all || []).filter(function (r) { return r && /^mz-/.test(r.id || '') && Array.isArray(r.maps); }).map(function (r) {
             var kept = {}; Object.keys(r.kept || {}).forEach(function (k) { kept[k] = bytesOfBlob(r.kept[k]); });
-            return { id: r.id, maps: r.maps.map(function (m) { var c = mine[m.id]; return { id: c && c.site ? c.site : m.id, also: m.id, path: m.path }; }), kept: kept };
+            return { id: r.id, maps: r.maps.map(asListed), kept: kept };
           });
-        });
+        }).catch(function () { return []; });
       };
-      recsNow = (gh ? fromGh() : fromBrowser()).then(function (l) {
-        l = (l || []).filter(Boolean);
+      var fromFolder = function () {   // .viewer/minerva/<record>/ beside the maps (another browser, or this one's data cleared)
+        if (!V.folderName()) return Promise.resolve([]);
+        var file = function (d, path) { return path.split('/').slice(0, -1).reduce(function (q, x) { return q.then(function (h) { return h.getDirectoryHandle(x); }); }, Promise.resolve(d)).then(function (h) { return h.getFileHandle(path.split('/').pop()); }).then(function (h) { return h.getFile(); }); };
+        return folder().then(function (f) { return f && f.dir.getDirectoryHandle('.viewer').then(function (v) { return v.getDirectoryHandle('minerva'); }); }).then(function (m) {
+          if (!m) return [];
+          var it = m.values(), out = [];
+          return (function next() { return it.next().then(function (x) { if (x.done) return out; if (x.value.kind === 'directory') out.push(x.value); return next(); }); })().then(function (ds) {
+            return Promise.all(ds.map(function (d) {
+              return file(d, 'record.json').then(function (fl) { return fl.text(); }).then(function (tx) {
+                var r = JSON.parse(tx), kept = {};
+                (r.kept || []).forEach(function (k) { kept[k] = function () { return file(d, k).then(function (fl) { return fl.arrayBuffer(); }).then(function (a) { return new Uint8Array(a); }); }; });
+                return { id: d.name, maps: (r.maps || []).map(asListed), kept: kept };
+              }).catch(function () { return null; });
+            }));
+          });
+        }).catch(function () { return []; });
+      };
+      // every place read, the same record (its id) taken from the first that has it: GitHub, this browser, the folder.
+      // A GitHub read that fails is not kept: the next pack tries again and refuses with the reason (recErr)
+      var got = Promise.all([gh ? fromGh().then(function (l) { recErr = null; return l; }, function (e) { recErr = e; return []; }) : Promise.resolve([]), fromBrowser(), fromFolder()]);
+      recsNow = got.then(function (ls) {
+        var seen = {}, l = [];
+        ls.forEach(function (x) { (x || []).filter(Boolean).forEach(function (r) { if (!seen[r.id]) { seen[r.id] = 1; l.push(r); } }); });
         recIds = {}; l.forEach(function (r) { r.maps.forEach(function (m) { recIds[m.id] = r; if (m.also) recIds[m.also] = r; }); });
-        V.refreshMine();
+        mgMemo = null; V.refreshMine();
+        if (recErr) recsNow = null;
         return l;
-      }).catch(function () { return []; });
+      });
       setTimeout(function () { recsNow = null; }, 60000);
       return recsNow;
     }
+    function sameMap(x, m) { return x.id === m.id || x.also === m.id || (!!mine[m.id] && !!mine[m.id].site && mine[m.id].site === x.id); }   // a record's map, by its id in any way of keeping
     function recOf(m) { return recIds && (recIds[m.id] || (mine[m.id] && mine[m.id].site && recIds[mine[m.id].site])) || null; }
     function packedSaved() { try { localStorage.setItem('atlas-minerva-groups', JSON.stringify(packedGroups)); } catch (e) {} }
     // a MINERVA group: opened from a zip, a map in it naming a picture, or packed once in this browser
-    function minervaGroup(g) {
+    function minervaGroup(g) {   // once per list made (the list's maps, the records)
       if (!g) return false;
-      var ms = inGroup(g);
-      return packedGroups.indexOf(g) >= 0 || ms.some(function (m) { return recOf(m) || (m.mine && mine[m.id] && /Glyph:/.test(mine[m.id].text || '')); });
+      memoNow();
+      if (!(g in mgMemo.g)) mgMemo.g[g] = packedGroups.indexOf(g) >= 0 || inGroup(g).some(function (m) { return recOf(m) || (m.mine && mine[m.id] && /Glyph:/.test(mine[m.id].text || '')); });
+      return mgMemo.g[g];
     }
     function cdOf(m) { return m.mine ? !!mine[m.id] && isCd(mine[m.id].text) : fmtOf(m) === 'CellDesigner'; }
     // the list's grey mark: the first map of a MINERVA group is its top level
-    function isTop(m) { if (!m || m.binned || !m.group || !recIds) return false; var ms = inGroup(m.group); return ms[0] === m && minervaGroup(m.group); }
+    function memoNow() { if (!mgMemo || mgMemo.maps !== V.maps) mgMemo = { maps: V.maps, g: Object.create(null), first: Object.create(null) }; }   // no inherited names: a group called constructor is a group
+    function firstOf(g) { memoNow(); if (!(g in mgMemo.first)) mgMemo.first[g] = inGroup(g)[0] || null; return mgMemo.first[g]; }
+    function isTop(m) { return !!m && !m.binned && !!m.group && !!recIds && firstOf(m.group) === m && minervaGroup(m.group); }
     // Set as top level: the map moved first in its group, the list's own Move (one undo step)
-    function canTop(m) { return !!m && !m.binned && !!m.group && !!recIds && inGroup(m.group)[0] !== m && minervaGroup(m.group) && movable(m); }
+    function canTop(m) { return !!m && !m.binned && !!m.group && !!recIds && firstOf(m.group) !== m && minervaGroup(m.group) && movable(m); }
     // a map's file name in the zip: the path it came with (a submap at the root goes there under its file's name), its
     // file's name, else its name in the list
     function zipPath(m, rec, top) {
-      var at = rec && rec.maps.filter(function (x) { return x.id === m.id || x.also === m.id || (mine[m.id] && mine[m.id].site === x.id); })[0];
+      var at = rec && rec.maps.filter(function (x) { return sameMap(x, m); })[0];
       var base = at ? at.path.split('/').pop() : m.mine && mine[m.id] && mine[m.id].file ? mine[m.id].file.replace(/\.[^.]*$/, '') + '.xml' : bare(mapName(m)).replace(/[\/\\:*?"<>|]+/g, '-') + '.xml';
       return top ? base : 'submaps/' + base;
     }
@@ -1294,11 +1330,15 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         c.toBlob(function (b) { if (!b) return no(new Error('too large for this browser to draw')); b.arrayBuffer().then(function (a) { ok(new Uint8Array(a)); }); }, 'image/png');
       });
     }
+    function svgSize(s) {   // an SVG's own size in units: its width and height, else its viewBox's, else the browser's 300 by 150
+      var n = function (a) { var v = s && s.getAttribute(a) || ''; return /%/.test(v) ? 0 : parseFloat(v) || 0; }, vb = (s && s.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+      return n('width') && n('height') ? [n('width'), n('height')] : vb.length === 4 && vb[2] > 0 && vb[3] > 0 ? [vb[2], vb[3]] : [300, 150];
+    }
     function svgPng(blob, px) {
       return blob.text().then(function (t) {
         var doc = new DOMParser().parseFromString(t, 'image/svg+xml'), s = doc.documentElement;
         if (!s || s.localName !== 'svg' || doc.getElementsByTagName('parsererror').length) throw new Error('not an SVG that can be read');
-        if (!s.getAttribute('viewBox')) s.setAttribute('viewBox', '0 0 ' + (parseFloat(s.getAttribute('width')) || 300) + ' ' + (parseFloat(s.getAttribute('height')) || 150));
+        if (!s.getAttribute('viewBox')) s.setAttribute('viewBox', '0 0 ' + svgSize(s).join(' '));
         s.setAttribute('width', px[0]); s.setAttribute('height', px[1]); s.setAttribute('preserveAspectRatio', 'none');
         var u = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(doc)], { type: 'image/svg+xml' }));
         return new Promise(function (ok, no) {
@@ -1316,19 +1356,31 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     // whole (its kept files go back with it). The top level first: the group's first map if among them, else the first.
     // Refused whole with the reason; what is left out or changed on the way said once the zip is downloaded
     function packZip(ms, whole, name) {
+      if (packing) return alert('A MINERVA zip is being made: wait for its download.');
+      packing = true; storedAll = null;   // the pictures this browser keeps read afresh: the last read may be up to 2 s old
       var said = [], fitted = [];
       ms = ms.filter(function (m) { return m && !m.binned; });
       var g = ms[0] && ms[0].group, first = g ? inGroup(g)[0] : null;
       if (first && ms.indexOf(first) > 0) ms = [first].concat(ms.filter(function (m) { return m !== first; }));
       return projRecs().then(function () {
+        if (recErr) throw new Error('the projects\' records could not be read from GitHub (' + (recErr.message || recErr) + '): try again in a moment');
         return Promise.all(ms.map(function (m) { return textNow(m); }));
       }).then(function (texts) {
-        var maps = ms.map(function (m, i) { return { m: m, text: texts[i], title: mapName(m), path: zipPath(m, recOf(m), i === 0) }; });
-        var plan = packPlan(maps), kept = {}, missing = [], top = recOf(ms[0]);
+        var taken = { 'submaps/mapping.xml': 1 }, renamed = [];
+        var maps = ms.map(function (m, i) {   // two maps of one file name (two copies of one zip): the second numbered, said
+          var p0 = zipPath(m, recOf(m), i === 0), p = p0;
+          for (var k = 2; taken[p.toLowerCase()]; k++) p = p0.replace(/\.xml$/i, '') + '-' + k + '.xml';
+          taken[p.toLowerCase()] = 1;
+          if (p !== p0) renamed.push(p);
+          return { m: m, text: texts[i], title: mapName(m), path: p };
+        });
+        if (renamed.length) said.push('Maps of a name taken numbered in the zip: ' + renamed.join(', ') + ' (MINERVA names a submap by it).');
+        var top = recOf(ms[0]) || ms.map(recOf).filter(Boolean)[0] || null;   // the project of the top level, else of the first map from a zip
+        var plan = packPlan(maps), kept = {}, missing = [];
         var others = ms.map(recOf).filter(function (r, i, a) { return r && r !== top && a.indexOf(r) === i; });
         if (whole && top) {
           kept = top.kept;
-          missing = top.maps.filter(function (x) { return !ms.some(function (m) { return x.id === m.id || x.also === m.id; }); }).map(function (x) { return x.path; });
+          missing = top.maps.filter(function (x) { return !ms.some(function (m) { return sameMap(x, m); }); }).map(function (x) { return x.path; });
           if (others.length && others.some(function (r) { return Object.keys(r.kept).length; })) said.push('The other files of the maps from another zip were left out (only the top level\'s project keeps its links).');
         } else if (ms.some(function (m) { var r = recOf(m); return r && Object.keys(r.kept).length; })) said.push('The project\'s other files (its links between maps) were left out: they go back only when the whole group is packed.');
         var keptNames = Object.keys(kept);
@@ -1336,12 +1388,12 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
           var linked = keptGlyphs(keptBytes), pics = {};
           var named = plan.map(function (n) { return n.name; });
           return named.concat(linked.filter(function (x) { return named.indexOf(x) < 0; })).reduce(function (q, gname) {
-            return q.then(function () { return picRead(gname); }).then(function (b) {
+            return q.then(function () { return picRead(gname, true); }).then(function (b) {
               var n = plan.filter(function (x) { return x.name === gname; })[0];
-              if (!b) { if (n) throw new Error(gname + ' is named in ' + n.maps.join(', ') + ' but is not kept here'); return; }
+              if (!b) { if (n) throw new Error(gname + ' is named in ' + n.maps.join(', ') + ' but was not found where the maps are kept, or could not be read'); return; }
               if (/svg/.test(b.type)) {
                 var box = n && n.box || null;
-                return (box ? Promise.resolve(svgPixels(box)) : b.text().then(function (t) { var w = /\swidth="([\d.]+)/.exec(t), h = /\sheight="([\d.]+)/.exec(t); return svgPixels([w ? +w[1] : 300, h ? +h[1] : 150]); }))
+                return (box ? Promise.resolve(svgPixels(box)) : b.text().then(function (t) { return svgPixels(svgSize(new DOMParser().parseFromString(t, 'image/svg+xml').documentElement)); }))
                   .then(function (px) { return svgPng(b, px); }).then(function (d) { pics[gname] = d; if (n && n.mixed) said.push(gname + ' is on boxes of different proportions: its PNG was made for the first.'); },
                     function (e) { throw new Error(gname + ' could not be made into a PNG: ' + e.message); });
               }
@@ -1354,9 +1406,9 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
               });
             });
           }, Promise.resolve()).then(function () {
-            Object.keys(pics).forEach(function (x) { if (pics[x].length > 5 * 1048576) said.push(x + ' is ' + (pics[x].length / 1048576).toFixed(1) + ' MB: MINERVA takes it in a zip, but its own editor refuses a image over 5 MB.'); });
+            Object.keys(pics).forEach(function (x) { if (pics[x].length > 5 * 1048576) said.push(x + ' is ' + (pics[x].length / 1048576).toFixed(1) + ' MB: MINERVA takes it in a zip, but its own editor refuses an image over 5 MB.'); });
             var e = packEntries(maps.map(function (x) { return { path: x.path, text: x.text }; }), pics, keptBytes, missing);
-            if (fitted.length) said.push(fitted.length + ' image' + (fitted.length > 1 ? 's' : '') + ' made in the proportions of ' + (fitted.length > 1 ? 'their boxes' : 'its box') + ', as here (MINERVA keeps a image\'s own): ' + fitted.join(', ') + '.');
+            if (fitted.length) said.push(fitted.length + ' image' + (fitted.length > 1 ? 's' : '') + ' made in the proportions of ' + (fitted.length > 1 ? 'their boxes' : 'its box') + ', as here (MINERVA keeps an image\'s own): ' + fitted.join(', ') + '.');
             if (e.z.length) said.push('Z-Index of the compartments with images set from what holds what in: ' + e.z.join(', ') + '.');
             if (e.gone.length) said.push('Links to maps no longer in the group left out: ' + e.gone.join(', ') + '.');
             return zip(e.entries);
@@ -1366,9 +1418,11 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         var u = URL.createObjectURL(new Blob([bytes], { type: 'application/zip' })), a = document.createElement('a');
         a.href = u; a.download = (bare(name) || 'MINERVA project').replace(/[\/\\:*?"<>|]+/g, '-') + '.zip'; document.body.appendChild(a); a.click(); a.remove();
         setTimeout(function () { URL.revokeObjectURL(u); }, 10000);
-        if (g && packedGroups.indexOf(g) < 0 && whole) { packedGroups.push(g); packedSaved(); V.refreshMine(); }
+        packing = false;
+        if (g && packedGroups.indexOf(g) < 0 && whole) { packedGroups.push(g); packedSaved(); mgMemo = null; V.refreshMine(); }
         if (said.length) alert('Downloaded as a MINERVA zip.\n\n' + said.join('\n'));
-      }, function (e) { alert('Not downloaded as a MINERVA zip: ' + (e && e.message ? e.message : e)); });
+      }, function (e) { packing = false; alert('Not downloaded as a MINERVA zip: ' + (e && e.message ? e.message : e)); })
+        .catch(function (e) { packing = false; warn('After the MINERVA zip: ' + (e && e.message ? e.message : e)); });
     }
     var picker;
     function __run16() {   // run at start, in order (__start)
