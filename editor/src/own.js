@@ -1,5 +1,5 @@
 import { formatOfMap, shared, V } from './state.js';
-import { ahead, api, b64, blobSha, changed, drawText, freeName, gh, graphmlOf, heldText, localBox, map, mapTop, note, on, origFolderDrop, origRead, origWrite, repo, site, src, stop, toFolder, token, unkeep, warn } from './core.js';
+import { ahead, api, cloudOn, waitText, b64, blobSha, changed, drawText, freeName, gh, graphmlOf, heldText, localBox, map, mapTop, note, on, origFolderDrop, origRead, origWrite, repo, site, src, stop, toFolder, token, unkeep, warn } from './core.js';
 import { cdMap, cdMk, cdPicSource, cdpy, isCd } from './celldesigner.js';
 import { noLayout } from './graphml.js';
 import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
@@ -2327,7 +2327,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       read: function () { return mineIn; },
       here: function () { return (groupsHere = mineGroupsHere()); }, groups: function () { return groupsHere; }, order: mineGroups,   // order: every group the reader made, on the site or not, in their order
       withMine: withMine, addPaint: addPaint, isGroup: ownGroup, movable: movable, moveTo: function (id, g, before) { return moveU([id], g, before); }, moveMany: moveU, did: listDid, rename: renameGroup, canRenameGroup: canRenameGroup, renameMap: renameMap, canRename: canRename, newMap: function (g, f) { return listMade(function () { return newMap(g, f); }); }, shown: mineShown, listItems: listItems,
-      rec: function (id) { return mine[id] || null; }, naming: function () { return !!naming; }, isTop: isTop,
+      rec: function (id) { return mine[id] || null; }, naming: function () { return !!naming; }, isTop: isTop, cloud: cloudOn, waitLine: waitText,
       tool: { kind: function (id) { return fmtOf(V.byId[id] || {}); }, name: function (id) { var m = V.byId[id]; return m ? mapName(m) : ''; }, text: function (id) { var m = V.byId[id]; return m ? textNow(m) : Promise.reject(new Error('the map is no longer in the list')); }, add: fromTool }   // what a tool's run is handed (tools.js)
     };
     mineIn.then(upAll).then(binMigrate);

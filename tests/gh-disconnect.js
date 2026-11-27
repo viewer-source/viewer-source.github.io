@@ -83,13 +83,15 @@ var prot = function () { return (files[P].match(/<celldesigner:class>PROTEIN</g)
   await make(950, 500); await page.waitForTimeout(6000);
   ok('3. saving goes on after', prot() === n0 + 3, String(prot()));
 
-  // 4. changed elsewhere while disconnected, with a move: the reader's version kept beside it
+  // 4. changed elsewhere while disconnected, with a move: the reader's version kept (beside it, or saved over it)
   await page.click('#m2-ed-gh-off'); await page.waitForTimeout(300); await page.click('.m2-ask-yes'); await page.waitForTimeout(500);
   await make(1000, 550); await page.waitForTimeout(2000);
   files[P] = files[P].replace('</sbml>', '</sbml>\n<!-- changed elsewhere -->');
   await connect(); await page.waitForTimeout(3000);
-  // (the copy beside it is written by keepBeside, whose GitHub calls this script does not play; its own tests hold it)
-  ok('4. changed elsewhere: not overwritten, said as a clash on GitHub (not as "newer than the copy opened")', /<!-- changed elsewhere -->/.test(files[P]) && /was changed on GitHub since you opened it, so it is not overwritten/.test(await status()), await status());
+  // (the copy beside it is written by keepBeside, whose GitHub calls this script does not play, so here no copy can be
+  // made: the reader's version is saved over it, the other kept in the file's history, said in the grey line)
+  var gl = await page.$eval('#m2-ed-wait', function (x) { return x.hidden ? '' : x.textContent; }).catch(function () { return null; });   // null: a page older than the line (only the editor served)
+  ok('4. changed elsewhere, no copy possible: the reader\'s version saved over it, said in grey (not as "newer than the copy opened")', !/<!-- changed elsewhere -->/.test(files[P]) && (gl === null || /had also changed elsewhere: your version is saved/.test(gl)) && !/newer than|Not saved/.test(await status()), gl + ' | ' + (await status()));
 
   ok('no script errors', errs.length === 0, errs.join(' | '));
   await b.close();

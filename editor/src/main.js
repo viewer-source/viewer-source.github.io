@@ -12,7 +12,7 @@ import { __start as start_cdcreate } from './cdcreate.js';
 import { __start as start_sbcreate } from './sbcreate.js';
 import { __start as start_help } from './help.js';
 import { __start as start_own } from './own.js';
-import { aheadSoon, away, buttons, chooseFolder, map, on, paint, picWait, repo, shown, stop, syncFolder, token, unkeep } from './core.js';
+import { aheadSoon, away, buttons, chooseFolder, map, on, paint, picWait, repo, sendWaiting, shown, stop, syncFolder, token, unkeep } from './core.js';
 import { cdFormat, cdKept, cdShown, warmUp } from './celldesigner.js';
 import { graphmlFormat } from './graphml.js';
 import { sbFormat } from './sbgn.js';
@@ -50,6 +50,7 @@ window.m2Editor = function (v) {
     buttons();
     aheadSoon();
     syncFolder();   // the reader's folder read for My maps, when the browser still allows it
+    sendWaiting();   // saves left in the outbox (a send that failed, the last visit) sent now
     if (v.current) setTimeout(shown, 0);   // the Edit window already open (a reload in edit mode, or opened while this loaded): editing starts
     return { fresh: function () { shared.redo = []; shared.listAhead = []; }, paint: paint, away: away, unkeep: unkeep, chooseFolder: chooseFolder, own: own, hasToken: function () { return !!(repo() && token()); }, leaving: function (m) { if (on && m !== map) { shared.switching = true; try { stop(); } finally { shared.switching = false; } } }, left: function (m) { cdShown(m && m.id); if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); warmUp(); aheadSoon(); }, pictured: function (failed) { if (picWait) shown(!!failed); } };
 };

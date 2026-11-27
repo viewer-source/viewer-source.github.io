@@ -7,6 +7,7 @@ import { beyond, glyphArcs, glyphPort, joinAt, joinGuides, joinSolve, nodeCentre
 import { sbpy } from './engines.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveSays, origAll, palDown, palShow, palUp, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
+import { outboxAll, outboxDone, outboxFresh, outboxGet, outboxKeep, outboxLoad } from './outbox.js';
 import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, moveOut, toMove, openZipFolder, savedMine, toGh, upAll, upRun } from './own.js';
 
     // ---------- the editor's shared core (editor/src/core.js) ----------
@@ -212,17 +213,21 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
     function push(again) {
       clearTimeout(saveTimer); saveTimer = null;
-      if (!site || !shared.dirty || stuck) return Promise.resolve();
+      if (!site || site.pending || !site.path || !shared.dirty || stuck) return Promise.resolve();   // kept in this browser (pending), or saved as a file: never GitHub
       if (saving) { saveAgain = true; return saving; }
       if (drawing) { saveTimer = setTimeout(push, 300); return Promise.resolve(); }   // the last move not yet in the file
       var target = site, body = src();
       note();
+      keepOut(target, body);   // kept in this browser first: a failed send, a reload or a closed tab loses nothing
+      sending[target.id] = body;   // a text kept while this save is under way knows GitHub may have this one by then
       saving = api('/contents/' + target.path, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: 'Moved in the viewer: ' + target.path.split('/').pop(), content: b64(body), sha: target.sha || undefined, branch: 'main' }) })
         .then(function (r) {
           return r.json().then(function (d) {
             if (r.ok) {
+              var was = target.sha;
               target.sha = d.content.sha; target.saved = body;
+              outSent(target, body, was);
               if (bank[target.id] && bank[target.id].kept !== target) forget(target.id);   // what was read ahead is older than this save (the copy kept on leaving waits for it: keepAhead)
               learnt(target.path, target.sha);   // the folder's listing read before is older for this map
               if (V.kept && V.kept.id === target.id) V.kept.sha = target.sha;
@@ -253,17 +258,161 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
                   if (f[1] !== (target.saved || target.base)) return conflict(target, body);
                   target.sha = f[0].sha; saving = null; saveAgain = false;
                   return push(true);
-                }, function (e) { warn('Not saved: no connection (' + (e && e.message ? e.message : e) + '). The next move tries again.'); });   // GitHub not reached to compare: no clash claimed
+                }, function () { sendFailed('net'); });   // GitHub not reached to compare: no clash claimed; the text waits in the outbox
             } else if (r.status === 401 || r.status === 403 || r.status === 404) {
-              warn('Not saved: the token was refused (' + r.status + '). Connect again with a token that can write to ' + repo() + '.');
-              ghForm(true);
-            } else warn('Not saved (' + r.status + '): ' + (d.message || '') + '. The next move tries again.');
+              sendFailed('token');
+            } else if (r.status >= 500) sendFailed('net');   // GitHub not answering for now: as a lost connection, sent again later
+            else warn('Not saved (' + r.status + '): ' + (d.message || '') + '. Your changes are kept in this browser; the next move tries again.');
           });
         })
-        .catch(function (e) { warn('Not saved: no connection (' + e.message + '). The next move tries again.'); })
-        .then(function () { if (saving !== ours) return; saving = null; if (saveAgain) { saveAgain = false; if (shared.dirty) return push(); } });
+        .catch(function () { sendFailed('net'); })
+        .then(function () { if (sending[target.id] === body) delete sending[target.id]; if (saving !== ours) return; saving = null; if (saveAgain) { saveAgain = false; if (shared.dirty) return push(); } });
       var ours = saving;
       return saving;
+    }
+    // The outbox (outbox.js): with a token every save of a map is kept in this browser before it is sent, and let go once
+    // GitHub has it. A send that fails for want of a connection (or GitHub not answering) is said by no message: the map
+    // waits in the outbox and is sent again when the browser says the connection is back, at the next move, when the page
+    // opens, and every half minute while anything waits. Said as states, not messages: once a send has failed and changes
+    // still wait, one grey line in the Edit window and above the list ("Offline: changes to 2 maps kept in this browser,
+    // sent to GitHub when the connection is back.") and a crossed-out cloud by each map waiting; nothing online, nothing
+    // once all is sent. A file changed on GitHub meanwhile (another tab, another device): the reader's version is saved
+    // over it, the other stays in the file's history, said by one grey line. A token refused: kept, said once.
+    // Two tabs: one sends at a time (Web Locks), each record read afresh before it is sent, and a map being edited in
+    // another tab (its lock atlas-edit-<key> held) is left to that tab's own saves
+    var waitFail, sendRun, retryTimer, lastVisit, passing, passTimer, sending, lockFree, CLOUD;
+    function __run47() {   // run at start, in order (__start)
+    waitFail = false, sendRun = null, retryTimer = null, lastVisit = null, passing = '', passTimer = null, sending = {}, lockFree = null;
+    CLOUD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 2 20 20"/><path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193"/><path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07"/></svg>';
+    addEventListener('online', function () { sendWaiting(); sendOpen(); });
+    addEventListener('pagehide', keepNow);   // the tab left or hidden: the open map's moves not yet sent kept now (the save waits 3 s after the last move)
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') keepNow(); });
+    }
+    function keyOf(id) { return repo() + '|' + id; }
+    function here() { var k = repo() + '|'; return outboxAll().filter(function (r) { return r.key.indexOf(k) === 0; }); }   // this site's records
+    function savable() { return on && site && site.path && !site.pending && !stuck && !site.clashed && repo() && token(); }   // the map open saves on GitHub
+    function keepNow() { if (savable() && shared.dirty && !drawing) { var t = src(), r = outboxGet(keyOf(site.id)); if (!r || r.text !== t) keepOut(site, t); } }
+    function sendOpen() { if (savable() && shared.dirty && !saving && !saveTimer) push(); }   // the map open sends its own
+    function mapName(id, fallback) { var m = V.byId[id]; return m ? m.topic || m.title : fallback || id; }
+    function recOf(t, body, n) {
+      return { key: keyOf(t.id), id: t.id, path: t.path, name: n || mapName(t.id, name), text: body, sha: t.sha || null, saved: t.saved != null ? t.saved : t.base != null ? t.base : null, also: sending[t.id] || null, mine: !!t.mine };
+    }
+    function keepOut(t, body) {
+      if (!t || !t.id || !t.path || !(repo() && token())) return Promise.resolve();
+      return outboxKeep(recOf(t, body)).catch(function (e) {   // the browser refused to keep it: said, as only the open tab holds the change now
+        warn('This browser could not keep your last change (' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '). Download the map to keep it.');
+      });
+    }
+    // a save of map t went through with body: its record let go, or, when a newer text was kept meanwhile on the version
+    // before (the tab hidden during the save), moved onto this save, so a later send does not take it for a change elsewhere
+    function outSent(t, body, was) {
+      var k = keyOf(t.id), r = outboxGet(k);
+      if (r && r.text !== body && r.sha === (was || null)) { r.sha = t.sha; r.saved = body; r.also = null; outboxKeep(r).catch(function () {}); }
+      else outboxDone(k, body);
+      if (t.clashSay) { passSay(t.clashSay + ' had also changed elsewhere: your version is saved; the other is in its history.'); t.clashSay = null; }
+      sendOk();
+      if (here().some(function (x) { return x.id !== t.id; })) sendWaiting();   // the connection is back: the others go too
+    }
+    function sendOk() {
+      clearTimeout(retryTimer); retryTimer = null;
+      waitFail = false;
+      waitShow();
+    }
+    function sendFailed(why) {   // 'net': no connection, GitHub not answering; 'token': the token refused
+      if (why === 'token') {
+        if (waitFail !== 'token') { warn('GitHub refused the token. Your changes are kept in this browser. Connect again with a new token.'); ghForm(true); }
+        waitFail = 'token';
+      } else {
+        waitFail = 'net';
+        clearTimeout(retryTimer); retryTimer = setTimeout(function () { retryTimer = null; sendWaiting(); sendOpen(); }, 30000);
+      }
+      waitShow();
+    }
+    function sendWhy(e) { return e === 401 || e === 403 || e === 404 ? 'token' : typeof e === 'number' && e !== 409 && e < 500 ? 'other' : 'net'; }   // a status GitHub gave, else a lost connection
+    function waitingOf(id) { return !!waitFail && !!outboxGet(keyOf(id)); }   // the cloud by a map: not on GitHub, and a send has failed
+    function waitText() {
+      var n = waitFail === 'net' ? here().length : 0;
+      return n ? 'Offline: changes to ' + n + (n > 1 ? ' maps' : ' map') + ' kept in this browser, sent to GitHub when the connection is back.' : passing;
+    }
+    function cloudOn(b, id) {   // the cloud put by a row of the list, or taken away (buildList asks for each row, waitShow for the rows shown)
+      var c = b.querySelector('.m2-cloud'), w = waitingOf(id);
+      if (w && !c) { c = document.createElement('span'); c.className = 'm2-cloud'; c.title = 'Not on GitHub yet: kept in this browser'; c.innerHTML = CLOUD; var n = b.querySelector('.m2-fx') || b.querySelector('.m2-name'); if (n) n.after(c); else b.appendChild(c); }
+      else if (!w && c) c.remove();
+    }
+    function waitShow() {
+      var t = waitText(), e = document.getElementById('m2-ed-wait');
+      if (e) { e.textContent = t; e.hidden = !t; }
+      var l = document.getElementById('m2-list');
+      if (!l) return;
+      var w = l.querySelector(':scope > .m2-wait');
+      if (t && !w) { w = document.createElement('p'); w.className = 'm2-set-note m2-wait'; l.insertBefore(w, l.firstChild); }
+      if (w) { if (t) w.textContent = t; else w.remove(); }
+      l.querySelectorAll('.m2-map[data-id]').forEach(function (b) { cloudOn(b, b.getAttribute('data-id')); });
+    }
+    function passSay(t) {   // a line said for a few seconds, then gone
+      passing = t; waitShow();
+      clearTimeout(passTimer); passTimer = setTimeout(function () { passing = ''; waitShow(); }, 6000);
+    }
+    // a lock held by this tab while it edits a map, so another tab's round leaves that map to this tab's saves
+    function editLock(id) {
+      editUnlock();
+      if (!id || !navigator.locks || !(repo() && token())) return;
+      var p = new Promise(function (res) { lockFree = res; });
+      navigator.locks.request('atlas-edit-' + keyOf(id), function () { return p; }).catch(function () {});
+    }
+    function editUnlock() { if (lockFree) { lockFree(); lockFree = null; } }
+    // the maps waiting in the outbox sent, one at a time, in one tab at a time (Web Locks); the map open in the editor
+    // sends its own (push), a map edited in another tab is left to it
+    function sendWaiting() {
+      if (sendRun) return sendRun;
+      var go = function () {
+        return outboxLoad(true).then(function () {
+          if (lastVisit === null) lastVisit = here().map(function (r) { return r.key; });   // what the last visit left
+          if (!(repo() && token())) return;
+          return (navigator.locks && navigator.locks.query ? navigator.locks.query() : Promise.resolve({ held: [] })).then(function (q) {
+            var busy = (q.held || []).map(function (h) { return h.name; });
+            var list = here().filter(function (r) { return !(on && site && site.id === r.id) && busy.indexOf('atlas-edit-' + r.key) < 0; }), back = [], clash = [], sent = 0;
+            return list.reduce(function (p, r) {
+              return p.then(function () { return sendOne(r).then(function (x) { if (!x) return; sent++; if (lastVisit.indexOf(r.key) >= 0) back.push(r.key); if (x.clash) clash.push(r.name); waitShow(); }); });
+            }, Promise.resolve()).then(function () {
+              if (sent) sendOk();
+              lastVisit = lastVisit.filter(function (k) { return back.indexOf(k) < 0; });
+              if (clash.length) passSay(clash.join(', ') + ' had also changed elsewhere: your version is saved; the other is in its history.');
+              else if (back.length) passSay('Changes to ' + back.length + (back.length > 1 ? ' maps' : ' map') + ' from your last visit sent to GitHub.');
+            }, function (e) {
+              var why = sendWhy(e);
+              if (why === 'other') warn('Not saved on GitHub (' + e + '). Your changes are kept in this browser.');
+              else sendFailed(why);
+            });
+          });
+        });
+      };
+      var run = navigator.locks ? navigator.locks.request('atlas-outbox', go) : go();
+      sendRun = run.catch(function () {}).then(function () { sendRun = null; });
+      return sendRun;
+    }
+    // one record sent, read afresh first (another tab may hold a newer text); GitHub's file read: already there, on the
+    // version the text was made on, or changed elsewhere (not the page's own save under way when the text was kept).
+    // Throws GitHub's status, or the lost connection
+    function sendOne(r) {
+      return outboxFresh(r.key).then(function (cur) {
+        if (!cur || cur.text !== r.text) return null;   // let go, or a newer text kept meanwhile (sent at the next round)
+        return ghRead(r.path).then(function (g) {
+          g = g || { sha: null, text: null };   // not on GitHub (a file made by the first save, or deleted there: written again)
+          if (g.text === r.text) return { sha: g.sha };   // GitHub has it already (sent by another tab)
+          var clash = g.text != null && g.sha !== r.sha && g.text !== r.saved && g.text !== r.also;
+          return api('/contents/' + r.path, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: 'Moved in the viewer: ' + r.path.split('/').pop(), content: b64(r.text), sha: g.sha || undefined, branch: 'main' }) })
+            .then(function (q) { if (!q.ok) throw q.status; return q.json(); })
+            .then(function (d) { return { sha: d.content.sha, clash: clash }; });
+        }).then(function (x) {
+          learnt(r.path, x.sha); forget(r.id);   // what was read ahead of this map is older now
+          if (r.mine) savedMine({ id: r.id, sha: x.sha }, r.text);
+          var u = unsaved[r.id];
+          if (u && u.text === r.text) delete unsaved[r.id];
+          return outboxDone(r.key, r.text).then(function () { return x; });
+        });
+      });
     }
     // no token (the first layer): the map's file as edited and its drawing kept in this browser
     // (draftPut, own.js), a moment after the last move once the move is drawn, so a reload shows it and editing goes on from
@@ -561,8 +710,30 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       return keepBeside(s.id, function () { return on && site === s ? src() : t; }, function (title, id, was) {
         openSay = { id: id, t: (n = was) + ' was changed ' + where + ' since you opened it, so it is not overwritten: your version is kept beside it as ' + title + ', and editing goes on there.' };
         warn(openSay.t);
+        outboxDone(keyOf(s.id), null).then(waitShow);   // the reader's version is the copy now: the map's own record let go
       }).catch(function (e) {
+        if (s.path && repo() && token()) return oursOver(s, on && site === s ? src() : t, n);   // no copy made (a map of a kind that cannot be copied, GitHub refusing it): never a dead end, the reader's version saved over it, the other in its history
         warn('Not saved: ' + n + ' was changed ' + where + ' since you opened it, so it is not overwritten, and your version could not be kept beside it (' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '). Download the map to keep your changes.');
+      });
+    }
+    // a clash where no copy can be made (an SBGN-ML map of a group): the reader's version is saved over the file, the
+    // other stays in the file's history on GitHub, said by one grey line; editing goes on. Not sent (no connection): it
+    // waits in the outbox, sent later the same way
+    function oursOver(s, t, n) {
+      var r = recOf(s, t, n), once = function () { return sendOne(r); };
+      return outboxKeep(r).then(function () { return navigator.locks ? navigator.locks.request('atlas-outbox', once) : once(); }).then(function (x) {
+        if (!x) return;
+        if (site === s) {
+          s.sha = x.sha; s.saved = t; s.clashed = false; stuck = false;
+          if (src() === t) shared.dirty = false; else if (on) { clearTimeout(saveTimer); saveTimer = setTimeout(push, AUTOSAVE); }   // moves made meanwhile: saved as usual
+          quiet();
+        }
+        sendOk();
+        passSay(n + ' had also changed elsewhere: your version is saved; the other is in its history.');
+      }, function (e) {
+        if (site === s) { s.clashed = false; stuck = false; quiet(); }
+        var why = sendWhy(e);
+        if (why === 'other') warn('Not saved on GitHub (' + e + '). Your changes are kept in this browser.'); else sendFailed(why);
       });
     }
     // The error catcher: an error nobody caught while a map is edited (in a gesture, a key, a timer, a promise) is said in
@@ -1324,7 +1495,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (same) {   // editing starts on the picture as it is: no redraw, the map stays where it is
         map.width = same.width; map.height = same.height; map.scale = same.scale; x0 = same.x0; y0 = same.y0;
       }
-      V.current = map; on = true; goodNow();
+      V.current = map; on = true; goodNow(); editLock(site && site.id);
       if (shared.F.opened) shared.F.opened();   // what the format does once its map is open (CellDesigner: the canvas's white taken off)
       V.nodes = null; V.sel = null; V.renderInfo(); V.drawPin();
       document.getElementById('m2-title').textContent = n;
@@ -1348,6 +1519,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (!on) return;
       keyFlush();   // the arrow keys' last run settled on this map, not on the next one opened (its 150 ms timer)
       if (saveTimer) push();   // a move still waiting is saved now
+      editUnlock();   // another tab may send this map's waiting save from now on
       leftMoves = { site: site, n: undo.length };   // before histKeep, which empties undo
       var moved = undo.length > 0 || edits > 0;   // every move undone counts too: the kept picture follows the text left
       histKeep();   // its undo and redo kept for when it is opened again
@@ -1381,10 +1553,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (site === u.site) u.text = src();
       leftSay();
     }
-    function leftSay() {   // out of editing: the maps still holding moves not saved, said (kept in this page only)
-      var l = Object.keys(unsaved).map(function (k) { return unsaved[k].name; });
-      if (!on && l.length) warn(l.join(', ') + (l.length > 1 ? ': moves' : ': the last moves') + ' not saved on GitHub. Edit ' + (l.length > 1 ? 'each' : 'it') + ' again before leaving this page to save them.');
-    }
+    function leftSay() { waitShow(); }   // out of editing: moves not sent are in the outbox, said by its line and cloud, never in red
     // going back to edit at once (without this, switching back and forth waited 0.5-1.5 s, the read-ahead thrown away
     // on leaving and read again over the network, the drawing made again): what the editor holds of the site's map it
     // edited is kept as that map's read-ahead: the site's files as read before, the repository's version as this page
@@ -1727,24 +1896,39 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       });
       if (!repo()) return fromSite(null);
       if (!token()) return fromSite({ path: path, sha: null, pending: true });
-      p.gh.then(function (g) {
-        // moves of this map not saved on GitHub when editing was left: taken up again and saved, if GitHub is still at
-        // the version they were made on (saved: GitHub's text, for the check of a refused save; an SBGN-ML map's edited
-        // copy not made yet: none on GitHub still)
-        var u = unsaved[m.id], usha = u ? u.site.sha || null : undefined;
+      // a save of this map still in the outbox (a send that failed, the last visit's): sent first, and GitHub read again
+      // when it went, else the text waiting is taken up as moves not saved
+      var k = keyOf(m.id), had = null, gp = outboxLoad().then(function () { had = outboxGet(k); return had ? sendWaiting() : null; })
+        .then(function () { return had && !outboxGet(k) ? ghRead(path) : p.gh; });
+      gp.then(function (g) {
+        // moves of this map not saved on GitHub when editing was left: taken up again and saved (saved: GitHub's text,
+        // for the check of a refused save; an SBGN-ML map's edited copy not made yet: none on GitHub still); GitHub
+        // changed elsewhere meanwhile: the reader's version is saved over it, the other kept in its history
+        var u = unsaved[m.id], o = outboxGet(k);
+        if (!u && o) u = { text: o.text, site: { sha: o.sha } };
+        var usha = u ? u.site.sha || null : undefined;
         delete unsaved[m.id];
-        if (u && (g ? g.sha : null) === usha) return go(u.text, g ? { path: path, sha: g.sha, saved: g.text } : { path: path, sha: null }).then(function () {
+        if (u && g && g.text === u.text) { u = null; outboxDone(k, g.text).then(waitShow); }   // GitHub has it already
+        if (u) return go(u.text, g ? { path: path, sha: g.sha, saved: g.text } : { path: path, sha: null }).then(function () {
           if (tk !== opening) return;
+          if ((g ? g.sha : null) !== usha && g && site) site.clashSay = m.title;   // said once the save has gone through
           shared.dirty = true; changed(); note();
         }, notLoaded);
-        var gone = function () { if (tk === opening && u) warn('The moves not saved before could not be taken up: the map changed on GitHub meanwhile. This is its version there.'); };
-        if (!g && p.F.ahead.path) return published.then(function (t) { return go(t, { path: path, sha: null }); }).then(gone).catch(notLoaded);   // a map edited as a copy of its own (SBGN-ML) with no copy yet: the first save makes it
+        if (!g && p.F.ahead.path) return published.then(function (t) { return go(t, { path: path, sha: null }); }).catch(notLoaded);   // a map edited as a copy of its own (SBGN-ML) with no copy yet: the first save makes it
         if (!g) return fromSite(null);   // not a map of this repository: saved as a file
         return go(g.text, { path: path, sha: g.sha }).then(function () {
           if (tk !== opening) return;
-          recheck(p, g, m); gone();
+          recheck(p, g, m);
         }, notLoaded);
-      }, function (e) { if (tk !== opening) return; warn('Could not read the map from GitHub (' + e + '); the token may be refused.'); ghForm(true); });
+      }, function (e) {
+        if (tk !== opening) return;
+        var o = outboxGet(k);   // GitHub not reached: a save waiting for this map is edited further, sent later
+        if (o && !(e === 401 || e === 403)) return go(o.text, { path: path, sha: o.sha, saved: o.saved }).then(function () { if (tk === opening) { shared.dirty = true; changed(); sendFailed('net'); } }, notLoaded);
+        // no connection: edited from the site's own file, on the version the build drew (index.json's src, its blob
+        // sha); the first save waits in the outbox and finds out on sending whether GitHub has changed since
+        if (typeof e !== 'number' && !p.F.ahead.path) return published.then(function (t) { return go(t, { path: path, sha: m.src || null, saved: t }); }).catch(notLoaded);
+        warn('Could not read the map from GitHub (' + e + '); the token may be refused.'); ghForm(true);
+      });
     }
     // the repository's version read ahead may have changed since (another tab, another person): checked once more right
     // after the switch, in the background; with no move made yet editing simply goes on from the newer version, with a
@@ -1770,6 +1954,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         box.querySelector('#m2-ed-gh-token').value = '';
         offSay = null;
         upAll();   // the reader's maps kept in this browser go to GitHub
+        waitFail = false; sendWaiting();   // saves kept while the token was refused, or before it was taken away, sent
         if (on && site && site.mine) { buttons(); quiet(); if (site.pending) toGh(site); return; }   // a reader's map edited: sent (or its save taken up), then saved there
         var moved = shared.dirty || !!(site && site.pending && src() !== site.pub);   // moves kept in the browser count too
         if (on && site) {   // connected while editing: go on from the repository's version, keeping the moves made
@@ -1985,7 +2170,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     box.querySelector('#m2-ed-stop').addEventListener('click', function () { V.win = 'list'; V.railMark(); if (V.chosen) V.put(V.chosen); else stop(); });
     }
     function resume() {   // back to a file from the computer with moves not saved
-      V.current = map; on = true; V.grid.classList.add('m2-editing'); buttons(); histBack();
+      V.current = map; on = true; V.grid.classList.add('m2-editing'); buttons(); histBack(); editLock(site && site.id);
       document.getElementById('m2-title').textContent = map.title;
       x0 = y0 = 0; map.width = 0; render();
     }
@@ -2005,7 +2190,10 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
     var HANDLE, BEND;
     function __run31() {   // run at start, in order (__start)
-    window.addEventListener('beforeunload', function (e) { if (shared.dirty) { if (saveTimer) push(); e.preventDefault(); e.returnValue = ''; } });
+    window.addEventListener('beforeunload', function (e) {   // the browser's own question while changes are not on GitHub (kept in the outbox all the same)
+      if (shared.dirty) { keepNow(); if (saveTimer) push(); }
+      if (shared.dirty || (waitFail && here().length)) { e.preventDefault(); e.returnValue = ''; }
+    });
     addEventListener('pagehide', function () {
       try {
         if (!(on && V.chosen)) return;
@@ -3382,5 +3570,5 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }, true);
     }
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); }   // the part's statements, in their order
-    export { asSpace, G, GE, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubEnd, hubPorts, inComplex, landBox, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownCursors, ownMenus, paint, parse, parseFix, picWait, placed, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, takes, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); __run47(); }   // the part's statements, in their order
+    export { cloudOn, sendWaiting, waitText, asSpace, G, GE, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubEnd, hubPorts, inComplex, landBox, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownCursors, ownMenus, paint, parse, parseFix, picWait, placed, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, takes, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };

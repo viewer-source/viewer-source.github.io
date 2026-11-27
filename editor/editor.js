@@ -412,13 +412,13 @@
             return [p, p + n.lab.t, p, p + n.lab.b];
           }
           function grown2(ks, B, B0, moving2, away2) {
-            var nb = {}, box2 = function(k) {
+            var nb = {}, box3 = function(k) {
               return nb[k] || B(k);
             }, PAD = M.pad;
             var hold = function(k) {
               var p = nodes[k].up;
               if (p == null || moving2(p)) return;
-              var n = nodes[p], c = box2(p), b = box2(k), w, e = extOf2(k, b);
+              var n = nodes[p], c = box3(p), b = box3(k), w, e = extOf2(k, b);
               var s0 = B0(k), c0 = B0(p), e0 = extOf2(k, s0);
               var far = away2 && moving2(k) ? [away2.x1, away2.y1, -away2.x0, -away2.y0] : [0, 0, 0, 0];
               if (n.shape.kind === "Complex") {
@@ -600,7 +600,7 @@
           var B0 = function(k) {
             return change.before && change.before[M.nodes[k].id] || M.box(k);
           };
-          var box2 = change.how === "box", regroups = !change.layout && (!box2 || Array.from(set).every(function(k) {
+          var box3 = change.how === "box", regroups = !change.layout && (!box3 || Array.from(set).every(function(k) {
             return M.nodes[k].comp;
           }));
           var H2 = make(M), out = regroups ? H2.regroup(change.how, set, M.box, B0) : /* @__PURE__ */ new Map(), mv2 = [];
@@ -608,7 +608,7 @@
             mv2.push([i, t]);
           });
           var M2 = moved(M, mv2), H22 = make(M2), boxes = {};
-          var nb = box2 ? regroups ? {} : H22.grown(Array.from(set), M.box, B0, function() {
+          var nb = box3 ? regroups ? {} : H22.grown(Array.from(set), M.box, B0, function() {
             return false;
           }) : H22.grown(H22.tops(set, change.how === "alone"), M.box, B0, function(k) {
             return set.has(k);
@@ -2124,8 +2124,8 @@
     commit(t2, { name: "properties", sel: ids, quiet: true });
     return true;
   }
-  function sbEnds(id, o, box2) {
-    var t2 = sbJs.scaleEnds(shared.text, id, o, box2);
+  function sbEnds(id, o, box3) {
+    var t2 = sbJs.scaleEnds(shared.text, id, o, box3);
     if (t2 !== shared.text) {
       setText(t2);
       parse();
@@ -2188,8 +2188,8 @@
     if (!sbRefsMemo[3]) return null;
     var ab = sbRefsMemo[4];
     return { id: pid, title: line2 ? "References of its process" : "References", items: sbRefsMemo[3].map(function(k) {
-      var c = k.indexOf(":"), db = k.slice(0, c);
-      return { key: k, db, val: k.slice(c + 1), q: ab.indexOf(k) >= 0 ? "bqmodel:isDescribedBy" : "bqbiol:isDescribedBy", own: ab.indexOf(k) < 0 && /^(pubmed|doi)$/.test(db), about: ab.indexOf(k) >= 0 };
+      var c = k.indexOf(":"), db2 = k.slice(0, c);
+      return { key: k, db: db2, val: k.slice(c + 1), q: ab.indexOf(k) >= 0 ? "bqmodel:isDescribedBy" : "bqbiol:isDescribedBy", own: ab.indexOf(k) < 0 && /^(pubmed|doi)$/.test(db2), about: ab.indexOf(k) >= 0 };
     }) };
   }
   function sbRefsSet(pid, add, del) {
@@ -3189,13 +3189,13 @@
     });
   }
   function cdEndTo(k, end, i) {
-    var e = edges2[k], nd = nodes2[i], here = end ? e.t : e.s, proc = function(x) {
+    var e = edges2[k], nd = nodes2[i], here2 = end ? e.t : e.s, proc = function(x) {
       return /\|(proc|g\d*)$/.test(nodes2[x].id);
     }, rid = e.id.slice(0, e.id.lastIndexOf("|") + 1);
     if (edges2.some(function(f) {
       return f.id.indexOf(rid) === 0 && (f.s === i || f.t === i);
     })) return false;
-    return !proc(here) && !/\|g\d*$/.test(nodes2[end ? e.s : e.t].id) && !proc(i) && !nd.comp && !(nd.up != null && !nodes2[nd.up].comp);
+    return !proc(here2) && !/\|g\d*$/.test(nodes2[end ? e.s : e.t].id) && !proc(i) && !nd.comp && !(nd.up != null && !nodes2[nd.up].comp);
   }
   function cdLeave(moves) {
     if (!cdMk || !moves.some(function(m) {
@@ -4835,8 +4835,8 @@
   function cdRx(txt) {
     return Math.trunc(window.cdrender.width(txt || "", 10) / 2 + 12);
   }
-  function cdFrontOf(t, a, box2) {
-    var I = cdMk.aliasInfo(t, a), b = box2 || I.box, s = 6 * ((I.homodimer || 1) - 1);
+  function cdFrontOf(t, a, box3) {
+    var I = cdMk.aliasInfo(t, a), b = box3 || I.box, s = 6 * ((I.homodimer || 1) - 1);
     return [b[0], b[1], b[2] - s, b[3] - s];
   }
   function cdAngleOn(p, F) {
@@ -4923,18 +4923,18 @@
   function __run28() {
     cdGrew = null;
   }
-  function cdGrowBounds(t, a, box2) {
+  function cdGrowBounds(t, a, box3) {
     if (cdGrew && !cdGrew[a]) {
       var i = nodes2.findIndex(function(n) {
         return n.id === a;
       });
       if (i >= 0) cdGrew[a] = boxOf(i);
     }
-    return cdMk.bounds(t, a, box2);
+    return cdMk.bounds(t, a, box3);
   }
-  function cdGrow(t, a, box2, skip) {
-    if (!box2) return t;
-    var t0 = t, F0 = cdFrontOf(t, a), F = cdFrontOf(t, a, box2), ic = cdOn(cdIcons0(t, a).filter(function(q) {
+  function cdGrow(t, a, box3, skip) {
+    if (!box3) return t;
+    var t0 = t, F0 = cdFrontOf(t, a), F = cdFrontOf(t, a, box3), ic = cdOn(cdIcons0(t, a).filter(function(q) {
       return !skip || !skip(q);
     }), F, F0), any = false;
     ic.forEach(function(q) {
@@ -4943,7 +4943,7 @@
         any = true;
       } else if (q.k === SS) t = cdMk.structuralMove(t, a, cdAngleOn(q.c, F));
     });
-    t = cdGrowBounds(t, a, box2);
+    t = cdGrowBounds(t, a, box3);
     return any ? cdFitOthers(t0, t, a) : t;
   }
   function cdFitOthers(t0, t, id) {
@@ -5159,13 +5159,13 @@
     };
     var f = feat();
     if (!f || res && !f.residues[k]) return;
-    var box2 = document.createElement("div");
-    box2.className = "m2-cx m2-cdsv";
-    box2.setAttribute("role", "dialog");
-    box2.setAttribute("aria-label", res ? "Residue" : ui ? "Unit of information" : "Structural state");
-    box2.innerHTML = ui ? '<label><span>Prefix</span><select></select></label><label class="m2-cdsv-list"><span>Label</span><select></select></label><label class="m2-cdsv-text"><span>Label</span><input type="text" spellcheck="false"></label><button type="button">Remove</button>' : res ? '<label><span>Site</span><input type="text" spellcheck="false"></label><label><span>Modification</span><select></select></label>' : '<label><span>State</span><select><option value="open">Open</option><option value="closed">Closed</option><option value="">Text</option></select></label><label class="m2-cdsv-text"><span>Text</span><input type="text" spellcheck="false"></label><button type="button">Remove</button>';
-    var inp = box2.querySelector("input"), sel = box2.querySelector("select"), row = box2.querySelector(".m2-cdsv-text");
-    var lrow = box2.querySelector(".m2-cdsv-list"), lab = lrow && lrow.querySelector("select");
+    var box3 = document.createElement("div");
+    box3.className = "m2-cx m2-cdsv";
+    box3.setAttribute("role", "dialog");
+    box3.setAttribute("aria-label", res ? "Residue" : ui ? "Unit of information" : "Structural state");
+    box3.innerHTML = ui ? '<label><span>Prefix</span><select></select></label><label class="m2-cdsv-list"><span>Label</span><select></select></label><label class="m2-cdsv-text"><span>Label</span><input type="text" spellcheck="false"></label><button type="button">Remove</button>' : res ? '<label><span>Site</span><input type="text" spellcheck="false"></label><label><span>Modification</span><select></select></label>' : '<label><span>State</span><select><option value="open">Open</option><option value="closed">Closed</option><option value="">Text</option></select></label><label class="m2-cdsv-text"><span>Text</span><input type="text" spellcheck="false"></label><button type="button">Remove</button>';
+    var inp = box3.querySelector("input"), sel = box3.querySelector("select"), row = box3.querySelector(".m2-cdsv-text");
+    var lrow = box3.querySelector(".m2-cdsv-list"), lab = lrow && lrow.querySelector("select");
     var fixed = function() {
       return !!cdMk.INFO[sel.value];
     };
@@ -5279,27 +5279,27 @@
       var i = nodes2.findIndex(function(n) {
         return n.id === id;
       }), j = jOf(), q = i < 0 || j < 0 ? null : cdSvList(i)[j];
-      if (i < 0 || !box2.isConnected) return;
+      if (i < 0 || !box3.isConnected) return;
       if (!q || q[3] !== kind) {
         var b = boxOf(i);
         q = [0, [b[0] + b[2] / 2, b[1] + b[3] / 2], [b[2], 0]];
       }
-      var vr = V.view.getBoundingClientRect(), z = box2.getBoundingClientRect().width / box2.offsetWidth || 1, w = box2.offsetWidth * z, ht = box2.offsetHeight * z;
+      var vr = V.view.getBoundingClientRect(), z = box3.getBoundingClientRect().width / box3.offsetWidth || 1, w = box3.offsetWidth * z, ht = box3.offsetHeight * z;
       var nb = boxOf(i), X0 = Math.min(nb[0], q[1][0] - q[2][0] / 2), X1 = Math.max(nb[0] + nb[2], q[1][0] + q[2][0] / 2), Y0 = Math.min(nb[1], q[1][1] - q[2][1] / 2), Y1 = Math.max(nb[1] + nb[3], q[1][1] + q[2][1] / 2);
       var L = vr.left + sx(X0) * z, R = vr.left + sx(X1) * z, T0 = vr.top + sy(Y0) * z, B = vr.top + sy(Y1) * z, g = 10 * z, W = V.winW(), H2 = V.winH();
       var cx = Math.max(4, Math.min((L + R) / 2 - w / 2, W - 4 - w)), cy = Math.max(4, Math.min((T0 + B) / 2 - ht / 2, H2 - 4 - ht));
       var at2 = B + g + ht <= H2 - 4 ? [cx, B + g] : T0 - g - ht >= 4 ? [cx, T0 - g - ht] : R + g + w <= W - 4 ? [R + g, cy] : L - g - w >= 4 ? [L - g - w, cy] : [cx, Math.max(4, H2 - 4 - ht)];
-      box2.style.left = at2[0] / z + "px";
-      box2.style.top = at2[1] / z + "px";
+      box3.style.left = at2[0] / z + "px";
+      box3.style.top = at2[1] / z + "px";
     };
     var outside = function(e) {
-      if (!box2.contains(e.target)) T.done(true);
+      if (!box3.contains(e.target)) T.done(true);
     };
     T = shared.typing = { inp, place, done: function(keep) {
       if (shared.typing !== T) return;
       if (keep) typed();
       shared.typing = null;
-      box2.remove();
+      box3.remove();
       document.removeEventListener("pointerdown", outside, true);
       if (pendOf()) shared.cdPend = null;
       paint();
@@ -5340,12 +5340,12 @@
     if (ui) lab.addEventListener("change", function() {
       unit(chosen());
     });
-    if (!res) box2.querySelector("button").addEventListener("click", function() {
+    if (!res) box3.querySelector("button").addEventListener("click", function() {
       if (pendOf()) T.done(false);
       else if (ui) unit(null);
       else put2(null);
     });
-    box2.addEventListener("keydown", function(e) {
+    box3.addEventListener("keydown", function(e) {
       e.stopPropagation();
       if (e.key === "Escape") {
         e.preventDefault();
@@ -5357,27 +5357,27 @@
         V.view.focus({ preventScroll: true });
       } else if ((e.ctrlKey || e.metaKey) && V.letter(e) === "a" && !/input/i.test(e.target.tagName)) e.preventDefault();
     });
-    box2.addEventListener("pointerdown", function(e) {
+    box3.addEventListener("pointerdown", function(e) {
       e.stopPropagation();
     });
-    box2.addEventListener("keydown", function(e) {
+    box3.addEventListener("keydown", function(e) {
       if (e.key !== "Tab") return;
-      var fs = Array.prototype.filter.call(box2.querySelectorAll("input, select, button"), function(x) {
+      var fs = Array.prototype.filter.call(box3.querySelectorAll("input, select, button"), function(x) {
         return !x.closest("[hidden]");
       }), at2 = fs.indexOf(document.activeElement);
       e.preventDefault();
       fs[(at2 + (e.shiftKey ? -1 : 1) + fs.length) % fs.length].focus();
     });
-    document.body.appendChild(box2);
+    document.body.appendChild(box3);
     document.addEventListener("pointerdown", outside, true);
     var j0 = jOf();
     shared.svSel = j0 < 0 ? null : { id, j: j0 };
     paint();
     place();
-    box2.tabIndex = -1;
-    box2.setAttribute("data-keys-own", "");
+    box3.tabIndex = -1;
+    box3.setAttribute("data-keys-own", "");
     setTimeout(function() {
-      if (shared.typing === T) box2.focus({ preventScroll: true });
+      if (shared.typing === T) box3.focus({ preventScroll: true });
     }, 0);
   }
   function cdSvAdd(id, kind) {
@@ -5613,8 +5613,8 @@
     if (!cdRefsMemo[2]) return null;
     var line2 = shared.selE.length === 1 && !shared.selN.length && /\|m\d+$/.test(edges2[shared.selE[0]].id);
     return { id: rid, title: line2 ? "References of its reaction" : "References", items: cdRefsMemo[2].map(function(r) {
-      var c = r.key ? r.key.indexOf(":") : -1, db = c > 0 ? r.key.slice(0, c) : "", v = c > 0 ? r.key.slice(c + 1) : r.link;
-      return { key: r.key || r.link, db, val: v, q: r.q, own: r.q === "bqbiol:isDescribedBy" && /^(pubmed|doi)$/.test(db), about: /^bqmodel:/.test(r.q) };
+      var c = r.key ? r.key.indexOf(":") : -1, db2 = c > 0 ? r.key.slice(0, c) : "", v = c > 0 ? r.key.slice(c + 1) : r.link;
+      return { key: r.key || r.link, db: db2, val: v, q: r.q, own: r.q === "bqbiol:isDescribedBy" && /^(pubmed|doi)$/.test(db2), about: /^bqmodel:/.test(r.q) };
     }) };
   }
   function cdRefsSet(rid, add, del) {
@@ -5760,11 +5760,11 @@
         }
         if (/^(mem|outer|inner)$/.test(k)) return cdDouble(k, parseFloat(v), ids);
         if (k === "ss") {
-          var tx = v.replace(/[\r\n]+/g, " ").trim();
+          var tx2 = v.replace(/[\r\n]+/g, " ").trim();
           return all(function(t, id) {
             if (/^(COMPARTMENT|DEGRADED)$/.test(cdMk.aliasInfo(t, id).cls || "COMPARTMENT")) return t;
             var s0 = cdMk.features(t, id).structural;
-            return tx ? s0 && s0.text === tx ? t : cdSsSet(t, id, tx, null) : s0 ? cdMk.structural(t, id, null) : t;
+            return tx2 ? s0 && s0.text === tx2 ? t : cdSsSet(t, id, tx2, null) : s0 ? cdMk.structural(t, id, null) : t;
           });
         }
         return false;
@@ -5900,9 +5900,9 @@
     var m = /^data:image\/svg\+xml;base64,(.*)$/.exec(src2 || "");
     if (m) {
       try {
-        var tx = new TextDecoder().decode(Uint8Array.from(atob(m[1]), function(c) {
+        var tx2 = new TextDecoder().decode(Uint8Array.from(atob(m[1]), function(c) {
           return c.charCodeAt(0);
-        })), a = (/<svg\b[^>]*>/i.exec(tx) || [""])[0];
+        })), a = (/<svg\b[^>]*>/i.exec(tx2) || [""])[0];
         var w = /\swidth="([\d.]+)(?:px)?"/.exec(a), h = /\sheight="([\d.]+)(?:px)?"/.exec(a), vb = /\sviewBox="\s*[-\d.e]+[\s,]+[-\d.e]+[\s,]+([\d.e]+)[\s,]+([\d.e]+)/i.exec(a);
         if (w && h && +w[1] > 0 && +h[1] > 0) return Promise.resolve([+w[1], +h[1]]);
         if (vb && +vb[1] > 0 && +vb[2] > 0) return Promise.resolve([+vb[1], +vb[2]]);
@@ -6058,8 +6058,8 @@
       if (!cdStill(m0)) return;
       var fb;
       if (cdApply(function(t, sh) {
-        var box2 = round_();
-        fb = [box2[0] + sh[0], box2[1] + sh[1], box2[2], box2[3]].map(function(v) {
+        var box3 = round_();
+        fb = [box3[0] + sh[0], box3[1] + sh[1], box3[2], box3[3]].map(function(v) {
           return Math.round(v * 100) / 100;
         });
         return cdMk.background(t, r.note, fb).text;
@@ -6881,12 +6881,12 @@
       return /^glyphs\/[^/]+\.png$/i.test(g);
     }) : [];
   }
-  function svgPixels(box2) {
-    var w = Math.max(1, box2[0] * 2), h = Math.max(1, box2[1] * 2), k = Math.min(1, 8e3 / Math.max(w, h));
+  function svgPixels(box3) {
+    var w = Math.max(1, box3[0] * 2), h = Math.max(1, box3[1] * 2), k = Math.min(1, 8e3 / Math.max(w, h));
     return [Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k))];
   }
-  function fitPixels(size, box2) {
-    var r = box2[0] / box2[1];
+  function fitPixels(size, box3) {
+    var r = box3[0] / box3[1];
     if (Math.abs(size[0] / size[1] / r - 1) <= 0.05) return null;
     var w = Math.max(size[0], size[1] * r), h = w / r, k = Math.min(1, 8e3 / Math.max(w, h));
     return [Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k))];
@@ -7255,7 +7255,7 @@
   function renameGroup(was) {
     if (was && !ownGroup(was)) return renameSiteGroup(was);
     if (naming) naming(true);
-    var box2 = document.getElementById("m2-list"), at2 = null, fresh = null;
+    var box3 = document.getElementById("m2-list"), at2 = null, fresh = null;
     if (!was) {
       fresh = was = "New group";
       for (var k = 2; !mineValid(was); k++) was = fresh + " " + k;
@@ -7263,7 +7263,7 @@
       mineGroupsSet([was].concat(mineGroups()));
       V.refreshMine();
     }
-    if (!(at2 = box2.querySelector('.m2-group.m2-mine[data-group="' + CSS.escape(was) + '"]'))) {
+    if (!(at2 = box3.querySelector('.m2-group.m2-mine[data-group="' + CSS.escape(was) + '"]'))) {
       if (fresh) {
         mineGroupsSet(mineGroups().filter(function(g) {
           return g !== fresh;
@@ -8398,12 +8398,12 @@
     adding = [], ADD_AFTER = 300;
   }
   function addPaint() {
-    var box2 = document.getElementById("m2-list");
-    if (!box2) return;
-    Array.prototype.forEach.call(box2.querySelectorAll(".m2-wait, .m2-pend-n"), function(x) {
+    var box3 = document.getElementById("m2-list");
+    if (!box3) return;
+    Array.prototype.forEach.call(box3.querySelectorAll(".m2-wait, .m2-pend-n"), function(x) {
       x.remove();
     });
-    Array.prototype.forEach.call(box2.querySelectorAll(".m2-empty[hidden]"), function(x) {
+    Array.prototype.forEach.call(box3.querySelectorAll(".m2-empty[hidden]"), function(x) {
       x.hidden = false;
     });
     adding = adding.filter(function(b) {
@@ -8420,12 +8420,12 @@
     });
     adding.forEach(function(b) {
       if (!b.shown) return;
-      var g = b.group, head = g ? box2.querySelector('.m2-group:not(.m2-link-group)[data-group="' + CSS.escape(g) + '"]') : null;
+      var g = b.group, head = g ? box3.querySelector('.m2-group:not(.m2-link-group)[data-group="' + CSS.escape(g) + '"]') : null;
       if (g && !head) return;
       if (head && count[g] && !head.querySelector(".m2-pend-n")) head.appendChild(Object.assign(document.createElement("span"), { className: "m2-pend-n", textContent: "adding " + count[g][0] + " of " + count[g][1] }));
       if (head && head.classList.contains("m2-shut")) return;
-      var maps = box2.querySelectorAll('.m2-map:not(.m2-binned)[data-group="' + CSS.escape(g) + '"]' + (g ? "" : ".m2-mine"));
-      var at2 = box2.querySelectorAll('.m2-wait[data-group="' + CSS.escape(g) + '"]'), empty = g && box2.querySelector('.m2-empty[data-group="' + CSS.escape(g) + '"]');
+      var maps = box3.querySelectorAll('.m2-map:not(.m2-binned)[data-group="' + CSS.escape(g) + '"]' + (g ? "" : ".m2-mine"));
+      var at2 = box3.querySelectorAll('.m2-wait[data-group="' + CSS.escape(g) + '"]'), empty = g && box3.querySelector('.m2-empty[data-group="' + CSS.escape(g) + '"]');
       at2 = at2.length ? at2[at2.length - 1] : maps.length ? maps[maps.length - 1] : empty || head;
       if (empty) empty.hidden = true;
       b.rows.forEach(function(r) {
@@ -8444,7 +8444,7 @@
           });
         }
         if (at2) at2.after(row);
-        else box2.insertBefore(row, box2.firstChild);
+        else box3.insertBefore(row, box3.firstChild);
         at2 = row;
       });
     });
@@ -9095,8 +9095,8 @@
           return Promise.all(ds.map(function(d) {
             return file(d, "record.json").then(function(fl) {
               return fl.text();
-            }).then(function(tx) {
-              var r = JSON.parse(tx), kept = {};
+            }).then(function(tx2) {
+              var r = JSON.parse(tx2), kept = {};
               (r.kept || []).forEach(function(k) {
                 kept[k] = function() {
                   return file(d, k).then(function(fl) {
@@ -9332,8 +9332,8 @@
               return;
             }
             if (/svg/.test(b.type)) {
-              var box2 = n && n.box || null;
-              return (box2 ? Promise.resolve(svgPixels(box2)) : b.text().then(function(t) {
+              var box3 = n && n.box || null;
+              return (box3 ? Promise.resolve(svgPixels(box3)) : b.text().then(function(t) {
                 return svgPixels(svgSize(new DOMParser().parseFromString(t, "image/svg+xml").documentElement));
               })).then(function(px) {
                 return svgPng(b, px);
@@ -11056,6 +11056,8 @@
         return !!naming;
       },
       isTop,
+      cloud: cloudOn,
+      waitLine: waitText,
       tool: { kind: function(id) {
         return fmtOf(V.byId[id] || {});
       }, name: function(id) {
@@ -11500,10 +11502,10 @@
         ddClose();
         bx2.blur();
         if (was) return;
-        var q = r._o, m = q.get(), box2 = document.createElement("div");
-        box2.className = "m2-cx m2-ed-pdl";
-        box2.setAttribute("role", "listbox");
-        box2.setAttribute("aria-label", q.label);
+        var q = r._o, m = q.get(), box3 = document.createElement("div");
+        box3.className = "m2-cx m2-ed-pdl";
+        box3.setAttribute("role", "listbox");
+        box3.setAttribute("aria-label", q.label);
         q.list.forEach(function(c) {
           var b = document.createElement("button");
           b.type = "button";
@@ -11513,30 +11515,30 @@
           b.innerHTML = "<span>" + c[1] + "</span>" + (q.sq ? q.sq(c[0]) : "");
           b.addEventListener("click", function(ev) {
             ev.stopPropagation();
-            var same = box2._t === src();
+            var same = box3._t === src();
             ddClose();
             if (same) {
               q.set(c[0]);
               palDrop(q);
             }
           });
-          box2.appendChild(b);
+          box3.appendChild(b);
         });
-        document.body.appendChild(box2);
-        var f2 = bx2.getBoundingClientRect(), k = box2.getBoundingClientRect().width / box2.offsetWidth || 1;
-        box2.style.minWidth = f2.width / k + "px";
-        var w = box2.offsetWidth * k, h = box2.offsetHeight * k, below = V.winH() - 4 - f2.bottom, above = f2.top - 4;
+        document.body.appendChild(box3);
+        var f2 = bx2.getBoundingClientRect(), k = box3.getBoundingClientRect().width / box3.offsetWidth || 1;
+        box3.style.minWidth = f2.width / k + "px";
+        var w = box3.offsetWidth * k, h = box3.offsetHeight * k, below = V.winH() - 4 - f2.bottom, above = f2.top - 4;
         var y = h + 2 * k <= below || below >= above ? f2.bottom + 2 * k : f2.top - 2 * k - h;
-        box2.style.left = Math.max(4, Math.min(f2.left, V.winW() - 4 - w)) / k + "px";
-        box2.style.top = Math.max(4, Math.min(y, V.winH() - 4 - h)) / k + "px";
-        ddOpen = box2;
-        box2._r = r;
-        box2._t = src();
-        box2._list = q.list;
-        box2._keys = keys;
+        box3.style.left = Math.max(4, Math.min(f2.left, V.winW() - 4 - w)) / k + "px";
+        box3.style.top = Math.max(4, Math.min(y, V.winH() - 4 - h)) / k + "px";
+        ddOpen = box3;
+        box3._r = r;
+        box3._t = src();
+        box3._list = q.list;
+        box3._keys = keys;
         bx2.setAttribute("aria-expanded", "true");
         if (keys) {
-          var s = box2.querySelector('[aria-selected="true"]') || box2.firstChild;
+          var s = box3.querySelector('[aria-selected="true"]') || box3.firstChild;
           if (s) s.focus();
         }
       });
@@ -13855,10 +13857,10 @@
     return 2 * (b[2] + b[3]);
   }
   function toT(b, r) {
-    var w = b[2], h = b[3], dt = Math.abs(r[1] + 0.5) * h, dr = Math.abs(r[0] - 0.5) * w, db = Math.abs(r[1] - 0.5) * h, dl = Math.abs(r[0] + 0.5) * w, m = Math.min(dt, dr, db, dl);
+    var w = b[2], h = b[3], dt = Math.abs(r[1] + 0.5) * h, dr = Math.abs(r[0] - 0.5) * w, db2 = Math.abs(r[1] - 0.5) * h, dl = Math.abs(r[0] + 0.5) * w, m = Math.min(dt, dr, db2, dl);
     if (m === dt) return (r[0] + 0.5) * w;
     if (m === dr) return w + (r[1] + 0.5) * h;
-    if (m === db) return w + h + (0.5 - r[0]) * w;
+    if (m === db2) return w + h + (0.5 - r[0]) * w;
     return 2 * w + h + (0.5 - r[1]) * h;
   }
   function fromT(b, t) {
@@ -14873,7 +14875,7 @@
     t.split(/\s+|,(?=\s|\d|$)|;(?=\s|$)/).forEach(function(x) {
       x = x.replace(/^[(\[<"']+|[)\]>"'.,]+$/g, "");
       if (!x) return;
-      var m, db = null, v = null, dec = function(s) {
+      var m, db2 = null, v = null, dec = function(s) {
         try {
           return decodeURIComponent(s);
         } catch (e) {
@@ -14881,53 +14883,53 @@
         }
       };
       if (m = /^(?:https?:\/\/)?(?:www\.)?(?:pubmed\.ncbi\.nlm\.nih\.gov|ncbi\.nlm\.nih\.gov\/pubmed)\/(\d+)\/?(?:[?#].*)?$/i.exec(x)) {
-        db = "pubmed";
+        db2 = "pubmed";
         v = m[1];
       } else if (m = /^(?:https?:\/\/)?(?:dx\.)?doi\.org\/(.+)$/i.exec(x)) {
-        db = "doi";
+        db2 = "doi";
         v = dec(m[1]);
       } else if (m = /^(?:https?:\/\/)?(?:www\.|rest\.)?uniprot\.org\/(?:uniprot|uniprotkb)\/([A-Za-z0-9-]+)(?:[\/.?#].*)?$/i.exec(x)) {
-        db = "uniprot";
+        db2 = "uniprot";
         v = m[1];
       } else if (m = /^(?:https?:\/\/)?(?:www\.)?genenames\.org\/.*?(?:HGNC(?::|%3A)|hgnc_id\/)(\d+)/i.exec(x)) {
-        db = "hgnc";
+        db2 = "hgnc";
         v = m[1];
       } else if (m = /^(?:https?:\/\/)?(?:www\.)?ebi\.ac\.uk\/chebi\/.*?CHEBI(?::|%3A)(\d+)/i.exec(x)) {
-        db = "chebi";
+        db2 = "chebi";
         v = m[1];
       } else if (m = /^(?:https?:\/\/)?(?:amigo\.geneontology\.org|(?:www\.)?ebi\.ac\.uk\/QuickGO)\/.*?GO(?::|%3A)(\d{7})/i.exec(x)) {
-        db = "go";
+        db2 = "go";
         v = m[1];
       } else if (m = /^(?:https?:\/\/)?(?:meshb\.nlm\.nih\.gov|(?:www\.)?ncbi\.nlm\.nih\.gov\/mesh)\/.*?\b([CD]\d{6,9})\b/i.exec(x)) {
-        db = "mesh";
+        db2 = "mesh";
         v = m[1];
       } else if ((m = /^(?:https?:\/\/)?identifiers\.org\/(?:([\w.]+)[:\/])?(.+)$/i.exec(x)) || (m = /^urn:miriam:([\w.]+):(.+)$/i.exec(x))) {
-        db = (m[1] || "").toLowerCase().replace(/^obo\./, "");
+        db2 = (m[1] || "").toLowerCase().replace(/^obo\./, "");
         v = dec(m[2]);
         var p = /^(CHEBI|GO|HGNC):(.+)$/i.exec(v);
-        if (p && (!db || db === p[1].toLowerCase())) {
-          db = p[1].toLowerCase();
+        if (p && (!db2 || db2 === p[1].toLowerCase())) {
+          db2 = p[1].toLowerCase();
           v = p[2];
         }
       } else if (m = /^(pmid|pubmed|doi|uniprot|hgnc|chebi|go|mesh):(.+)$/i.exec(x)) {
-        db = m[1].toLowerCase().replace("pmid", "pubmed");
+        db2 = m[1].toLowerCase().replace("pmid", "pubmed");
         v = m[2];
       } else if (/^10\./.test(x)) {
-        db = "doi";
+        db2 = "doi";
         v = x;
       } else dbs.some(function(d) {
         var D2 = ANN_DB[d];
         if (d === "pubmed" ? /^\d+$/.test(x) : D2.plain && D2.plain.test(x)) {
-          db = d;
+          db2 = d;
           v = x;
           return true;
         }
         return false;
       });
-      if (db === "chebi" || db === "go") v = db.toUpperCase() + ":" + String(v).replace(/^(chebi|go):/i, "");
-      else if (db === "uniprot" || db === "mesh") v = String(v).toUpperCase();
-      else if (db === "hgnc") v = String(v).replace(/^hgnc:/i, "");
-      var D = db && dbs.indexOf(db) >= 0 && ANN_DB[db], key = D && D.ok.test(v) ? db + ":" + v : null;
+      if (db2 === "chebi" || db2 === "go") v = db2.toUpperCase() + ":" + String(v).replace(/^(chebi|go):/i, "");
+      else if (db2 === "uniprot" || db2 === "mesh") v = String(v).toUpperCase();
+      else if (db2 === "hgnc") v = String(v).replace(/^hgnc:/i, "");
+      var D = db2 && dbs.indexOf(db2) >= 0 && ANN_DB[db2], key = D && D.ok.test(v) ? db2 + ":" + v : null;
       if (!key) out.bad.push(x);
       else if (out.keys.indexOf(key) < 0) out.keys.push(key);
     });
@@ -15127,7 +15129,7 @@
     });
   }
   function picShow(f, v) {
-    var box2 = f.parentNode, img = box2.querySelector("img"), nm = box2.querySelector(".m2-ed-ppicname"), src2 = v && v.src || "";
+    var box3 = f.parentNode, img = box3.querySelector("img"), nm = box3.querySelector(".m2-ed-ppicname"), src2 = v && v.src || "";
     nm.textContent = v ? v.name.replace(/^glyphs\//, "") : "none";
     nm.title = v ? v.name : "";
     if (img.getAttribute("src") !== src2) {
@@ -15135,7 +15137,7 @@
       else img.removeAttribute("src");
     }
     img.hidden = !src2;
-    box2.querySelector(".m2-ed-ppicoff").hidden = !v;
+    box3.querySelector(".m2-ed-ppicoff").hidden = !v;
     f.hidden = !!v;
   }
   var DEF_KEY;
@@ -15778,11 +15780,11 @@
       else livePut(shared.sizeRec, nb);
     }
   }
-  function poseSize(i, box2) {
+  function poseSize(i, box3) {
     poseBack();
     if (!gN) return;
     shared.live = shared.live || /* @__PURE__ */ new Set();
-    posed({ n: /* @__PURE__ */ new Set(), p: /* @__PURE__ */ new Set(), dx: 0, dy: 0 }, { i, box: box2 });
+    posed({ n: /* @__PURE__ */ new Set(), p: /* @__PURE__ */ new Set(), dx: 0, dy: 0 }, { i, box: box3 });
     if (shared.poseNow) shared.sizePosed = true;
   }
   function sizeOff() {
@@ -15923,6 +15925,118 @@
     __run113();
     __run214();
     __run310();
+  }
+
+  // editor/src/outbox.js
+  var dbP;
+  var box2;
+  var loaded;
+  function db() {
+    if (!dbP) dbP = new Promise(function(res, rej) {
+      var idb = window.indexedDB;
+      if (!idb) return rej(new Error("this browser keeps no data for the page"));
+      var r = idb.open("atlas-outbox", 1);
+      r.onupgradeneeded = function() {
+        if (!r.result.objectStoreNames.contains("saves")) r.result.createObjectStore("saves");
+      };
+      r.onsuccess = function() {
+        var d = r.result;
+        d.onversionchange = function() {
+          d.close();
+          dbP = null;
+        };
+        res(d);
+      };
+      r.onerror = function() {
+        dbP = null;
+        rej(r.error);
+      };
+      r.onblocked = function() {
+        dbP = null;
+        rej(new Error("another tab of this site holds the stored changes"));
+      };
+    });
+    return dbP;
+  }
+  function tx(mode, f) {
+    return db().then(function(d) {
+      return new Promise(function(res, rej) {
+        var t = d.transaction("saves", mode), q = f(t.objectStore("saves"));
+        t.oncomplete = function() {
+          res(q && q.result);
+        };
+        t.onerror = t.onabort = function() {
+          rej(t.error);
+        };
+      });
+    });
+  }
+  function outboxLoad(again) {
+    if (!box2) box2 = {};
+    if (!loaded || again) loaded = tx("readonly", function(st) {
+      return st.getAll();
+    }).then(function(all) {
+      var seen = {};
+      (all || []).forEach(function(r) {
+        if (r && r.key) {
+          seen[r.key] = 1;
+          if (!box2[r.key] || (r.at || 0) >= (box2[r.key].at || 0)) box2[r.key] = r;
+        }
+      });
+      if (again) Object.keys(box2).forEach(function(k) {
+        if (!seen[k] && box2[k].kept) delete box2[k];
+      });
+    }, function() {
+    }).then(function() {
+      return box2;
+    });
+    return loaded;
+  }
+  function outboxKeep(rec) {
+    if (!box2) box2 = {};
+    rec.at = Date.now();
+    box2[rec.key] = rec;
+    return tx("readwrite", function(st) {
+      return st.put(rec, rec.key);
+    }).then(function() {
+      rec.kept = true;
+    });
+  }
+  function outboxFresh(key) {
+    return tx("readonly", function(st) {
+      return st.get(key);
+    }).then(function(r) {
+      if (!box2) box2 = {};
+      if (r) {
+        r.kept = true;
+        if (!box2[key] || (r.at || 0) >= (box2[key].at || 0)) box2[key] = r;
+      } else if (box2[key] && box2[key].kept) delete box2[key];
+      return box2[key] || null;
+    });
+  }
+  function outboxDone(key, text) {
+    var r = box2 && box2[key];
+    if (r && text != null && r.text !== text) return Promise.resolve(false);
+    if (r) delete box2[key];
+    return tx("readwrite", function(st) {
+      var q = st.get(key);
+      q.onsuccess = function() {
+        if (q.result && (text == null || q.result.text === text)) st.delete(key);
+      };
+      return q;
+    }).then(function() {
+      return true;
+    }, function() {
+      return true;
+    });
+  }
+  function outboxGet(key) {
+    return box2 && box2[key] || null;
+  }
+  function outboxAll() {
+    return box2 ? Object.keys(box2).map(function(k) {
+      return box2[k];
+    }) : [];
   }
 
   // editor/src/core.js
@@ -16245,7 +16359,7 @@
   function push(again) {
     clearTimeout(saveTimer);
     saveTimer = null;
-    if (!site || !shared.dirty || stuck) return Promise.resolve();
+    if (!site || site.pending || !site.path || !shared.dirty || stuck) return Promise.resolve();
     if (saving) {
       saveAgain = true;
       return saving;
@@ -16256,6 +16370,8 @@
     }
     var target = site, body = src();
     note();
+    keepOut(target, body);
+    sending[target.id] = body;
     saving = api("/contents/" + target.path, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -16263,8 +16379,10 @@
     }).then(function(r) {
       return r.json().then(function(d) {
         if (r.ok) {
+          var was = target.sha;
           target.sha = d.content.sha;
           target.saved = body;
+          outSent(target, body, was);
           if (bank[target.id] && bank[target.id].kept !== target) forget(target.id);
           learnt(target.path, target.sha);
           if (V.kept && V.kept.id === target.id) V.kept.sha = target.sha;
@@ -16306,17 +16424,18 @@
             saving = null;
             saveAgain = false;
             return push(true);
-          }, function(e) {
-            warn("Not saved: no connection (" + (e && e.message ? e.message : e) + "). The next move tries again.");
+          }, function() {
+            sendFailed("net");
           });
         } else if (r.status === 401 || r.status === 403 || r.status === 404) {
-          warn("Not saved: the token was refused (" + r.status + "). Connect again with a token that can write to " + repo() + ".");
-          ghForm(true);
-        } else warn("Not saved (" + r.status + "): " + (d.message || "") + ". The next move tries again.");
+          sendFailed("token");
+        } else if (r.status >= 500) sendFailed("net");
+        else warn("Not saved (" + r.status + "): " + (d.message || "") + ". Your changes are kept in this browser; the next move tries again.");
       });
-    }).catch(function(e) {
-      warn("Not saved: no connection (" + e.message + "). The next move tries again.");
+    }).catch(function() {
+      sendFailed("net");
     }).then(function() {
+      if (sending[target.id] === body) delete sending[target.id];
       if (saving !== ours) return;
       saving = null;
       if (saveAgain) {
@@ -16326,6 +16445,249 @@
     });
     var ours = saving;
     return saving;
+  }
+  var waitFail;
+  var sendRun;
+  var retryTimer;
+  var lastVisit;
+  var passing;
+  var passTimer;
+  var sending;
+  var lockFree;
+  var CLOUD;
+  function __run472() {
+    waitFail = false, sendRun = null, retryTimer = null, lastVisit = null, passing = "", passTimer = null, sending = {}, lockFree = null;
+    CLOUD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 2 20 20"/><path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193"/><path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07"/></svg>';
+    addEventListener("online", function() {
+      sendWaiting();
+      sendOpen();
+    });
+    addEventListener("pagehide", keepNow2);
+    document.addEventListener("visibilitychange", function() {
+      if (document.visibilityState === "hidden") keepNow2();
+    });
+  }
+  function keyOf(id) {
+    return repo() + "|" + id;
+  }
+  function here() {
+    var k = repo() + "|";
+    return outboxAll().filter(function(r) {
+      return r.key.indexOf(k) === 0;
+    });
+  }
+  function savable() {
+    return on && site && site.path && !site.pending && !stuck && !site.clashed && repo() && token();
+  }
+  function keepNow2() {
+    if (savable() && shared.dirty && !drawing) {
+      var t = src(), r = outboxGet(keyOf(site.id));
+      if (!r || r.text !== t) keepOut(site, t);
+    }
+  }
+  function sendOpen() {
+    if (savable() && shared.dirty && !saving && !saveTimer) push();
+  }
+  function mapName2(id, fallback) {
+    var m = V.byId[id];
+    return m ? m.topic || m.title : fallback || id;
+  }
+  function recOf2(t, body, n) {
+    return { key: keyOf(t.id), id: t.id, path: t.path, name: n || mapName2(t.id, name), text: body, sha: t.sha || null, saved: t.saved != null ? t.saved : t.base != null ? t.base : null, also: sending[t.id] || null, mine: !!t.mine };
+  }
+  function keepOut(t, body) {
+    if (!t || !t.id || !t.path || !(repo() && token())) return Promise.resolve();
+    return outboxKeep(recOf2(t, body)).catch(function(e) {
+      warn("This browser could not keep your last change (" + String(e && e.message ? e.message : e).replace(/\.$/, "") + "). Download the map to keep it.");
+    });
+  }
+  function outSent(t, body, was) {
+    var k = keyOf(t.id), r = outboxGet(k);
+    if (r && r.text !== body && r.sha === (was || null)) {
+      r.sha = t.sha;
+      r.saved = body;
+      r.also = null;
+      outboxKeep(r).catch(function() {
+      });
+    } else outboxDone(k, body);
+    if (t.clashSay) {
+      passSay(t.clashSay + " had also changed elsewhere: your version is saved; the other is in its history.");
+      t.clashSay = null;
+    }
+    sendOk();
+    if (here().some(function(x) {
+      return x.id !== t.id;
+    })) sendWaiting();
+  }
+  function sendOk() {
+    clearTimeout(retryTimer);
+    retryTimer = null;
+    waitFail = false;
+    waitShow();
+  }
+  function sendFailed(why) {
+    if (why === "token") {
+      if (waitFail !== "token") {
+        warn("GitHub refused the token. Your changes are kept in this browser. Connect again with a new token.");
+        ghForm(true);
+      }
+      waitFail = "token";
+    } else {
+      waitFail = "net";
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(function() {
+        retryTimer = null;
+        sendWaiting();
+        sendOpen();
+      }, 3e4);
+    }
+    waitShow();
+  }
+  function sendWhy(e) {
+    return e === 401 || e === 403 || e === 404 ? "token" : typeof e === "number" && e !== 409 && e < 500 ? "other" : "net";
+  }
+  function waitingOf(id) {
+    return !!waitFail && !!outboxGet(keyOf(id));
+  }
+  function waitText() {
+    var n = waitFail === "net" ? here().length : 0;
+    return n ? "Offline: changes to " + n + (n > 1 ? " maps" : " map") + " kept in this browser, sent to GitHub when the connection is back." : passing;
+  }
+  function cloudOn(b, id) {
+    var c = b.querySelector(".m2-cloud"), w = waitingOf(id);
+    if (w && !c) {
+      c = document.createElement("span");
+      c.className = "m2-cloud";
+      c.title = "Not on GitHub yet: kept in this browser";
+      c.innerHTML = CLOUD;
+      var n = b.querySelector(".m2-fx") || b.querySelector(".m2-name");
+      if (n) n.after(c);
+      else b.appendChild(c);
+    } else if (!w && c) c.remove();
+  }
+  function waitShow() {
+    var t = waitText(), e = document.getElementById("m2-ed-wait");
+    if (e) {
+      e.textContent = t;
+      e.hidden = !t;
+    }
+    var l = document.getElementById("m2-list");
+    if (!l) return;
+    var w = l.querySelector(":scope > .m2-wait");
+    if (t && !w) {
+      w = document.createElement("p");
+      w.className = "m2-set-note m2-wait";
+      l.insertBefore(w, l.firstChild);
+    }
+    if (w) {
+      if (t) w.textContent = t;
+      else w.remove();
+    }
+    l.querySelectorAll(".m2-map[data-id]").forEach(function(b) {
+      cloudOn(b, b.getAttribute("data-id"));
+    });
+  }
+  function passSay(t) {
+    passing = t;
+    waitShow();
+    clearTimeout(passTimer);
+    passTimer = setTimeout(function() {
+      passing = "";
+      waitShow();
+    }, 6e3);
+  }
+  function editLock(id) {
+    editUnlock();
+    if (!id || !navigator.locks || !(repo() && token())) return;
+    var p = new Promise(function(res) {
+      lockFree = res;
+    });
+    navigator.locks.request("atlas-edit-" + keyOf(id), function() {
+      return p;
+    }).catch(function() {
+    });
+  }
+  function editUnlock() {
+    if (lockFree) {
+      lockFree();
+      lockFree = null;
+    }
+  }
+  function sendWaiting() {
+    if (sendRun) return sendRun;
+    var go = function() {
+      return outboxLoad(true).then(function() {
+        if (lastVisit === null) lastVisit = here().map(function(r) {
+          return r.key;
+        });
+        if (!(repo() && token())) return;
+        return (navigator.locks && navigator.locks.query ? navigator.locks.query() : Promise.resolve({ held: [] })).then(function(q) {
+          var busy = (q.held || []).map(function(h) {
+            return h.name;
+          });
+          var list2 = here().filter(function(r) {
+            return !(on && site && site.id === r.id) && busy.indexOf("atlas-edit-" + r.key) < 0;
+          }), back2 = [], clash = [], sent = 0;
+          return list2.reduce(function(p, r) {
+            return p.then(function() {
+              return sendOne(r).then(function(x) {
+                if (!x) return;
+                sent++;
+                if (lastVisit.indexOf(r.key) >= 0) back2.push(r.key);
+                if (x.clash) clash.push(r.name);
+                waitShow();
+              });
+            });
+          }, Promise.resolve()).then(function() {
+            if (sent) sendOk();
+            lastVisit = lastVisit.filter(function(k) {
+              return back2.indexOf(k) < 0;
+            });
+            if (clash.length) passSay(clash.join(", ") + " had also changed elsewhere: your version is saved; the other is in its history.");
+            else if (back2.length) passSay("Changes to " + back2.length + (back2.length > 1 ? " maps" : " map") + " from your last visit sent to GitHub.");
+          }, function(e) {
+            var why = sendWhy(e);
+            if (why === "other") warn("Not saved on GitHub (" + e + "). Your changes are kept in this browser.");
+            else sendFailed(why);
+          });
+        });
+      });
+    };
+    var run = navigator.locks ? navigator.locks.request("atlas-outbox", go) : go();
+    sendRun = run.catch(function() {
+    }).then(function() {
+      sendRun = null;
+    });
+    return sendRun;
+  }
+  function sendOne(r) {
+    return outboxFresh(r.key).then(function(cur) {
+      if (!cur || cur.text !== r.text) return null;
+      return ghRead(r.path).then(function(g) {
+        g = g || { sha: null, text: null };
+        if (g.text === r.text) return { sha: g.sha };
+        var clash = g.text != null && g.sha !== r.sha && g.text !== r.saved && g.text !== r.also;
+        return api("/contents/" + r.path, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: "Moved in the viewer: " + r.path.split("/").pop(), content: b64(r.text), sha: g.sha || void 0, branch: "main" })
+        }).then(function(q) {
+          if (!q.ok) throw q.status;
+          return q.json();
+        }).then(function(d) {
+          return { sha: d.content.sha, clash };
+        });
+      }).then(function(x) {
+        learnt(r.path, x.sha);
+        forget(r.id);
+        if (r.mine) savedMine({ id: r.id, sha: x.sha }, r.text);
+        var u = unsaved[r.id];
+        if (u && u.text === r.text) delete unsaved[r.id];
+        return outboxDone(r.key, r.text).then(function() {
+          return x;
+        });
+      });
+    });
   }
   var localTimer;
   var localFor;
@@ -16754,8 +17116,43 @@
     }, function(title, id, was) {
       openSay = { id, t: (n = was) + " was changed " + where2 + " since you opened it, so it is not overwritten: your version is kept beside it as " + title + ", and editing goes on there." };
       warn(openSay.t);
+      outboxDone(keyOf(s.id), null).then(waitShow);
     }).catch(function(e) {
+      if (s.path && repo() && token()) return oursOver(s, on && site === s ? src() : t, n);
       warn("Not saved: " + n + " was changed " + where2 + " since you opened it, so it is not overwritten, and your version could not be kept beside it (" + String(e && e.message ? e.message : e).replace(/\.$/, "") + "). Download the map to keep your changes.");
+    });
+  }
+  function oursOver(s, t, n) {
+    var r = recOf2(s, t, n), once = function() {
+      return sendOne(r);
+    };
+    return outboxKeep(r).then(function() {
+      return navigator.locks ? navigator.locks.request("atlas-outbox", once) : once();
+    }).then(function(x) {
+      if (!x) return;
+      if (site === s) {
+        s.sha = x.sha;
+        s.saved = t;
+        s.clashed = false;
+        stuck = false;
+        if (src() === t) shared.dirty = false;
+        else if (on) {
+          clearTimeout(saveTimer);
+          saveTimer = setTimeout(push, AUTOSAVE);
+        }
+        quiet();
+      }
+      sendOk();
+      passSay(n + " had also changed elsewhere: your version is saved; the other is in its history.");
+    }, function(e) {
+      if (site === s) {
+        s.clashed = false;
+        stuck = false;
+        quiet();
+      }
+      var why = sendWhy(e);
+      if (why === "other") warn("Not saved on GitHub (" + e + "). Your changes are kept in this browser.");
+      else sendFailed(why);
     });
   }
   var good;
@@ -17961,6 +18358,7 @@
     V.current = map;
     on = true;
     goodNow();
+    editLock(site && site.id);
     if (shared.F.opened) shared.F.opened();
     V.nodes = null;
     V.sel = null;
@@ -17996,6 +18394,7 @@
     if (!on) return;
     keyFlush();
     if (saveTimer) push();
+    editUnlock();
     leftMoves = { site, n: undo.length };
     var moved = undo.length > 0 || edits > 0;
     histKeep();
@@ -18054,10 +18453,7 @@
     leftSay();
   }
   function leftSay() {
-    var l = Object.keys(unsaved).map(function(k) {
-      return unsaved[k].name;
-    });
-    if (!on && l.length) warn(l.join(", ") + (l.length > 1 ? ": moves" : ": the last moves") + " not saved on GitHub. Edit " + (l.length > 1 ? "each" : "it") + " again before leaving this page to save them.");
+    waitShow();
   }
   function ghKnown(s) {
     return stuck || !s || !s.sha || shared.dirty && site === s ? null : { sha: s.sha, text: s.saved || s.base };
@@ -18410,12 +18806,12 @@
     p.docs = null;
   }
   function sweep() {
-    var cur = V.current, t = ++sweepT, here = cur ? V.maps.indexOf(V.byId[cur.id]) : -1;
-    if (here < 0) return;
+    var cur = V.current, t = ++sweepT, here2 = cur ? V.maps.indexOf(V.byId[cur.id]) : -1;
+    if (here2 < 0) return;
     var list2 = V.maps.filter(function(m) {
       return graphmlOf(m);
     }).map(function(m, i2) {
-      return [m, Math.abs(V.maps.indexOf(m) - here), i2];
+      return [m, Math.abs(V.maps.indexOf(m) - here2), i2];
     }).sort(function(a, b) {
       return a[1] - b[1] || a[2] - b[2];
     }).map(function(x) {
@@ -18536,29 +18932,49 @@
     });
     if (!repo()) return fromSite(null);
     if (!token()) return fromSite({ path, sha: null, pending: true });
-    p.gh.then(function(g) {
-      var u = unsaved[m.id], usha = u ? u.site.sha || null : void 0;
+    var k = keyOf(m.id), had = null, gp = outboxLoad().then(function() {
+      had = outboxGet(k);
+      return had ? sendWaiting() : null;
+    }).then(function() {
+      return had && !outboxGet(k) ? ghRead(path) : p.gh;
+    });
+    gp.then(function(g) {
+      var u = unsaved[m.id], o = outboxGet(k);
+      if (!u && o) u = { text: o.text, site: { sha: o.sha } };
+      var usha = u ? u.site.sha || null : void 0;
       delete unsaved[m.id];
-      if (u && (g ? g.sha : null) === usha) return go(u.text, g ? { path, sha: g.sha, saved: g.text } : { path, sha: null }).then(function() {
+      if (u && g && g.text === u.text) {
+        u = null;
+        outboxDone(k, g.text).then(waitShow);
+      }
+      if (u) return go(u.text, g ? { path, sha: g.sha, saved: g.text } : { path, sha: null }).then(function() {
         if (tk !== opening) return;
+        if ((g ? g.sha : null) !== usha && g && site) site.clashSay = m.title;
         shared.dirty = true;
         changed();
         note();
       }, notLoaded);
-      var gone = function() {
-        if (tk === opening && u) warn("The moves not saved before could not be taken up: the map changed on GitHub meanwhile. This is its version there.");
-      };
       if (!g && p.F.ahead.path) return published.then(function(t) {
         return go(t, { path, sha: null });
-      }).then(gone).catch(notLoaded);
+      }).catch(notLoaded);
       if (!g) return fromSite(null);
       return go(g.text, { path, sha: g.sha }).then(function() {
         if (tk !== opening) return;
         recheck(p, g, m);
-        gone();
       }, notLoaded);
     }, function(e) {
       if (tk !== opening) return;
+      var o = outboxGet(k);
+      if (o && !(e === 401 || e === 403)) return go(o.text, { path, sha: o.sha, saved: o.saved }).then(function() {
+        if (tk === opening) {
+          shared.dirty = true;
+          changed();
+          sendFailed("net");
+        }
+      }, notLoaded);
+      if (typeof e !== "number" && !p.F.ahead.path) return published.then(function(t) {
+        return go(t, { path, sha: m.src || null, saved: t });
+      }).catch(notLoaded);
       warn("Could not read the map from GitHub (" + e + "); the token may be refused.");
       ghForm(true);
     });
@@ -18596,6 +19012,8 @@
         box.querySelector("#m2-ed-gh-token").value = "";
         offSay = null;
         upAll();
+        waitFail = false;
+        sendWaiting();
         if (on && site && site.mine) {
           buttons();
           quiet();
@@ -18902,12 +19320,12 @@
     var x = mr - 2 * k + w <= V.winW() - 4 ? mr - 2 * k : ml + 2 * k - w >= 4 ? ml + 2 * k - w : V.winW() - 4 - w;
     kwBox.style.left = Math.max(4, x) / k + "px";
     kwBox.style.top = Math.max(4, Math.min(r.top - lift, V.winH() - 4 - h)) / k + "px";
-    var box2 = kwBox;
+    var box3 = kwBox;
     kwBox.m2close = function() {
-      if (kwBox === box2) kwClose();
+      if (kwBox === box3) kwClose();
     };
     kwBox.m2first = function() {
-      var f = box2.querySelector("button:not(:disabled)");
+      var f = box3.querySelector("button:not(:disabled)");
       if (f) f.focus();
     };
     return kwBox;
@@ -18986,6 +19404,7 @@
     V.grid.classList.add("m2-editing");
     buttons();
     histBack();
+    editLock(site && site.id);
     document.getElementById("m2-title").textContent = map.title;
     x0 = y0 = 0;
     map.width = 0;
@@ -19012,7 +19431,10 @@
   function __run313() {
     window.addEventListener("beforeunload", function(e) {
       if (shared.dirty) {
+        keepNow2();
         if (saveTimer) push();
+      }
+      if (shared.dirty || waitFail && here().length) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -20980,6 +21402,7 @@
     __run443();
     __run452();
     __run46();
+    __run472();
   }
 
   // editor/src/tools.js
@@ -21082,6 +21505,7 @@
     buttons();
     aheadSoon();
     syncFolder();
+    sendWaiting();
     if (v.current) setTimeout(shown, 0);
     return { fresh: function() {
       shared.redo = [];

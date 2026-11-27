@@ -101,14 +101,15 @@ async function github(b) {
   ok('and nothing said', !/Not saved/.test(await h.status()), await h.status());
   await page.evaluate(function () { window.__full = false; });
 
-  // someone else changed the file
+  // someone else changed the file, and no copy of the reader's version can be made beside it (the Git Data API is not
+  // played here): no dead end, the reader's version is saved over it, the other stays in the file's history
   var other = body[p].replace(/<\/graphml>\s*$/, '<!-- another person -->\n</graphml>\n');
   sha[p] = 'someone-else'; body[p] = other;
-  n0 = puts.length; await h.move(); await page.waitForTimeout(6000);
-  ok('refused as changed by someone else: their file kept', body[p] === other && puts.length === n0 + 1, (puts.length - n0) + ' tries');
-  ok('and said', /changed on GitHub since you opened it/.test(await h.status()), await h.status());
-  await h.move(); await page.waitForTimeout(5000);
-  ok('after it, their file is never written', body[p] === other && puts.filter(function (x) { return x.path === p; }).length === n0 + 1, puts.length + ' saves');
+  n0 = puts.length; await h.move(); var t4 = await h.now(); await page.waitForTimeout(4500);   // the line passes after 6 s
+  ok('changed by someone else, no copy possible: the reader\'s version saved over it', body[p] === t4 && body[p] !== other);
+  ok('and said in the grey line, not in red', /had also changed elsewhere: your version is saved; the other is in its history/.test(await page.$eval('#m2-list > .m2-wait, #m2-ed-wait', function (x) { return x.textContent; }).catch(function () { return ''; })) && !/Not saved/.test(await h.status()), await h.status());
+  await h.move(); var t5 = await h.now(); await page.waitForTimeout(5000);
+  ok('after it, editing saves as before', body[p] === t5, (puts.length - n0) + ' saves');
   ok('no script error', !errs.length, errs.join(' | '));
   await page.close();
 }
