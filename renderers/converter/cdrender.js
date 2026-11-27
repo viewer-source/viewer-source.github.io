@@ -538,12 +538,22 @@
   }
   D.clip = function (i, P, anchored, Q, shapeOnly) {   // the visual end (clip in cdrender-rules.md)
     if (!anchored) P = leave(outline(this.al(i)[0], this.box(i)), P, Q);
-    return shapeOnly ? P : enter(this.extras(i), Q, P);
+    return shapeOnly ? P : enter(this.extras(i), Q, this.whole(i, P, Q, anchored));
   };
-  D.ends = function (line, ra, pa) {   // ends in cdrender-rules.md
+  D.whole = function (i, P, Q, anchored) {   // a multimer's visual end on the outline of all its copies (whole in cdrender-rules.md)
+    var A = this.al(i), b = A[1], f = this.front(i), s = b[2] - f[2], n = Math.round(s / 6) + 1;
+    if (n < 2) return P;
+    var C = anchored ? P : this.centre(i), best = P, d = Infinity;
+    for (var k = 0; k < n; k++) {
+      var c = leave(outline(A[0], [f[0] + 6 * k, f[1] + 6 * k, f[2], f[3]]), C, Q), e = Math.hypot(c[0] - Q[0], c[1] - Q[1]);
+      if (c !== C && e < d) { best = c; d = e; }
+    }
+    return best;
+  };
+  D.ends = function (line, ra, pa, ancA, ancB) {   // ends in cdrender-rules.md
     var L = line.length, A = line[0], B = line[L - 1], A1 = line[1], B1 = line[L - 2];
-    line[0] = enter(this.extras(ra), A1, A);
-    line[L - 1] = enter(this.extras(pa), B1, B);
+    line[0] = enter(this.extras(ra), A1, this.whole(ra, A, A1, ancA));
+    line[L - 1] = enter(this.extras(pa), B1, this.whole(pa, B, B1, ancB));
   };
   D.extras = function (i) {   // extras in cdrender-rules.md
     var A = this.al(i), x = A[1][0], y = A[1][1], w = A[1][2], h = A[1][3], self = this;
@@ -644,7 +654,7 @@
     dash = { TRANSCRIPTION: '10,4,2,4,2,4', TRANSLATION: '10,3,2,3' }[typ] || dash;
     var u;
     if (reduced) {
-      this.ends(line, ra, pa);
+      this.ends(line, ra, pa, ancA, ancB);
       var kind = REDUCED_HEAD[typ.split('UNKNOWN_').join('')] || 'production';
       u = unit(line[L - 1][0] - line[L - 2][0], line[L - 1][1] - line[L - 2][1]);
       this.open(this.cur + '|a');
@@ -656,7 +666,7 @@
     var cs = find(x, 'cd:connectScheme'), k = cs ? I(get(cs, 'rectangleIndex', 0)) : 0;
     k = Math.min(k, L - 2);
     var P = line[k], Q = line[k + 1], sq = [(P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2], fl = unit(Q[0] - P[0], Q[1] - P[1]);
-    this.ends(line, ra, pa);
+    this.ends(line, ra, pa, ancA, ancB);
     var reversible = get(rx, 'reversible') !== 'false', nums = counts(rx);
     u = unit(line[L - 1][0] - line[L - 2][0], line[L - 1][1] - line[L - 2][1]);
     if (this.GROUPS) {
@@ -697,15 +707,15 @@
       var seq = inward ? out.slice().reverse() : out;
       if (inward) seq[0] = self.clip(get(e, 'alias'), E, anc, seq[1], true);   // the shape alone: the square's place, the visual end below
       else seq[seq.length - 1] = self.clip(get(e, 'alias'), E, anc, seq[seq.length - 2], true);
-      arms.push([seq, inward, get(e, 'alias')]);
+      arms.push([seq, inward, get(e, 'alias'), anc]);
     });
     var seq = assoc ? arms[2][0] : arms[0][0];
     var k = Math.min(ep ? I(get(ep, 'tShapeIndex', 0)) : 0, seq.length - 2);
     var P = seq[k], Q = seq[k + 1], sq = [(P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2], fl = unit(Q[0] - P[0], Q[1] - P[1]);
     arms.forEach(function (arm) {   // the visual ends, once the square is placed
       var s = arm[0], L = s.length;
-      if (arm[1]) s[0] = enter(self.extras(arm[2]), s[1], s[0]);
-      else s[L - 1] = enter(self.extras(arm[2]), s[L - 2], s[L - 1]);
+      if (arm[1]) s[0] = enter(self.extras(arm[2]), s[1], self.whole(arm[2], s[0], s[1], arm[3]));
+      else s[L - 1] = enter(self.extras(arm[2]), s[L - 2], self.whole(arm[2], s[L - 1], s[L - 2], arm[3]));
     });
     arms.forEach(function (arm) {
       var p = arm[0].slice(), inward = arm[1], headHere = !inward || reversible;

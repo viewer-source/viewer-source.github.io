@@ -44,6 +44,19 @@ files.forEach(function (f) {
     if (editPoints(t) !== editPoints(t2)) throw new Error('a reaction\'s own bend points changed');
     var mx = Infinity, my = Infinity, Mx = -Infinity, My = -Infinity;
     Object.keys(b).forEach(function (id) { var q = b[id]; mx = Math.min(mx, q.x); my = Math.min(my, q.y); Mx = Math.max(Mx, q.x + q.w); My = Math.max(My, q.y + q.h); });
+    // free texts count too, as the fit counts them (a background image under the whole map lies past the network's corner)
+    // and a free text's own x and y stay its bounds' (both shifted)
+    var ly = /<celldesigner:listOfLayers>[\s\S]*?<\/celldesigner:listOfLayers>/.exec(t2), rb = /<celldesigner:bounds ([^>]*)>/g, mb, av = function (q, k) { var m = new RegExp('\\s' + k + '="([^"]*)"').exec(' ' + q); return m ? +m[1] : NaN; };
+    while (ly && (mb = rb.exec(ly[0]))) {
+      var lx = isFinite(av(mb[1], 'x')) ? av(mb[1], 'x') : Math.min(av(mb[1], 'sx'), av(mb[1], 'ex')), lyy = isFinite(av(mb[1], 'y')) ? av(mb[1], 'y') : Math.min(av(mb[1], 'sy'), av(mb[1], 'ey'));
+      if (isFinite(lx)) mx = Math.min(mx, lx); if (isFinite(lyy)) my = Math.min(my, lyy);
+    }
+    var gaps = function (u) {   // each free text's own x, y less its bounds' (0, 0 when they agree)
+      var l = /<celldesigner:listOfLayers>[\s\S]*?<\/celldesigner:listOfLayers>/.exec(u), rl = /<celldesigner:layerSpeciesAlias(\s[^>]*)?>[\s\S]*?<celldesigner:bounds ([^>]*)>/g, ml, o = [];
+      while (l && (ml = rl.exec(l[0]))) o.push(ml[1] && /\sx="/.test(ml[1]) ? [av(ml[1], 'x') - av(ml[2], 'x'), av(ml[1], 'y') - av(ml[2], 'y')].map(function (v) { return Math.round(v * 100) / 100; }).join() : '');
+      return o.join('|');
+    };
+    if (gaps(t2) !== gaps(t)) throw new Error('a free text\'s x, y not shifted with its bounds: ' + gaps(t) + ' -> ' + gaps(t2));
     if (mx > 56 || my > 56) throw new Error('top left still far: ' + mx + ', ' + my);
     if (d.W < Mx + 40 || d.H < My + 40) throw new Error('canvas too small: ' + d.W + ' x ' + d.H + ' for ' + Mx + ', ' + My);
     var g2 = ed.graphml(t2, null, opt), r2 = ed.place(t2, g2, { DOMParser: DP, fit: true });

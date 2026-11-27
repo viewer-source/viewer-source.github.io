@@ -837,6 +837,14 @@
         // a free text's corner, a free line's two ends
         T.attrs(ly[0] + m4.index, ['x', 'y', 'sx', 'sy', 'ex', 'ey'].filter(function (k) { return has(v2, k); }).map(function (k) { return [k, num(F(v2[k]) + sh[/y$/.test(k) ? 1 : 0])]; }));
       }
+      // a free text's own x and y (CellDesigner writes its corner there too, as cd_make.background does): shifted with its
+      // bounds, so the two never disagree (MINERVA and CellDesigner read the bounds, other readers may take these)
+      var re6 = /<celldesigner:layerSpeciesAlias\s[^>]*>/g, m7;
+      while ((m7 = re6.exec(seg3))) {
+        var v3 = {}, re7 = /\s([xy])="([^"]*)"/g, m8;
+        while ((m8 = re7.exec(m7[0]))) v3[m8[1]] = m8[2];
+        T.attrs(ly[0] + m7.index, ['x', 'y'].filter(function (k) { return has(v3, k); }).map(function (k) { return [k, num(F(v3[k]) + sh[k === 'y' ? 1 : 0])]; }));
+      }
       // the gates reaction() did not write (their reactions not read by lines())
       var own = rxsAll.filter(function (rx) { var o = olds[rxid(rx)]; return o && (o.gate || o.gates.length); }).map(function (rx) { return T.span(rxOpen(rxid(rx)), T.at('reaction', rxid(rx))); });
       var re5 = /<celldesigner:(?:GateMember|modification) [^>]*type="BOOLEAN_LOGIC_GATE[^>]*>/g, m6;

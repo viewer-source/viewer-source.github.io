@@ -147,11 +147,15 @@ on an ellipse at 22.5 degree steps, on a phenotype's hexagon, else on the box (t
 
 ## clip
 
-the line's visual end at alias i: an anchor as it is, else where the line from the centre leaves the shape; then the first state variable or unit of information it meets on its way in (the shape outline)
+the line's visual end at alias i: an anchor as it is, else where the line from the centre leaves the shape; on a multimer then where it first meets any copy (whole); then the first state variable or unit of information it meets on its way in (the shape outline)
+
+## whole
+
+a multimer's visual end (the line meets the whole shape, the copies over it, not the front copy alone): where the line, coming from its other end Q, first meets the outline of any copy, from the anchor on the front copy or, with no anchor, from the centre of the whole box. Only the drawn end moves: the port (CellDesigner's anchor on the front copy, at), the shape-only ends the square is placed from and the editor's 16 landing places stay CellDesigner's. CellDesigner itself stops the line at the front copy's anchor, or at the whole box with no anchor (a gap by the back copy's corner); this departs from its look on purpose
 
 ## ends
 
-a reaction's visual ends, cut at the state variables once its square is placed from the shape-only ends
+a reaction's visual ends, cut at a multimer's copies (whole) and the state variables once its square is placed from the shape-only ends
 
 ## extras
 

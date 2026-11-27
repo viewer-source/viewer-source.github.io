@@ -5845,6 +5845,7 @@
       }
     });
     ownMenus.push(cdBgOwn);
+    ownCursors.push(cdBgCursor);
   }
   var cdPicker;
   var cdPickFor;
@@ -5975,6 +5976,8 @@
       return g.box && g.box.every(function(v, k) {
         return Math.abs(v - ref.box[k]) < 5e-3;
       });
+    })[0] || same.filter(function(g) {
+      return ref.n != null && g.n === ref.n;
     })[0] || (same.length === 1 ? same[0] : null);
   }
   function cdBgDo(ref, f) {
@@ -5983,6 +5986,15 @@
       return g ? f(t, g.n) : t;
     }, []);
   }
+  function cdBgSh() {
+    if (lastFor && lastFor[0] === shared.text && lastFor[1] === shared.cd.now) return cdNow().sh;
+    var m = /<g transform="translate\(([-\d.]+),([-\d.]+)\)">/.exec(lastSvg || "");
+    return m ? [+m[1], +m[2]] : [0, 0];
+  }
+  function cdBgP(P) {
+    var sh = cdBgSh();
+    return P && [P[0] + sh[0], P[1] + sh[1]];
+  }
   function cdBgIn(b, P) {
     return !!b && P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3];
   }
@@ -5990,10 +6002,10 @@
     return !hit(P) && !edgeAt(P, true) && !svAt(P);
   }
   function cdBgAt(P) {
-    var bs = cdBgs().filter(function(g2) {
-      return cdBgIn(g2.box, P);
+    var F = cdBgP(P), bs = cdBgs().filter(function(g2) {
+      return cdBgIn(g2.box, F);
     }), g = bs[bs.length - 1];
-    return g ? { name: g.name, box: g.box.slice() } : null;
+    return g ? { name: g.name, box: g.box.slice(), n: g.n } : null;
   }
   function cdBgSelect(ref) {
     shared.selN = [];
@@ -6005,7 +6017,7 @@
     paint();
   }
   function cdBgOwn(P) {
-    return !!(cdBg && cdPal() && on && V.current === map && P && cdBgIn(cdBg.box, P) && cdBgFree(P));
+    return !!(cdBg && cdPal() && on && V.current === map && P && cdBgIn(cdBg.box, cdBgP(P)) && cdBgFree(P));
   }
   function cdBgIs(ref) {
     return !!cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join();
@@ -6032,20 +6044,26 @@
     }]] : null;
   }
   function cdBgAdd(f) {
-    var m0 = map, bs = nodes2.map(function(n, i) {
-      return boxOf(i);
-    }).filter(Boolean);
-    var box2 = (bs.length ? bs.reduce(function(a, b) {
-      var x = Math.min(a[0], b[0]), y = Math.min(a[1], b[1]);
-      return [x, y, Math.max(a[0] + a[2], b[0] + b[2]) - x, Math.max(a[1] + a[3], b[1] + b[3]) - y];
-    }) : [0, 0, 800, 600]).map(function(v) {
-      return Math.round(v * 100) / 100;
-    });
+    var m0 = map;
+    var round_ = function() {
+      var bs = nodes2.map(function(n, i) {
+        return boxOf(i);
+      }).filter(Boolean);
+      return bs.length ? bs.reduce(function(a, b) {
+        var x = Math.min(a[0], b[0]), y = Math.min(a[1], b[1]);
+        return [x, y, Math.max(a[0] + a[2], b[0] + b[2]) - x, Math.max(a[1] + a[3], b[1] + b[3]) - y];
+      }) : [0, 0, 800, 600];
+    };
     return cdPicKeep(f).then(function(r) {
       if (!cdStill(m0)) return;
-      if (cdApply(function(t) {
-        return cdMk.background(t, r.note, box2).text;
-      }, []) !== false) cdBgSelect({ name: r.note, box: box2 });
+      var fb;
+      if (cdApply(function(t, sh) {
+        var box2 = round_();
+        fb = [box2[0] + sh[0], box2[1] + sh[1], box2[2], box2[3]].map(function(v) {
+          return Math.round(v * 100) / 100;
+        });
+        return cdMk.background(t, r.note, fb).text;
+      }, []) !== false) cdBgSelect({ name: r.note, box: fb });
     }, function(e) {
       warn("Background image not added: " + String(e && e.message ? e.message : e).replace(/\.?$/, "."));
     });
@@ -6099,11 +6117,27 @@
         cdBg = null;
         return;
       }
-      cdBg.ref = { name: g.name, box: g.box.slice() };
+      cdBg.ref = { name: g.name, box: g.box.slice(), n: g.n };
       cdBg.box = g.box.slice();
     }
-    var b = cdBg.box;
+    var sh = cdBgSh(), b = [cdBg.box[0] - sh[0], cdBg.box[1] - sh[1], cdBg.box[2], cdBg.box[3]];
     out.push('<rect class="m2-ed-ghost" x="' + sx(b[0]) + '" y="' + sy(b[1]) + '" width="' + b[2] * V.z + '" height="' + b[3] * V.z + '"/>' + handleMarks(b, "m2-ed-handle"));
+  }
+  function cdBgHandle(Pf) {
+    var b = cdBg.box, tol = Math.max(5, 8 / V.z), o = 3.3, hx = -1, hy = -1;
+    [b[0] - o, b[0] + b[2] / 2, b[0] + b[2] + o].forEach(function(x, k) {
+      if (Math.abs(Pf[0] - x) <= tol) hx = k;
+    });
+    [b[1] - o, b[1] + b[3] / 2, b[1] + b[3] + o].forEach(function(y, k) {
+      if (Math.abs(Pf[1] - y) <= tol) hy = k;
+    });
+    return hx >= 0 && hy >= 0 && !(hx === 1 && hy === 1) ? [hx, hy] : null;
+  }
+  function cdBgCursor(P, free) {
+    if (!cdBg || cdBg.drag || !cdPal() || !on || V.current !== map || tool || link) return null;
+    var Pf = cdBgP(P), hd = cdBgHandle(Pf);
+    if (hd) return hd[0] === 1 ? "ns-resize" : hd[1] === 1 ? "ew-resize" : hd[0] === hd[1] ? "nwse-resize" : "nesw-resize";
+    return free && !svAt(P) && cdBgIn(cdBg.box, Pf) ? "move" : null;
   }
   var cdTap;
   function cdBgDown(e) {
@@ -6114,15 +6148,8 @@
       if (!e.shiftKey && !shared.selN.length && !shared.selE.length && !shared.selP.length && !shared.svSel && cdBgAt(P) && cdBgFree(P)) cdTap = { x: e.clientX, y: e.clientY, P };
       return;
     }
-    var b = cdBg.box, tol = Math.max(5, 8 / V.z), o = 3.3;
-    var xs = [b[0] - o, b[0] + b[2] / 2, b[0] + b[2] + o], ys = [b[1] - o, b[1] + b[3] / 2, b[1] + b[3] + o], hx = -1, hy = -1;
-    xs.forEach(function(x, k) {
-      if (Math.abs(P[0] - x) <= tol) hx = k;
-    });
-    ys.forEach(function(y, k) {
-      if (Math.abs(P[1] - y) <= tol) hy = k;
-    });
-    var onHandle = hx >= 0 && hy >= 0 && !(hx === 1 && hy === 1), inside2 = cdBgIn(b, P) && cdBgFree(P);
+    var b = cdBg.box, Pf = cdBgP(P), hd = cdBgHandle(Pf), hx = hd ? hd[0] : -1, hy = hd ? hd[1] : -1;
+    var onHandle = !!hd, inside2 = cdBgIn(b, Pf) && cdBgFree(P);
     if (!onHandle && !inside2) {
       cdBg = null;
       paint();
@@ -6132,6 +6159,11 @@
     e.stopImmediatePropagation();
     var b0 = b.slice(), ref = cdBg.ref, el = V.view, corner = onHandle && hx !== 1 && hy !== 1;
     cdBg.drag = true;
+    var pic = Array.prototype.filter.call(document.querySelectorAll('#m2-img image[pointer-events="none"], #m2-img use[pointer-events="none"]'), function(q) {
+      return ["x", "y", "width", "height"].every(function(k, j) {
+        return Math.abs(+q.getAttribute(k) - b0[j]) < 0.01;
+      });
+    })[0];
     try {
       el.setPointerCapture(e.pointerId);
     } catch (er) {
@@ -6160,6 +6192,9 @@
       }
       if (cdBg) {
         cdBg.box = nb;
+        if (pic) ["x", "y", "width", "height"].forEach(function(k2, j) {
+          pic.setAttribute(k2, nb[j]);
+        });
         paint();
       }
     };
@@ -6167,7 +6202,12 @@
       el.removeEventListener("pointermove", move2);
       el.removeEventListener("pointerup", up);
       el.removeEventListener("pointercancel", up);
-      if (!cdBg) return;
+      if (!cdBg) {
+        if (pic) ["x", "y", "width", "height"].forEach(function(k, j) {
+          pic.setAttribute(k, b0[j]);
+        });
+        return;
+      }
       cdBg.drag = false;
       var nb = cdBg.box.map(function(v) {
         return Math.round(v * 100) / 100;
@@ -6175,7 +6215,7 @@
       if (nb.some(function(v, k) {
         return Math.abs(v - b0[k]) >= 5e-3;
       })) {
-        cdBg.ref = { name: ref.name, box: nb };
+        cdBg.ref = { name: ref.name, box: nb, n: ref.n };
         cdBgDo(ref, function(t, n) {
           return cdMk.backgroundSet(t, n, { box: nb });
         });
@@ -20027,6 +20067,7 @@
     return nodes2[i].kids.length > 0 && nodes2[i].shape.kind !== "Complex";
   }
   var ownMenus;
+  var ownCursors;
   function __run402() {
     window.m2EditOnObject = function() {
       return !!(on && V.current === map && shared.text && rclick) && !emptyClick();
@@ -20040,6 +20081,7 @@
       };
     };
     ownMenus = [];
+    ownCursors = [];
   }
   function complexHere(member) {
     if (!on || V.current !== map || !shared.text || !rclick || member && (emptyClick() || ownMenus.some(function(f) {
@@ -20387,6 +20429,14 @@
         var PP = at(e);
         var hh = e.shiftKey ? null : hit(PP), ez = !e.shiftKey && edgeAt(PP);
         if (ez && hh && hh.p != null) ez = null;
+        var oc = null;
+        ownCursors.some(function(f) {
+          return oc = f(PP, !hh && !ez);
+        });
+        if (oc) {
+          V.view.style.cursor = oc;
+          return;
+        }
         if (ez) {
           V.view.style.cursor = resizeCursor(ez.s);
           return;
@@ -20517,6 +20567,37 @@
     paint();
     return true;
   }
+  function onNeighbour(ps) {
+    if (!ps || !ps.size) return;
+    var lim = sq() / V.z, out = [], lines = [];
+    edges2.forEach(function(e, k) {
+      if (e.s == null || e.t == null || !e.pts.some(function(pi) {
+        return ps.has(pi);
+      })) return;
+      var all = ports(k), kept = all[0];
+      e.pts.forEach(function(pi, j) {
+        var P = all[j + 1], by = function(Q) {
+          return Math.max(Math.abs(Q[0] - P[0]), Math.abs(Q[1] - P[1])) < lim;
+        };
+        if (ps.has(pi) && (by(kept) || by(all[j + 2]))) {
+          out.push(pi);
+          if (lines.indexOf(k) < 0) lines.push(k);
+        } else kept = P;
+      });
+    });
+    if (!out.length) return;
+    var ids = lines.map(function(k) {
+      return edges2[k].id;
+    });
+    setText(import_graphml_edit.default.unbend(shared.text, out));
+    parse();
+    shared.selP = [];
+    shared.selE = [];
+    shared.part = null;
+    edges2.forEach(function(q, k) {
+      if (ids.indexOf(q.id) >= 0) shared.selE.push(k);
+    });
+  }
   function dragEnd(e) {
     var d = drag;
     drag = null;
@@ -20596,11 +20677,13 @@
     }
     if (d.made != null) {
       move(d.dx, d.dy);
+      onNeighbour(sets ? sets.p : /* @__PURE__ */ new Set([d.p]));
       fitAfter();
     } else if (d.dx || d.dy) {
       remember(false);
       move(d.dx, d.dy, sets);
       fixMoved(sets.n, d.alone);
+      onNeighbour(sets.p);
       if (d.keepE) {
         shared.selE = d.keepE;
         shared.selP = [];

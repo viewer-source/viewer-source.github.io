@@ -2902,7 +2902,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // removing them all and rerouting by hand is quicker than one by one): the right-click menu's Remove all bend points,
     // on empty map space while editing (a right click on a bend point means that bend point; inside a
     // compartment counts as empty); one undo step
-    var ownMenus;
+    var ownMenus, ownCursors;
     function __run40() {   // run at start, in order (__start)
     window.m2EditOnObject = function () { return !!(on && V.current === map && shared.text && rclick) && !emptyClick(); };   // the right click on an item (a node, a line, inside a complex), so its menu holds that item's items only
     window.m2EditAllBends = function () {
@@ -2915,7 +2915,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // and Repack complex, in the object's menu of a complex (a right click inside it) or of a member, above Select all of
     // this kind: the outermost complex round it (outerComplex), alone; above it Name by members for the innermost
     // complex there (create.js)
-    ownMenus = [];
+    ownMenus = []; ownCursors = [];
     }   // a format's part: functions telling a point that has its own right-click menu (a state variable), where no complex item is offered
     function complexHere(member) {   // the innermost complex round the right click, or null; member: asked by the object's menu, so not on empty space
       if (!on || V.current !== map || !shared.text || !rclick || (member && (emptyClick() || ownMenus.some(function (f) { return f(rclick); })))) return null;
@@ -3151,6 +3151,10 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         var PP = at(e);
         var hh = e.shiftKey ? null : hit(PP), ez = !e.shiftKey && edgeAt(PP);
         if (ez && hh && hh.p != null) ez = null;
+        // a format's own object under the pointer (a background image selected, cdcreate.js cdBgCursor): its handle's resize
+        // sign before anything, the move sign where nothing of the network is
+        var oc = null; ownCursors.some(function (f) { return (oc = f(PP, !hh && !ez)); });
+        if (oc) { V.view.style.cursor = oc; return; }
         if (ez) { V.view.style.cursor = resizeCursor(ez.s); return; }
         var sel = hh && ((hh.p != null ? shared.selP.indexOf(hh.p) : hh.e != null ? shared.selE.indexOf(hh.e) : shared.selN.indexOf(hh.n)) >= 0 ||
           (hh.p != null && shared.selE.some(function (q) { return edges2[q].pts.indexOf(hh.p) >= 0; })));
@@ -3208,6 +3212,27 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       unshift(); sizeOff(); if (d && d.made != null) render(); paint();   // the file unchanged otherwise: the drawing as it was is enough
       return true;
     }
+    // a bend point dropped so close to its neighbour on the line (the next bend, or the line's end at its port) that
+    // their squares overlap on screen: taken away in the same undo step, as it bends nothing and its square hides under
+    // the other's (a bend snapped level with its end a fraction of a unit before it drew two squares one over the other,
+    // a 1 px edge showing). Each point is weighed against the points kept before it and the one after
+    function onNeighbour(ps) {
+      if (!ps || !ps.size) return;
+      var lim = sq() / V.z, out = [], lines = [];
+      edges2.forEach(function (e, k) {
+        if (e.s == null || e.t == null || !e.pts.some(function (pi) { return ps.has(pi); })) return;
+        var all = ports(k), kept = all[0];
+        e.pts.forEach(function (pi, j) {
+          var P = all[j + 1], by = function (Q) { return Math.max(Math.abs(Q[0] - P[0]), Math.abs(Q[1] - P[1])) < lim; };
+          if (ps.has(pi) && (by(kept) || by(all[j + 2]))) { out.push(pi); if (lines.indexOf(k) < 0) lines.push(k); } else kept = P;
+        });
+      });
+      if (!out.length) return;
+      var ids = lines.map(function (k) { return edges2[k].id; });
+      setText(GE.unbend(shared.text, out)); parse();
+      shared.selP = []; shared.selE = []; shared.part = null;
+      edges2.forEach(function (q, k) { if (ids.indexOf(q.id) >= 0) shared.selE.push(k); });   // its line stays selected
+    }
     function dragEnd(e) {   // the end of a drag of the selection, a port or a resize
       var d = drag; drag = null; var sets = mv; mv = null; shared.poseNow = null;   // the file holds the pose from here (the drawing keeps it until drawn again)   // the moved groups and live arcs stay until the map is drawn again
       if (!d.port && !d.rs) shared.frozen = true;   // the copies too: the file now has the new places, the picture not yet
@@ -3242,8 +3267,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         if (d.p != null) out1(shared.selP, d.p); else if (d.e != null) out1(shared.selE, d.e); else out1(shared.selN, d.n);
         paint(); return;
       }
-      if (d.made != null) { move(d.dx, d.dy); fitAfter(); }   // one step for undo: made and moved
-      else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy, sets); fixMoved(sets.n, d.alone); if (d.keepE) { shared.selE = d.keepE; shared.selP = []; } fitAfter(); }   // what the drag showed moving (with Shift, the selection by itself)
+      if (d.made != null) { move(d.dx, d.dy); onNeighbour(sets ? sets.p : new Set([d.p])); fitAfter(); }   // one step for undo: made and moved
+      else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy, sets); fixMoved(sets.n, d.alone); onNeighbour(sets.p); if (d.keepE) { shared.selE = d.keepE; shared.selP = []; } fitAfter(); }   // what the drag showed moving (with Shift, the selection by itself)
       else { unshift(); if (d.keepE) { shared.selE = d.keepE; shared.selP = []; } }   // a click with a slight jitter: nothing moved, nothing stays hidden (else a smooth bend
       // turns sharp: the arcs drawn as plain lines while waiting for a redraw that a move of zero never asks for)
       paint();
@@ -3339,4 +3364,4 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); }   // the part's statements, in their order
-    export { asSpace, G, GE, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubEnd, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, placed, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, takes, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };
+    export { asSpace, G, GE, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubEnd, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownCursors, ownMenus, paint, parse, parseFix, picWait, placed, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, takes, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };
