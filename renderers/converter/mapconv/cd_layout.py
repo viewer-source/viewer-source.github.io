@@ -53,6 +53,32 @@ def anchor_point(box, side, circle=False, hexagon=False):
     return (x + fx * w, y + fy * h)
 
 
+# Helvetica's widths per 1000 of the font size, characters 32 to 126 (a copy of WIDTHS in the viewer's cdrender.js,
+# which is the master); any other character 556
+WIDTHS = [278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556,
+          556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778,
+          722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278,
+          278, 278, 469, 556, 333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556,
+          556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584]
+
+
+def text_width(s, size=12):
+    return sum(WIDTHS[ord(c) - 32] if 32 <= ord(c) < 127 else 556 for c in s) * size / 1000
+
+
+def name_inside(box, name, at, th=12.0):
+    # a compartment's name point (the top left of the name's box: its widest line, 23 high and 14 more a line, drawn at
+    # 12) moved back inside a rectangular compartment where the box reaches past its right or bottom inner edge, as
+    # CellDesigner moves it on saving: the membrane's thickness th + 5 from the right, + 0.5 from the bottom (the
+    # viewer's cdrender.js, namePoint); a name moved goes 2 px further from the right, as CellDesigner's own widths
+    # run up to 1.8 px wider than these. CellDesigner leaves a name near the left or top edge where it is
+    lines = name.split('\n')
+    w, h = max(text_width(l) for l in lines), 23 + 14 * (len(lines) - 1)
+    x, y, bw, bh = box
+    right, bottom = x + bw - th - 5 - w, y + bh - th - 0.5 - h
+    return (min(at[0], right - 2) if at[0] > right else at[0], max(min(at[1], bottom), min(at[1], y)))  # never above it
+
+
 def square_point(sq, f, a, c, r=5):
     # a point of the process square at sq (half size r), flow f: a along the flow, c to its right
     return (sq[0] + r * (a * f[0] - c * f[1]), sq[1] + r * (a * f[1] + c * f[0]))

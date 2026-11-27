@@ -298,7 +298,14 @@ def write(diagram, ann, layout='straight'):
         # the name where yEd has its label (top left of the label box)
         # CellDesigner's name point is the text baseline: 12.5 below the label top (its save of estrogen v01)
         lx, ly = d.label_at or (6, 0)
-        sub(a, 'namePoint', x=x + lx, y=y + ly + 12.5)
+        at = (x + lx, y + ly + 12.5)
+        if d.outline != 'ShapeNode ellipse':  # inside the compartment, as CellDesigner keeps it on saving
+            nm_ = ' '.join(' | '.join(t for t in d.labels if t.strip()).split())
+            inside = cd_layout.name_inside(box[i], nm_, at)
+            if math.dist(inside, at) > 0.05:
+                report.say('changed', 'compartment %s: name moved %.0f px inside it (CellDesigner keeps it there)' % (nm_ or i, math.dist(inside, at)))
+            at = inside
+        sub(a, 'namePoint', x=at[0], y=at[1])
         # as CellDesigner's own files (F021); colour: the paint whose band shows the yEd fill over white (yEd
         # uses transparency), the inverse of band(); the outline's colour when that is the paint (a round trip)
         sub(a, 'doubleLine', thickness='12.0', outerWidth='2.0', innerWidth='1.0')
