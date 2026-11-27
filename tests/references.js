@@ -30,7 +30,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
     var q = all.filter(function (x) { return x.getTotalLength; }).sort(function (u, v) { return v.getTotalLength() - u.getTotalLength(); })[0], pt = q.getPointAtLength(q.getTotalLength() / 2), m = q.getScreenCTM();
     return [m.a * pt.x + m.c * pt.y + m.e, m.b * pt.x + m.d * pt.y + m.f]; }, id); };
   var click = async function (P) { await page.keyboard.press('Escape'); await page.mouse.click(10, 880); await page.mouse.click(P[0], P[1]); await page.waitForTimeout(700); };
-  var rows = async function () { var m = await page.$('.m2-ed-pmore'); if (m && /^\+/.test(await m.textContent())) { await m.click(); await page.waitForTimeout(300); } return rows0(); };   // a folded list opened first
+  var rows = async function () { var m = await page.$('.m2-ed-pmore'); if (m && (await m.getAttribute('aria-expanded')) === 'false') { await m.click(); await page.waitForTimeout(300); } return rows0(); };   // a folded list opened first
   var rows0 = function () { return page.$$eval('.m2-ed-prefs', function (l) {
     var t = l[0]; if (!t || t.hidden || t.closest('[hidden]')) return null;
     return { title: t.querySelector('.m2-ed-prefh th[colspan]').firstChild.textContent, items: Array.from(t.querySelectorAll('.m2-ed-prefl tr')).map(function (r) { return r.querySelector('th').textContent + ' ' + r.querySelector('.m2-ed-ppicname').textContent + (r.querySelector('.m2-ed-px') ? ' x' : ''); }),

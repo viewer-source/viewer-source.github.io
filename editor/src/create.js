@@ -2608,7 +2608,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     prefs.querySelector('.m2-ed-pgo').addEventListener('click', refsAdd);
     prefs.addEventListener('click', function (e) {
       if (e.target.closest && e.target.closest('.m2-ed-pplus')) { refsOpen(); return; }
-      if (e.target.closest && e.target.closest('.m2-ed-pmore')) { prefsOpen = !prefsOpen; prefsKey = null; refsShow(); return; }
+      if (e.target.closest && (e.target.closest('.m2-ed-pmore') || (e.target.closest('.m2-ed-prefh th') && prefs.querySelector('.m2-ed-pmore')))) { prefsOpen = !prefsOpen; prefsKey = null; refsShow(); return; }   // the count, its chevron or the heading's word
       var x = e.target.closest && e.target.closest('.m2-ed-px'), R = annNow();
       if (!x || !R) return;
       prefsSay = null;
@@ -2640,6 +2640,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function idOwn(q, key) { return (q === 'bqbiol:is' || q === 'bqbiol:hasVersion') && /^[\w.]+:\S+$/.test(key || '') && !/^https?:/i.test(key); }
     // the signs of + and the cross, drawn so they sit in the middle of their square
     function signPlus() { return '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M6 1.5v9M1.5 6h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>'; }
+    function signFold(open) { return '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="' + (open ? 'M2 4l4 4 4-4' : 'M4 2l4 4-4 4') + '" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
     function signX() { return '<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>'; }
     // a link the format's part read ({ q, link, key }) as a row: key (db:id, or the link where it has none), db, val, about
     function annItem(r) { var c = r.key ? r.key.indexOf(':') : -1; return { key: r.key || r.link, db: c > 0 ? r.key.slice(0, c) : '', val: c > 0 ? r.key.slice(c + 1) : r.link, q: r.q, about: /^bqmodel:/.test(r.q) }; }
@@ -2724,12 +2725,12 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       if (key === prefsKey) return;
       prefsKey = key;
       var order = R.dbs.concat(R.items.map(function (x) { return x.db; })), rows = R.items.map(function (x, j) { return [x, j]; }).sort(function (a, b) { return (order.indexOf(a[0].db) - order.indexOf(b[0].db)) || a[1] - b[1]; }).map(function (r) { return r[0]; });   // grouped by database, the item's own first in the list's order, each group as the file has it
-      prefs.querySelector('.m2-ed-prefh').innerHTML = '<tr><th colspan="2">' + escHtml(R.title) + '<button type="button" class="m2-ed-pplus" title="Add ' + (R.kind ? 'identifiers' : 'references') + '" aria-label="Add ' + (R.kind ? 'identifiers' : 'references') + '">' + signPlus() + '</button></th></tr>';
+      var fold = rows.length < 2 ? '' : '<button type="button" class="m2-ed-pmore" title="' + (prefsOpen ? 'Show the first only' : 'Show all ' + rows.length) + '" aria-expanded="' + prefsOpen + '">' + rows.length + signFold(prefsOpen) + '</button>';   // the count and a chevron after the heading, as a group in the maps list: right folded, down open
+      prefs.querySelector('.m2-ed-prefh').innerHTML = '<tr><th colspan="2">' + escHtml(R.title) + fold + '<button type="button" class="m2-ed-pplus" title="Add ' + (R.kind ? 'identifiers' : 'references') + '" aria-label="Add ' + (R.kind ? 'identifiers' : 'references') + '">' + signPlus() + '</button></th></tr>';
       prefs.querySelector('.m2-ed-prefl').innerHTML = rows.map(function (x, j) {
-        if (!prefsOpen && j > 0) return '';   // a long list folded to its first row, +N opening the rest
-        var more = j || rows.length < 2 ? '' : '<button type="button" class="m2-ed-pmore" title="' + (prefsOpen ? 'Show the first only' : 'Show all ' + rows.length) + '">' + (prefsOpen ? 'less' : '+' + (rows.length - 1)) + '</button>';
+        if (!prefsOpen && j > 0) return '';   // a long list folded to its first row, the heading's count and chevron opening the rest
         var name = REF_DB[x.db] || x.db || 'Link', tip = name + ' ' + x.val + (x.own ? '' : ', ' + x.q + (x.about ? ': about the map as a model, kept as written' : ', kept as written'));
-        return '<tr title="' + escAttr(tip) + '"' + (prefsNew && prefsNew[0] === R.at && prefsNew[1].indexOf(x.key) >= 0 ? ' class="m2-ed-pnew"' : '') + '><th>' + escHtml(name) + '</th><td><span class="m2-ed-ppic"><span class="m2-ed-ppicname">' + escHtml(x.val) + (x.about ? ' <span class="m2-ed-pabout">about the map</span>' : '') + '</span>' + more +
+        return '<tr title="' + escAttr(tip) + '"' + (prefsNew && prefsNew[0] === R.at && prefsNew[1].indexOf(x.key) >= 0 ? ' class="m2-ed-pnew"' : '') + '><th>' + escHtml(name) + '</th><td><span class="m2-ed-ppic"><span class="m2-ed-ppicname">' + escHtml(x.val) + (x.about ? ' <span class="m2-ed-pabout">about the map</span>' : '') + '</span>' +
           (x.own ? '<button type="button" class="m2-ed-px" data-key="' + escAttr(x.key) + '" title="Remove ' + escAttr(name + ' ' + x.val) + '" aria-label="Remove">' + signX() + '</button>' : '') + '</span></td></tr>';
       }).join('');
       var fresh = prefsNew && prefs.querySelector('.m2-ed-pnew');

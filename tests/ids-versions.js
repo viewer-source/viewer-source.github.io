@@ -24,7 +24,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var nodeByLabel = function (name) { return page.$$eval('#m2-img [data-n]', function (l, name) {
     var hit = l.filter(function (g) { return Array.from(g.querySelectorAll('text')).map(function (x) { return x.textContent.trim(); }).join(' ') === name; })[0];
     if (!hit) return null; var r = hit.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, name); };
-  var rows = async function () { var m = await page.$('.m2-ed-pmore'); if (m && /^\+/.test(await m.textContent())) { await m.click(); await page.waitForTimeout(300); } return rows0(); };   // a folded list opened first
+  var rows = async function () { var m = await page.$('.m2-ed-pmore'); if (m && (await m.getAttribute('aria-expanded')) === 'false') { await m.click(); await page.waitForTimeout(300); } return rows0(); };   // a folded list opened first
   var rows0 = function () { return page.$$eval('.m2-ed-prefl tr', function (l) { return l.map(function (r) { return r.querySelector('th').textContent + ' ' + r.querySelector('.m2-ed-ppicname').textContent + (r.querySelector('.m2-ed-px') ? ' x' : ''); }); }); };
   var paste = async function (v) { await page.click('.m2-ed-pplus'); await page.waitForTimeout(200); await page.fill('.m2-ed-pin', v); await page.press('.m2-ed-pin', 'Enter'); await page.waitForTimeout(1200); };
   var undo = async function () { await page.keyboard.press('Control+z'); await page.waitForTimeout(1200); };
@@ -39,13 +39,20 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
     ok(f.hash + ': PDP found', !!at);
     if (!at) continue;
     await page.keyboard.press('Escape'); await page.mouse.click(at[0], at[1]); await page.waitForTimeout(800);
-    var vis = function () { return page.$$eval('.m2-ed-prefl tr', function (l) { var m = document.querySelector('.m2-ed-pmore'); return l.length + ' ' + (m ? m.textContent : ''); }); };
+    var vis = function () { return page.$$eval('.m2-ed-prefl tr', function (l) { var m = document.querySelector('.m2-ed-prefh .m2-ed-pmore'); return l.length + ' ' + (m ? m.getAttribute('aria-expanded') + ' ' + m.textContent + ' ' + m.querySelector('path').getAttribute('d') : ''); }); };
     if (f.hash === 'pdh-celldesigner') {
-      ok(f.hash + ': a long list folded to its first row and +N', /^1 \+\d+$/.test(await vis()), await vis());
+      var v0 = await vis(), n = +v0.split(' ')[2];
+      ok(f.hash + ': a long list folded to its first row, the heading showing the count and a right chevron', /^1 false \d+ M4 2l4 4-4 4$/.test(v0) && n >= 3, v0);
       await page.click('.m2-ed-pmore'); await page.waitForTimeout(300);
-      ok(f.hash + ': +N opens the whole list, less in its place', /^\d+ less$/.test(await vis()) && +(await vis()).split(' ')[0] >= 3, await vis());
+      ok(f.hash + ': the count opens the whole list, the chevron down', (await vis()) === n + ' true ' + n + ' M2 4l4 4 4-4', await vis());
       await page.click('.m2-ed-pmore'); await page.waitForTimeout(300);
-      ok(f.hash + ': less folds it again', /^1 \+\d+$/.test(await vis()), await vis());
+      ok(f.hash + ': clicked again it folds', /^1 false /.test(await vis()), await vis());
+      await page.click('.m2-ed-prefh th', { position: { x: 5, y: 12 } }); await page.waitForTimeout(300);
+      ok(f.hash + ': the heading word opens it too', (await vis()).indexOf(n + ' true') === 0, await vis());
+      await page.click('.m2-ed-prefh th', { position: { x: 5, y: 12 } }); await page.waitForTimeout(300);
+      var bx = await page.evaluate(function () { var m = document.querySelector('.m2-ed-pmore').getBoundingClientRect(), p = document.querySelector('.m2-ed-pplus').getBoundingClientRect(); return Math.abs((m.top + m.bottom) / 2 - (p.top + p.bottom) / 2) <= 1.5 && Math.abs(m.height - p.height) <= 0.5; });
+      ok(f.hash + ': the count as tall as the + and on its line', bx);
+      ok(f.hash + ': and folded again', /^1 false /.test(await vis()), await vis());
     }
     var R = await rows();
     ok(f.hash + ': every member identifier has a cross', R.length >= 3 && R.every(function (x) { return / x$/.test(x); }), JSON.stringify(R));
