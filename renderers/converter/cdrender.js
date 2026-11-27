@@ -841,15 +841,15 @@
   };
   // a layer's free texts; one whose notes name a picture is that picture in its box, its words not drawn, also on a
   // layer marked not visible: under everything, over everything only with a positive 'Z-Index:', never picked by the
-  // pointer
+  // pointer. Stacked as MINERVA stacks them: by Z-Index (none lowest), of one Z-Index the one first in the file on top
   D.texts = function () {
-    var self = this;
+    var self = this, pics = [];
     findall(this.ext, 'cd:listOfLayers/cd:layer').forEach(function (layer) {
       findall(layer, 'cd:listOfTexts/cd:layerSpeciesAlias').forEach(function (t) {
         var ln = find(t, 'cd:layerNotes'), notes = ln ? text(ln) || '' : '', pic = self.pic(notes), b = find(t, 'cd:bounds');
         if (pic && b) {
           var zi = /Z-Index:[ \t]*(-?\d+)/i.exec(notes);
-          (zi && +zi[1] > 0 ? self.over : self.under).push(image(pic, F(get(b, 'x')), F(get(b, 'y')), F(get(b, 'w')), F(get(b, 'h')), ' pointer-events="none"'));
+          pics.push({ z: zi ? +zi[1] : -Infinity, k: pics.length, svg: image(pic, F(get(b, 'x')), F(get(b, 'y')), F(get(b, 'w')), F(get(b, 'h')), ' pointer-events="none"') });
           return;
         }
         if (get(layer, 'visible') === 'false') return;
@@ -860,6 +860,7 @@
         lines.forEach(function (line, k) { self.text(line, x, top + z * 7 / 6 * k, z, 'start'); });
       });
     });
+    pics.sort(function (p, q) { return p.z - q.z || q.k - p.k; }).forEach(function (p) { (p.z > 0 ? self.over : self.under).push(p.svg); });
   };
   D.svg = function () {
     this.compartments(); this.species(); this.texts(); this.reactions();
