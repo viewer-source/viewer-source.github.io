@@ -21,6 +21,7 @@ import { liveOff, sizeOff } from './live.js';
     // Properties of an SBGN-ML glyph or line, as PF_CD is a CellDesigner map's (create.js propFmt)
     PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: sbDef, ends: sbEnds, hub: function (i) { return !!hubGroup(i); },
       rx: { of: sbRxOf, set: function (pid, on) { return sbReversible(pid, on, true); }, withNode: true },
+      refs: { of: sbRefsOf, set: sbRefsSet },   // a process's references (Properties, References)
       line: { colour: sbLineColour, set: sbLineSet, width: function (k) { return sbJs.widthOf(sbEdgeEl(k)); }, setWidth: sbLineWidth, ports: true,   // a line's colour, width and its ports' rows (edgeShow, edgeSet)
         count: sbCount, setCount: function (k, v) { return sbLineTo(k, sbJs.recount(shared.text, edges2[k].id, v)); } },   // a consumption's or production's cardinality
       off: sbOff,
@@ -139,6 +140,42 @@ import { liveOff, sizeOff } from './live.js';
       var key = id + '\u0000' + shared.text;
       if (sbRxSeen[0] !== key) { var rv = null; try { rv = sbJs.reversibility(shared.text, id, { sbgn: src() }); } catch (e) { rv = null; } sbRxSeen = [key, rv && (rv.can || rv.rev) ? { rid: id, on: rv.rev > 0 } : null]; }
       return sbRxSeen[1];
+    }
+    // a process's references (Properties, References; notes/annotation-editing.md): the process selected, or the one a
+    // line selected alone goes to or from (a modifier's, a consumption's, a production's); the GraphML's property References
+    // (sbgn_edit.refsOf), those the file holds under bqmodel shown as the file's, never removed (refsAbout)
+    var sbRefsMemo;
+    function __run6() {   // run at start, in order (__start)
+    sbRefsMemo = [null, null, null, null, null];
+    }   // [process, GraphML, file, its keys, those under bqmodel]: read once per text (Properties runs with every paint)
+    function sbIsProc(i) { return i != null && !!nodes2[i] && sbJs.PROCESSES.indexOf(sbClasses()[nodes2[i].id] || '') >= 0; }
+    function sbRefsOf() {
+      if (!sbJs || !sbJs.refsOf || shared.selP.length || shared.svSel) return null;
+      var pid = null, line = false;
+      if (shared.selN.length === 1 && !shared.selE.length && sbIsProc(shared.selN[0])) pid = nodes2[shared.selN[0]].id;
+      else if (shared.selE.length === 1 && !shared.selN.length && edges2[shared.selE[0]]) {
+        var e = edges2[shared.selE[0]], n = sbIsProc(e.t) ? e.t : sbIsProc(e.s) ? e.s : null;
+        if (n != null) { pid = nodes2[n].id; line = true; }
+      }
+      if (!pid) return null;
+      var base = shared.sb && shared.sb.base;
+      if (sbRefsMemo[0] !== pid || sbRefsMemo[1] !== shared.text || sbRefsMemo[2] !== base) {
+        var keys = [], about = [];
+        var sameBase = sbRefsMemo[0] === pid && sbRefsMemo[2] === base;   // those under bqmodel depend on the file alone
+        try { keys = sbJs.refsOf(shared.text, pid).split(' ').filter(Boolean); about = sameBase ? sbRefsMemo[4] : base ? sbJs.refsAbout(base, pid) : []; } catch (e) { keys = null; }
+        sbRefsMemo = [pid, shared.text, base, keys, about];
+      }
+      if (!sbRefsMemo[3]) return null;
+      var ab = sbRefsMemo[4];
+      return { id: pid, title: line ? 'References of its process' : 'References', items: sbRefsMemo[3].map(function (k) {
+        var c = k.indexOf(':'), db = k.slice(0, c);
+        return { key: k, db: db, val: k.slice(c + 1), q: ab.indexOf(k) >= 0 ? 'bqmodel:isDescribedBy' : 'bqbiol:isDescribedBy', own: ab.indexOf(k) < 0 && /^(pubmed|doi)$/.test(db), about: ab.indexOf(k) >= 0 };
+      }) };
+    }
+    function sbRefsSet(pid, add, del) {
+      var now = sbJs.refsOf(shared.text, pid).split(' ').filter(function (k) { return k && del.indexOf(k) < 0; });
+      var t2 = sbJs.setRefs(shared.text, pid, now.concat(add.filter(function (k) { return now.indexOf(k) < 0; })).join(' '));
+      return commit(t2, { name: 'references changed', ids: [pid], sel: shared.selN.map(function (i) { return nodes2[i].id; }), selE: shared.selE.map(function (k) { return edges2[k].id; }) });
     }
     function sbCount(k) {
       var id = edges2[k].id;
@@ -335,5 +372,5 @@ import { liveOff, sizeOff } from './live.js';
       } });
       return true;
     }
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); }   // the part's statements, in their order
     export { afKind, cardAll, cardAt, hubGroup, hybridActs, palKind, palOn, PF_SB, sbAnts, sbCols, sbColsRow, sbFileAf, sbReversible, svBase, svCopies, svDeleteSb, svShareMove, svShareText };

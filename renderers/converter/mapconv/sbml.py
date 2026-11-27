@@ -7,7 +7,7 @@ import os, re
 from collections import defaultdict
 from lxml import etree
 from . import report, sbgnml
-from .annotation import to_properties
+from .annotation import kept
 from .model import Map, Node, Arc
 from .layout import count_text
 from .sbgnml import colour, urn
@@ -85,15 +85,13 @@ def points(g):
 
 
 def annotations(el):
-    # an element's MIRIAM identifiers (bqbiol is, hasVersion) as node properties
+    # an element's MIRIAM links as node properties (annotation.kept: the four databases, the rest as read)
     a = kid(el, 'annotation')
     d = next(iter(a.iter('{%s}Description' % RDF)), None) if a is not None else None
-    data = {}
-    for q in (d if d is not None else []):
-        urns = [u for u in (urn(li.get('{%s}resource' % RDF) or '') for li in q.iter('{%s}li' % RDF)) if u]
-        if urns and etree.QName(q).localname in ('is', 'hasVersion'):
-            data.update(to_properties(etree.QName(q).localname == 'hasVersion', urns))
-    return data
+    bags = [({sbgnml.BQBIOL: 'bqbiol', sbgnml.BQMODEL: 'bqmodel'}.get(etree.QName(q).namespace, etree.QName(q).namespace),
+             etree.QName(q).localname, [urn(u) or u for u in (li.get('{%s}resource' % RDF) for li in q.iter('{%s}li' % RDF)) if u])
+            for q in (d if d is not None else []) if isinstance(q.tag, str)]
+    return kept([b for b in bags if b[2]])
 
 
 def styles(model, lay):
@@ -233,6 +231,53 @@ def transitions(model, acts, arcs, skipped, drawn=()):
                 k += 1
 
 
+def minerva_multi(model, lay, nodes, text):
+    # MINERVA's use of multi (its own, not the package's model of sites): a species' feature of the type
+    # minerva_modification_type_<class>_Residue_<STATE> is a state variable (EMPTY: an empty one), _UnitOfInformation a
+    # unit of information (its value's name the text), minerva_dimer_ the multimer count; each feature value's general
+    # glyph (layout:reference, its reference glyph naming the species glyph) places the state or unit on that glyph's
+    # border, with the text MINERVA draws (P). Read onto every glyph of the species; a glyph names the species by
+    # Node.species. Returns the general glyphs used
+    from .celldesigner import STATE
+    word = {v.replace("'", '').replace(' ', '_').upper(): k for k, v in STATE.items()}
+    names = {attr(v, 'id'): attr(v, 'name') for v in all_(model, 'possibleSpeciesFeatureValue')}
+    feats = defaultdict(list)  # species id -> [(feature value id, 'state' | 'unit' | 'count', text)]
+    for s in all_(model, 'species'):
+        for f in all_(s, 'speciesFeature'):
+            t = attr(f, 'speciesFeatureType') or ''
+            for v in all_(f, 'speciesFeatureValue'):
+                st, n = re.search(r'_Residue_([A-Z_]+)$', t), names.get(attr(v, 'value'))
+                if st:
+                    feats[s.get('id')].append((attr(v, 'id'), 'state', '' if st.group(1) == 'EMPTY' else word.get(st.group(1), st.group(1).lower())))
+                elif t.endswith('_UnitOfInformation') and n:
+                    feats[s.get('id')].append((attr(v, 'id'), 'unit', n))
+                elif t.startswith('minerva_dimer_') and (n or '').isdigit():
+                    feats[s.get('id')].append((None, 'count', n))
+    if not feats:
+        return set()
+    fids = {fid for fs in feats.values() for fid, _, _ in fs if fid}
+    place, used = {}, set()  # feature value id -> {species glyph id: (its text, centre x, centre y)}; the glyphs placing them
+    for g in all_(lay, 'generalGlyph'):
+        b = box(g)
+        for r in all_(g, 'referenceGlyph'):
+            if b is not None and attr(g, 'reference') in fids and attr(r, 'glyph') in nodes:
+                place.setdefault(attr(g, 'reference'), {})[attr(r, 'glyph')] = (text.get(attr(g, 'id')), b[0] + b[2] / 2, b[1] + b[3] / 2)
+                used.add(attr(g, 'id'))
+    for n in nodes.values():
+        x, y, w, h = n.box
+        for fid, kind, txt in feats.get(n.species, ()):
+            if kind == 'count':
+                n.count = int(txt); continue
+            drawn, cx, cy = place.get(fid, {}).get(n.id, (None, x + w / 2, y))
+            at = ((cx - x - w / 2) / w if w else 0.0, (cy - y - h / 2) / h if h else -0.5)
+            if kind == 'state':
+                n.states.append((drawn if drawn is not None and drawn != 'unset' else txt, at[0], at[1]))
+            else:
+                n.unit_at = n.unit_at + [None] * (len(n.units) - len(n.unit_at)) + [at]
+                n.units.append(txt)
+    return used
+
+
 def read(path):
     root = etree.parse(path).getroot()
     model = kid(root, 'model')
@@ -312,6 +357,7 @@ def read(path):
         nodes[i] = Node(id=i, kind=kind, box=b, units=units, parent=inside(b), species=s.get('id') if s is not None else None,
                         labels=['' if kind == 'EmptySet' else ((text.get(i) if text.get(i) != 'unset' else None) or (s.get('name') or s.get('id') if s is not None else ''))],
                         data=annotations(s) if s is not None else {})
+    placed = minerva_multi(model, lay, nodes, text)
     gates = set()
     for g in all_(lay, 'generalGlyph'):  # SBML-qual's boxes (CaSQ, bioLQM): one general glyph per qualitative species
         i, q = attr(g, 'id'), qsp.get(attr(g, 'reference'))
@@ -417,7 +463,7 @@ def read(path):
         c = colour(st.get('stroke'), defs)
         a.line = c if c not in (None, '#000000') else None
     for g in all_(lay, 'generalGlyph'):
-        if attr(g, 'id') not in nodes:
+        if attr(g, 'id') not in nodes and attr(g, 'id') not in placed:
             skipped.setdefault('general glyph', []).append(attr(g, 'id'))
     drawn = {g for g in (attr(e, 'reaction') for e in all_(lay, 'reactionGlyph'))}
     gone = [r for r in rx if r not in drawn]
@@ -504,18 +550,23 @@ def compartments(model, nodes, bio, used, needed=False):
 
 
 def annotate(el, data, links, used):
-    # a glyph's own MIRIAM identifiers as RDF (bqbiol:is, or hasVersion for a family's members), with a metaid
-    from .annotation import of_node
+    # a glyph's own MIRIAM identifiers as RDF (bqbiol:is, or hasVersion for a family's members), then its other links as
+    # read (annotation.kept), with a metaid
+    from .annotation import bags, of_node
     ann = of_node(data, links)
     uris = sbgnml.identifiers(ann[1]) if ann else []
-    if not uris:
+    more = [(sbgnml.BQBIOL if pre == 'bqbiol' else sbgnml.BQMODEL, q, [sbgnml.link(u) for u in ls])
+            for pre, q, ls in bags(data) if pre in ('bqbiol', 'bqmodel')]
+    if not uris and not more:
         return
     el.set('metaid', sid('meta_' + el.get('id', el.get('{%s}id' % QUAL, 'x')), used))
-    rdf = etree.SubElement(etree.SubElement(el, 'annotation'), '{%s}RDF' % RDF, nsmap={'rdf': RDF, 'bqbiol': sbgnml.BQBIOL})
+    rdf = etree.SubElement(etree.SubElement(el, 'annotation'), '{%s}RDF' % RDF,
+                           nsmap={'rdf': RDF, 'bqbiol': sbgnml.BQBIOL, **({'bqmodel': sbgnml.BQMODEL} if any(n == sbgnml.BQMODEL for n, _, _ in more) else {})})
     desc = etree.SubElement(rdf, '{%s}Description' % RDF, {'{%s}about' % RDF: '#' + el.get('metaid')})
-    bag = etree.SubElement(etree.SubElement(desc, '{%s}%s' % (sbgnml.BQBIOL, 'hasVersion' if ann[0] else 'is')), '{%s}Bag' % RDF)
-    for u in uris:
-        etree.SubElement(bag, '{%s}li' % RDF, {'{%s}resource' % RDF: u})
+    for ns, q, ls in ([(sbgnml.BQBIOL, 'hasVersion' if ann[0] else 'is', uris)] if uris else []) + more:
+        bag = etree.SubElement(etree.SubElement(desc, '{%s}%s' % (ns, q)), '{%s}Bag' % RDF)
+        for u in ls:
+            etree.SubElement(bag, '{%s}li' % RDF, {'{%s}resource' % RDF: u})
 
 
 def lay_el(parent, tag, **a):
@@ -566,7 +617,7 @@ def write(diagram):
     diagram = without_tags(diagram, 'SBML core')
     N, bio = diagram.nodes, diagram.biology
     G, L, R = '{%s}' % sbgnml.NS, '{%s}' % LAYOUT, '{%s}' % sbgnml.RENDER
-    sb = etree.fromstring(sbgnml.write(diagram).encode('utf-8'))
+    sb = etree.fromstring(sbgnml.write(diagram, af=False).encode('utf-8'))
     node_of = {sbgnml.xml_id(i): i for i in N}
     colour_of = {sbgnml.xml_id(a.id): a.line for a in diagram.arcs}
     glyphs = {g.get('id'): g for g in sb.iter(G + 'glyph')}
@@ -842,7 +893,7 @@ def render(lay, shapes, lines, texts, used):
 
 # Writing SBML-qual: an Activity Flow map as a logical model (the qual package, specifications/chaouiya-2015.md) with its
 # drawing in Layout and Render. One qualitative species per activity (maxLevel 1), one transition per activity that has
-# influences in, its rule by the Activity Flow to Boolean rules (pd2af-converter rules B1, B5, B6): on when any positive
+# influences in, its rule by the Activity Flow to Boolean rules: on when any positive
 # influence is on, every necessary stimulation is on and no negative influence is on; a node with negative influences
 # only is on unless one of them is; logic gates as drawn (AND, OR, NOT, gates on gates); a delay a variable of its own
 # that copies its input; a node with no influence in an input (constant). An unknown influence is drawn and listed as
@@ -888,7 +939,7 @@ def mathml(parent, f):
 def write_qual(diagram, rules=None, names=None):
     # rules: {node id: rule} to write in place of the map's own reading, a rule as an expression of node ids
     # (('var', id), ('true',), ('not', f), ('and' | 'or', [f, ...])); an id is an activity's glyph or a delay gate. A tool
-    # that knows more than the drawing (pd2af-converter's engine, from a Process Description map) gives them, and with
+    # that knows more than the drawing (a PD to AF conversion, from a Process Description map) gives them, and with
     # them its names for the nodes ({node id: name}), so its other outputs and this file name the nodes alike
     from .biology import label, PROCESSES
     from .graphml import DELAY

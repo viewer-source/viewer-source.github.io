@@ -49,7 +49,8 @@ from lxml import etree
 from . import cd_layout, cd_tidy, report
 from .cd_layout import ANCHOR, SQUARE, anchor_point, from_frame, square_point, to_frame
 from .layout import count_text, exit_point, visible
-from .annotation import PHENOTYPE_CLASSES, from_notes, from_references, notes, references, to_properties
+from .annotation import PHENOTYPE_CLASSES, bags, from_notes, from_references, kept, notes, references
+from .annotation import units as undrawn
 from .graphml import EQUIV, without_delays, without_tags
 from .model import Map, Node, Arc
 
@@ -404,16 +405,26 @@ def write(diagram, ann, layout='straight'):
         b = etree.SubElement(etree.SubElement(d, qualifier), '{%s}Bag' % RDF)
         for u in uris:
             etree.SubElement(b, '{%s}li' % RDF, {'{%s}resource' % RDF: u})
-    def miriam(parent, about, lab, abc=False):
-        if lab not in ann: return
-        fam, uris = ann[lab]
-        bag(description(parent, about, abc), '{%s}%s' % (BQ, 'hasVersion' if fam else 'is'), uris)
-    def described(parent, about, d):  # a process's references: one isDescribedBy bag each, as MINERVA maps hold them
+    def miriam(parent, about, lab, p, abc=False):  # the label's identifiers, then the node's other bags as read
+        more = [(BQ if pre == 'bqbiol' else BQM, q, [u for u in links if u.startswith('urn:miriam:')])
+                for pre, q, links in bags(p) if pre in ('bqbiol', 'bqmodel')]
+        gone = [u for _, _, links in bags(p) for u in links if not u.startswith('urn:miriam:')]
+        if gone:  # CellDesigner's annotation holds MIRIAM URNs
+            report.say('left out', '%s: links that are no MIRIAM URN: %s' % (about, ' '.join(gone)))
+        more = [m for m in more if m[2]]
+        if lab not in ann and not more: return
+        d = description(parent, about, abc)
+        if lab in ann:
+            fam, uris = ann[lab]
+            bag(d, '{%s}%s' % (BQ, 'hasVersion' if fam else 'is'), uris)
+        for q_ns, q, links in more:
+            bag(d, '{%s}%s' % (q_ns, q), links)
+    def described(parent, about, d):  # a process's references: bqbiol:isDescribedBy (evidence for the biology), one bag each, as MINERVA maps hold them
         uris = references(d.data.get('References'))
         if uris:
             desc = description(parent, about)
             for u in uris:
-                bag(desc, '{%s}isDescribedBy' % BQM, [u])
+                bag(desc, '{%s}isDescribedBy' % BQ, [u])
 
     catalysed = {}
     for e in E:
@@ -476,7 +487,7 @@ def write(diagram, ann, layout='straight'):
             # the family's name, its members' sites, each line ended: CellDesigner 4.4.2 drops, on saving, the text
             # on the same line as the RDF ('Family: PKA regulatory subunits', carnitine and glycolysis)
             body.text = ''.join(l + '\n' for l in facts(d, i)) or None
-            miriam(body, spec(i), label[i], abc=True)
+            miriam(body, spec(i), label[i], d.data, abc=True)
             x = sub(s, 'annotation'); sub(x, 'complexSpecies', spec(d.parent))
             identity(x, i)
             continue
@@ -494,7 +505,7 @@ def write(diagram, ann, layout='straight'):
         if cat:
             lc = sub(x, 'listOfCatalyzedReactions')
             for r in cat: sub(lc, 'catalyzed', reaction=r)
-        miriam(an, spec(i), label[i])
+        miriam(an, spec(i), label[i], d.data)
 
     def typed(e, t):  # a dashed arc: CellDesigner's unknown type, or the type itself with a note
         if not e.dashed: return t
@@ -702,11 +713,32 @@ def points(s):
     return [tuple(float(v) for v in q.split(',')) for q in (s or '').split()]
 
 
+def older(r):
+    # a file of an older CellDesigner layout (SBML Level 2 Version 1 to 3, ACSN 2.0's archive): its CellDesigner elements
+    # straight in each annotation, read as the extension of the current one; the SBML elements in the current namespace
+    if etree.QName(r).localname != 'sbml' or not (etree.QName(r).namespace or '').startswith('http://www.sbml.org/sbml/level2'):
+        raise ValueError('not a CellDesigner file: no SBML Level 2 model in it (%s)' % etree.QName(r).localname)
+    if etree.QName(r).namespace == SBML:
+        return r
+    report.say('changed', 'an older CellDesigner layout (SBML Level 2 Version %s): read as CellDesigner 4.4 reads it' % (r.get('version') or '1'))
+    old = etree.QName(r).namespace
+    for e in r.iter(etree.Element):
+        if etree.QName(e).namespace == old:
+            e.tag = '{%s}%s' % (SBML, etree.QName(e).localname)
+    for a in r.iter('{%s}annotation' % SBML):
+        cd = [c for c in a if isinstance(c.tag, str) and etree.QName(c).namespace == CD]
+        if cd and not any(etree.QName(c).localname == 'extension' for c in cd):
+            x = etree.SubElement(a, '{%s}extension' % CD)
+            for c in cd:
+                x.append(c)
+    return r
+
+
 def read(path):
     # a CellDesigner file as a map (model.Map), its own geometry kept (node sizes, arcs at its anchor
     # points as yEd ports, modifier arcs ending beside the square, PD02
     # eicosanoids); what does not convert is printed. The straight layout: layout.at_centres
-    r = etree.parse(path).getroot()
+    r = older(etree.parse(path).getroot())
     ns = {'cd': CD, 's': SBML, 'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'bq': 'http://biomodels.net/biology-qualifiers/',
           'bqm': 'http://biomodels.net/model-qualifiers/', 'xh': 'http://www.w3.org/1999/xhtml'}
     f = lambda x, q: x.find(q, ns)
@@ -738,8 +770,10 @@ def read(path):
     # species sets no state. Entries of one name and type (a file with one per species) count as one protein: their
     # residues joined, matched by site name, an unnamed one by its angle. kin: protein id -> its joined residues
     # [(angle, site)]; residues: (protein id, residue id) -> (its place in that list, its own angle)
-    residues, kin, joined = {}, {}, {}
+    residues, kin, joined, truncated = {}, {}, {}, set()
     for p in xs(ext, 'cd:listOfProteins/cd:protein'):
+        if p.get('type') == 'TRUNCATED':  # a fragment: not its full protein, though it has the same identifier
+            truncated.add(p.get('id'))
         rs = joined.setdefault((p.get('name'), p.get('type') or 'GENERIC'), [])
         kin[p.get('id')] = rs
         for m in xs(p, 'cd:listOfModificationResidues/cd:modificationResidue'):
@@ -750,7 +784,6 @@ def read(path):
                 k = len(rs); rs.append((ang, site))
             residues[p.get('id'), m.get('id')] = (k, ang)
     INV = {v: k for k, v in STATE.items()}
-    other = {}  # database -> species whose identifiers in it are left out
     aliases = list(xs(ext, 'cd:listOfComplexSpeciesAliases/cd:complexSpeciesAlias')) + \
         list(xs(ext, 'cd:listOfSpeciesAliases/cd:speciesAlias'))
     def props(cls, text, p):   # the notes' properties; on a phenotype, the line SBGN class: (the writer's facts)
@@ -794,18 +827,21 @@ def read(path):
         elif n > 1:  # N:x as on every multimer of the atlas yEd maps (N:2 included)
             units.append('N:%d' % n)
         pv = f(a, 'cd:usualView/cd:paint')
-        uris = [li.get('{%s}resource' % ns['rdf']) for li in xs(an, './/rdf:Description/*/rdf:Bag/rdf:li')] if an is not None else []
-        for u in uris:
-            db = u.rpartition(':')[0][len('urn:miriam:'):]
-            if db not in ('hgnc', 'hgnc.symbol', 'uniprot', 'obo.chebi'): other.setdefault(db, set()).add(a.get('species'))
-        fam = an is not None and f(an, './/rdf:Description/bq:hasVersion') is not None
+        desc = f(an, './/rdf:Description') if an is not None else None
+        bags = [({ns['bq']: 'bqbiol', ns['bqm']: 'bqmodel'}.get(etree.QName(q).namespace, etree.QName(q).namespace),
+                 etree.QName(q).localname, [li.get('{%s}resource' % ns['rdf']) for li in xs(q, 'rdf:Bag/rdf:li')])
+                for q in (desc if desc is not None else []) if isinstance(q.tag, str)]
         hyp = f(si, 'cd:hypothetical')
         font = f(a, 'cd:font')
+        data = props(cls, note(s), from_notes(note(s), kept([b for b in bags if b[2]])))
+        if pid in truncated:  # drawn as a plain macromolecule; the unit not drawn keeps it apart from its protein
+            if 'truncated' not in undrawn(data):
+                data['Unit of information'] = '\n'.join(undrawn(data) + ['truncated'])
         nodes[a.get('id')] = Node(
             id=a.get('id'), kind=kind, box=box, labels=[name(s.get('name')) if cls != 'DEGRADED' else ''],
             parent=a.get('complexSpeciesAlias') or a.get('compartmentAlias'),
             fill=None if cls == 'DRUG' or pv is None else paint(pv.get('color')), border=cls != 'UNKNOWN',
-            states=states, units=units, count=n, data=props(cls, note(s), from_notes(note(s), to_properties(fam, uris) if uris else {})),
+            states=states, units=units, count=n, data=data,
             dashed=hyp is not None and hyp.text == 'true', species=a.get('species'),
             font=float(font.get('size')) if font is not None and font.get('size') else None)
     # an unlabelled complex in yEd is named after its members in CellDesigner: the name goes
@@ -978,9 +1014,6 @@ def read(path):
     for tag in ('cd:listOfLayers/cd:layer', 'cd:listOfGroups/cd:group'):  # an empty layer (CellDesigner's default two) says nothing
         k = sum(1 for x in xs(ext, tag) if x.tag.endswith('group') or any(len(c) for c in x))
         if k: report.say('left out', '%d %s left out' % (k, tag.split(':')[-1] + 's'))
-    if other:  # identifiers the GraphML has no property for (MINERVA adds them; the Atlas fetches them from HGNC and ChEBI)
-        report.say('left out', 'identifiers other than HGNC, UniProt and ChEBI: %s' % ', '.join(
-            '%s on %d species' % (db, len(sp)) for db, sp in sorted(other.items(), key=lambda x: (-len(x[1]), x[0]))))
     # only the bends CellDesigner shows (none hidden under a node or on the straight line between
     # their neighbours, as the advanced layout's two points beside the square)
     return visible(Map(name=os.path.basename(path).rsplit('.', 1)[0], nodes=nodes, arcs=arcs))

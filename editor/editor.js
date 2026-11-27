@@ -1944,6 +1944,8 @@
       rx: { of: sbRxOf, set: function(pid, on2) {
         return sbReversible(pid, on2, true);
       }, withNode: true },
+      refs: { of: sbRefsOf, set: sbRefsSet },
+      // a process's references (Properties, References)
       line: {
         colour: sbLineColour,
         set: sbLineSet,
@@ -2143,6 +2145,57 @@
       sbRxSeen = [key, rv && (rv.can || rv.rev) ? { rid: id, on: rv.rev > 0 } : null];
     }
     return sbRxSeen[1];
+  }
+  var sbRefsMemo;
+  function __run62() {
+    sbRefsMemo = [null, null, null, null, null];
+  }
+  function sbIsProc(i) {
+    return i != null && !!nodes2[i] && sbJs.PROCESSES.indexOf(sbClasses()[nodes2[i].id] || "") >= 0;
+  }
+  function sbRefsOf() {
+    if (!sbJs || !sbJs.refsOf || shared.selP.length || shared.svSel) return null;
+    var pid = null, line2 = false;
+    if (shared.selN.length === 1 && !shared.selE.length && sbIsProc(shared.selN[0])) pid = nodes2[shared.selN[0]].id;
+    else if (shared.selE.length === 1 && !shared.selN.length && edges2[shared.selE[0]]) {
+      var e = edges2[shared.selE[0]], n = sbIsProc(e.t) ? e.t : sbIsProc(e.s) ? e.s : null;
+      if (n != null) {
+        pid = nodes2[n].id;
+        line2 = true;
+      }
+    }
+    if (!pid) return null;
+    var base = shared.sb && shared.sb.base;
+    if (sbRefsMemo[0] !== pid || sbRefsMemo[1] !== shared.text || sbRefsMemo[2] !== base) {
+      var keys = [], about = [];
+      var sameBase = sbRefsMemo[0] === pid && sbRefsMemo[2] === base;
+      try {
+        keys = sbJs.refsOf(shared.text, pid).split(" ").filter(Boolean);
+        about = sameBase ? sbRefsMemo[4] : base ? sbJs.refsAbout(base, pid) : [];
+      } catch (e2) {
+        keys = null;
+      }
+      sbRefsMemo = [pid, shared.text, base, keys, about];
+    }
+    if (!sbRefsMemo[3]) return null;
+    var ab = sbRefsMemo[4];
+    return { id: pid, title: line2 ? "References of its process" : "References", items: sbRefsMemo[3].map(function(k) {
+      var c = k.indexOf(":"), db = k.slice(0, c);
+      return { key: k, db, val: k.slice(c + 1), q: ab.indexOf(k) >= 0 ? "bqmodel:isDescribedBy" : "bqbiol:isDescribedBy", own: ab.indexOf(k) < 0 && /^(pubmed|doi)$/.test(db), about: ab.indexOf(k) >= 0 };
+    }) };
+  }
+  function sbRefsSet(pid, add, del) {
+    var now = sbJs.refsOf(shared.text, pid).split(" ").filter(function(k) {
+      return k && del.indexOf(k) < 0;
+    });
+    var t2 = sbJs.setRefs(shared.text, pid, now.concat(add.filter(function(k) {
+      return now.indexOf(k) < 0;
+    })).join(" "));
+    return commit(t2, { name: "references changed", ids: [pid], sel: shared.selN.map(function(i) {
+      return nodes2[i].id;
+    }), selE: shared.selE.map(function(k) {
+      return edges2[k].id;
+    }) });
   }
   function sbCount(k) {
     var id = edges2[k].id;
@@ -2470,6 +2523,7 @@
     __run33();
     __run4();
     __run52();
+    __run62();
   }
 
   // editor/src/geometry.js
@@ -3001,7 +3055,7 @@
     return !!(d && d.label === "CellDesigner");
   }
   var warm;
-  function __run62() {
+  function __run63() {
     warm = null;
   }
   function warmUp() {
@@ -3058,7 +3112,7 @@
     __run34();
     __run42();
     __run53();
-    __run62();
+    __run63();
     __run72();
     __run8();
   }
@@ -3462,7 +3516,7 @@
       if (v && q[3] !== v) console.error("The palette\u2019s " + q[1] + " sign differs from cdrender\u2019s " + v);
     });
   }
-  function __run63() {
+  function __run64() {
     pal.querySelector(".m2-ed-pstrict input").addEventListener("change", function(e) {
       if (!cdPal()) return;
       palDid([PAL_KEY], function() {
@@ -5477,12 +5531,57 @@
       return f(t, id);
     }, [], [keep]);
   }
+  var cdRefsMemo;
+  function __run632() {
+    cdRefsMemo = [null, null, null];
+  }
+  function cdRefRid() {
+    if (!shared.cd || shared.selP.length || shared.svSel || shared.selN.length + shared.selE.length < 1) return null;
+    var rid = null, ok = true;
+    shared.selE.forEach(function(k) {
+      var m = edges2[k] && edges2[k].id.match(/^(.*)\|(a|b|[mrp]\d+)$/);
+      if (!m || rid && rid !== m[1]) ok = false;
+      else rid = m[1];
+    });
+    shared.selN.forEach(function(i) {
+      var m = nodes2[i] && nodes2[i].id.match(/^(.*)\|proc$/);
+      if (!m || rid && rid !== m[1]) ok = false;
+      else rid = m[1];
+    });
+    return ok ? rid : null;
+  }
+  function cdRefsOf() {
+    var rid = cdRefRid();
+    if (!rid) return null;
+    if (cdRefsMemo[0] !== rid || cdRefsMemo[1] !== shared.cd.now) {
+      var L;
+      try {
+        L = cdMk.refs(shared.cd.now, rid);
+      } catch (e) {
+        L = null;
+      }
+      cdRefsMemo = [rid, shared.cd.now, L];
+    }
+    if (!cdRefsMemo[2]) return null;
+    var line2 = shared.selE.length === 1 && !shared.selN.length && /\|m\d+$/.test(edges2[shared.selE[0]].id);
+    return { id: rid, title: line2 ? "References of its reaction" : "References", items: cdRefsMemo[2].map(function(r) {
+      var c = r.key ? r.key.indexOf(":") : -1, db = c > 0 ? r.key.slice(0, c) : "", v = c > 0 ? r.key.slice(c + 1) : r.link;
+      return { key: r.key || r.link, db, val: v, q: r.q, own: r.q === "bqbiol:isDescribedBy" && /^(pubmed|doi)$/.test(db), about: /^bqmodel:/.test(r.q) };
+    }) };
+  }
+  function cdRefsSet(rid, add, del) {
+    var keep = shared.selE.length === 1 && !shared.selN.length && /\|[mrp]\d+$/.test(edges2[shared.selE[0]].id) ? edges2[shared.selE[0]].id : rid;
+    return cdApply(function(t) {
+      return cdMk.setRefs(t, rid, add, del);
+    }, [], [keep]);
+  }
   var PF_CD;
   function __run332() {
     PF_CD = {
       sizable: cdProp,
       size: cdSetSize,
       def: cdDef,
+      refs: { of: cdRefsOf, set: cdRefsSet },
       rx: {
         of: cdRxOf,
         set: cdReversible,
@@ -5991,7 +6090,7 @@
     __run24();
     __run35();
     __run54();
-    __run63();
+    __run64();
     __run73();
     __run82();
     __run9();
@@ -6016,6 +6115,7 @@
     __run30();
     __run31();
     __run322();
+    __run632();
     __run332();
   }
 
@@ -6748,7 +6848,7 @@
     return v === was || !groupTaken(v, was);
   }
   var naming;
-  function __run64() {
+  function __run65() {
     naming = null;
   }
   function inPlace(at2, o) {
@@ -10272,7 +10372,7 @@
     __run36();
     __run43();
     __run55();
-    __run64();
+    __run65();
     __run74();
     __run83();
     __run92();
@@ -10572,7 +10672,7 @@
     return '<div class="m2-ed-pline">' + line2 + '<button type="button" class="m2-ed-pinfo m2-ed-ptip m2-itip" aria-label="About ' + name2 + '" title="About ' + name2 + '" data-info="' + t + '" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="7.2" stroke-width="1.1"/><path d="M8 7.3v4.2" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="4.6" r="1.2" fill="currentColor" stroke="none"/></svg></button></div>';
   }
   var palSignsEl;
-  function __run65() {
+  function __run66() {
     pal.innerHTML = '<div class="m2-ed-prow m2-ed-pnot" role="group" aria-label="Notation">' + palBtn('data-lang="pd"', "Process Description", '<text x="12" y="17.3" text-anchor="middle" font-size="15">PD</text>') + palBtn('data-lang="af"', "Activity Flow", '<text x="12" y="17.3" text-anchor="middle" font-size="15">AF</text>') + '</div><div class="m2-ed-plook" role="radiogroup" aria-label="Activity Flow view">' + palTip(palView("rn", "Reduced notation view", "Reduced notation view: each activity drawn as its entity"), "Reduced notation view", INFO.rn) + palTip(palView("sbgn", "SBGN AF view", "SBGN Activity Flow view: each entity drawn as its SBGN activity"), "SBGN Activity Flow view", INFO.sbgn) + '</div><div class="m2-ed-pblk m2-ed-pprot">' + palTip('<label class="m2-ed-phyb" title="Ticked: every protein activity carries the auxiliary unit of a macromolecule, drawn and saved in the file; unticked: none has it"><input type="checkbox"><span>Protein auxiliary unit</span></label>', "Protein auxiliary unit", INFO.prot) + '</div><div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', "CellDesigner compatible", INFO.cdc) + '</div><div class="m2-ed-pblk m2-ed-psbgn">' + palTip('<label class="m2-ed-phyb" title="Ticked: what is drawn keeps to the SBGN PD specification alone; unticked: CellDesigner\u2019s additions too"><input type="checkbox"><span>Strict SBGN</span></label>', "Strict SBGN", INFO.sbgnPd) + '</div><div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', "Reduced notation", INFO.strict) + '</div><div class="m2-ed-pblk m2-ed-psites">' + palTip('<label class="m2-ed-phyb" title="Ticked: every state variable shows its site and the map is saved so; unticked: the value alone, the sites kept in the notes"><input type="checkbox"><span>Show sites</span></label>', "Show sites", INFO.sites) + '</div><div class="m2-ed-psigns"></div>';
     palSignsEl = pal.querySelector(".m2-ed-psigns");
   }
@@ -13693,7 +13793,7 @@
   var field;
   var pNow;
   function __run442() {
-    props.innerHTML = "<p>Properties</p>" + table(ROWS, " m2-ed-pnode") + table(EROWS, " m2-ed-pedge") + table(RROWS, " m2-ed-prx") + '<table class="m2-ed-ptab m2-ed-pcard" hidden></table><button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button><button type="button" class="m2-ed-pall" title="Every glyph of this kind on the map (every process, or every logic gate) takes this one\u2019s size and antenna">Apply to all of this kind</button><button type="button" class="m2-ed-pstd" title="The standard size and antenna of processes and logic gates, at the map\u2019s scale (Style, Standard sizes)">Standard size</button>';
+    props.innerHTML = "<p>Properties</p>" + table(ROWS, " m2-ed-pnode") + table(EROWS, " m2-ed-pedge") + table(RROWS, " m2-ed-prx") + '<table class="m2-ed-ptab m2-ed-pcard" hidden></table><table class="m2-ed-ptab m2-ed-prefs" hidden><tbody class="m2-ed-prefl"></tbody><tbody><tr><td colspan="2"><span class="m2-ed-ppic"><input type="text" class="m2-ed-pin" aria-label="PubMed IDs, DOIs or links to add" placeholder="PubMed IDs, DOIs or links" spellcheck="false" autocomplete="off"><button type="button" class="m2-ed-pgo">Add</button></span></td></tr><tr class="m2-ed-psay" hidden><td colspan="2"></td></tr></tbody></table><button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button><button type="button" class="m2-ed-pall" title="Every glyph of this kind on the map (every process, or every logic gate) takes this one\u2019s size and antenna">Apply to all of this kind</button><button type="button" class="m2-ed-pstd" title="The standard size and antenna of processes and logic gates, at the map\u2019s scale (Style, Standard sizes)">Standard size</button>';
     pal.insertAdjacentElement("afterend", props);
     props.insertAdjacentElement("afterend", pmap);
     inW = props.querySelector("#m2-ed-w"), inH = props.querySelector("#m2-ed-h");
@@ -13722,6 +13822,10 @@
     return cls === "biological activity" ? cls + ":" + (unit || "") : cls;
   }
   function propsShow(all) {
+    propsShow0(all);
+    refsShow();
+  }
+  function propsShow0(all) {
     var i = propNode(), k = propEdge(), r2 = function(v) {
       return String(Math.round(v * 100) / 100);
     }, ns = propNodes();
@@ -13950,6 +14054,117 @@
       var f = pcard.querySelector('[data-line="' + p.line.replace(/"/g, '\\"') + '"]');
       if (f && (all || document.activeElement !== f) && f.value !== p.value) f.value = p.value;
     });
+  }
+  var prefs;
+  var prefsKey;
+  var prefsSay;
+  var prefsRid;
+  var prefsFor;
+  var REF_DB;
+  function __run622() {
+    prefs = props.querySelector(".m2-ed-prefs");
+    prefsKey = null;
+    prefsSay = null;
+    prefsRid = null;
+    prefsFor = null;
+    REF_DB = { pubmed: "PubMed", doi: "DOI" };
+    var pin = prefs.querySelector(".m2-ed-pin");
+    pin.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") pin.value = "";
+    });
+    pin.addEventListener("paste", function(e) {
+      var t = e.clipboardData && e.clipboardData.getData("text");
+      if (t == null || !/[\r\n]/.test(t)) return;
+      e.preventDefault();
+      var a = pin.selectionStart, b = pin.selectionEnd, v = t.replace(/\s*[\r\n]+\s*/g, " ").trim();
+      pin.value = pin.value.slice(0, a) + v + pin.value.slice(b);
+      pin.selectionStart = pin.selectionEnd = a + v.length;
+    });
+    pin.addEventListener("focus", function() {
+      var pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null;
+      prefsFor = R ? R.id : null;
+    });
+    pin.addEventListener("change", function() {
+      var pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null;
+      if (R && R.id === prefsFor) refsAdd();
+    });
+    prefs.querySelector(".m2-ed-pgo").addEventListener("click", refsAdd);
+    prefs.addEventListener("click", function(e) {
+      var x = e.target.closest && e.target.closest(".m2-ed-px"), pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null;
+      if (!x || !R) return;
+      prefsSay = null;
+      if (!pf.refs.set(R.id, [], [x.dataset.key])) {
+        prefsKey = null;
+        refsShow();
+      }
+    });
+  }
+  function refsParse(text) {
+    var out = { keys: [], bad: [] }, t = String(text).replace(/\b(PMID|pubmed|doi)\s*:?\s+(?=\d)/gi, "$1:");
+    t.split(/\s+|,(?=\s|\d|$)|;(?=\s|$)/).forEach(function(x) {
+      x = x.replace(/^[(\[<"']+|[)\]>"'.,]+$/g, "");
+      if (!x) return;
+      var m, key = null, dec = function(v) {
+        try {
+          return decodeURIComponent(v);
+        } catch (e) {
+          return v;
+        }
+      };
+      if (m = /^(?:https?:\/\/)?(?:www\.)?(?:pubmed\.ncbi\.nlm\.nih\.gov|ncbi\.nlm\.nih\.gov\/pubmed)\/(\d+)\/?(?:[?#].*)?$/i.exec(x)) key = "pubmed:" + m[1];
+      else if (m = /^(?:https?:\/\/)?(?:dx\.)?doi\.org\/(.+)$/i.exec(x)) key = "doi:" + dec(m[1]);
+      else if ((m = /^(?:https?:\/\/)?identifiers\.org\/(pubmed|doi)[:\/](.+)$/i.exec(x)) || (m = /^urn:miriam:(pubmed|doi):(.+)$/i.exec(x))) key = m[1].toLowerCase() + ":" + dec(m[2]);
+      else if (m = /^(?:pmid|pubmed):(.+)$/i.exec(x)) key = "pubmed:" + m[1];
+      else if (m = /^doi:(.+)$/i.exec(x)) key = "doi:" + m[1];
+      else if (/^\d+$/.test(x)) key = "pubmed:" + x;
+      else if (/^10\./.test(x)) key = "doi:" + x;
+      var ok = key && (/^pubmed:\d{1,9}$/.test(key) || /^doi:\d{2}\.\d{4}\S*\/\S+$/.test(key));
+      if (!ok) out.bad.push(x);
+      else if (out.keys.indexOf(key) < 0) out.keys.push(key);
+    });
+    return out;
+  }
+  function refsAdd() {
+    var pin = prefs.querySelector(".m2-ed-pin"), v = pin.value.trim(), pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null;
+    if (!v || !R) return;
+    var P = refsParse(v), had = R.items.map(function(x) {
+      return x.key;
+    }), add = P.keys.filter(function(k) {
+      return had.indexOf(k) < 0;
+    }), said = [];
+    if (add.length) said.push(add.length + " added");
+    if (P.keys.length > add.length) said.push(P.keys.length - add.length + " already there");
+    if (P.bad.length) said.push("not read: " + P.bad.join(" ") + " (a PubMed ID is digits, as 19461003; a DOI starts 10., as 10.1038/nature08124)");
+    pin.value = P.bad.join(" ");
+    prefsSay = [R.id, said.join("; ") + "."];
+    if (add.length && !pf.refs.set(R.id, add, [])) prefsSay = [R.id, "Not written: the file did not take them."];
+    prefsKey = null;
+    refsShow();
+  }
+  function refsShow() {
+    var pf = propFmt(), R = !props.hidden && pf && pf.refs && propNodes().length <= 1 ? pf.refs.of() : null;
+    prefs.hidden = !R;
+    if (!R) {
+      prefsKey = null;
+      return;
+    }
+    if (R.id !== prefsRid) {
+      prefs.querySelector(".m2-ed-pin").value = "";
+      prefsRid = R.id;
+    }
+    if (prefsSay && prefsSay[0] !== R.id) prefsSay = null;
+    var key = R.id + "\0" + R.title + "\0" + R.items.map(function(x) {
+      return x.key + "" + x.q + (x.own ? "" : "!");
+    }).join("\0") + "\0" + (prefsSay ? prefsSay[1] : "");
+    if (key === prefsKey) return;
+    prefsKey = key;
+    prefs.querySelector(".m2-ed-prefl").innerHTML = '<tr><th colspan="2">' + escHtml(R.title) + "</th></tr>" + R.items.map(function(x) {
+      var name2 = REF_DB[x.db] || x.db || "Link", tip = name2 + " " + x.val + (x.own ? "" : ", " + x.q + (x.about ? ": about the map as a model, kept as written" : ", kept as written"));
+      return '<tr title="' + escAttr(tip) + '"><th>' + escHtml(name2) + '</th><td><span class="m2-ed-ppic"><span class="m2-ed-ppicname">' + escHtml(x.val) + (x.about ? ' <span class="m2-ed-pabout">about the map</span>' : "") + "</span>" + (x.own ? '<button type="button" class="m2-ed-px" data-key="' + escAttr(x.key) + '" title="Remove ' + escAttr(name2 + " " + x.val) + '" aria-label="Remove">\xD7</button>' : "") + "</span></td></tr>";
+    }).join("");
+    var say = prefs.querySelector(".m2-ed-psay");
+    say.hidden = !prefsSay;
+    say.firstChild.textContent = prefsSay ? prefsSay[1] : "";
   }
   function escHtml(v) {
     return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -14237,7 +14452,7 @@
     __run37();
     __run44();
     __run56();
-    __run65();
+    __run66();
     __run75();
     __run84();
     __run93();
@@ -14283,6 +14498,7 @@
     __run57();
     __run58();
     __run61();
+    __run622();
   }
 
   // editor/src/live.js
@@ -15167,7 +15383,7 @@
   function buildNote() {
     return "Saved, but the site is not rebuilt (" + buildRefused + "): the token cannot start its build.";
   }
-  function __run66() {
+  function __run67() {
     addEventListener("pagehide", function() {
       if (buildTimer) {
         clearTimeout(buildTimer);
@@ -19792,7 +20008,7 @@
     __run311();
     __run45();
     __run59();
-    __run66();
+    __run67();
     __run76();
     __run85();
     __run94();

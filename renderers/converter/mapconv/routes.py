@@ -4,7 +4,7 @@
 #            advanced, as drawn); SBGN-ML, also for Newt (newt_layout); GraphML (corrected) for a map drawn
 #            with other shapes; GraphML (marked) when it breaks a rule (the problems left out)
 #   CellDesigner: GraphML, straight and advanced; SBGN-ML, also for Newt
-#   SBGN-ML, Newt: GraphML; CellDesigner in its four layouts
+#   SBGN-ML, Newt: GraphML; CellDesigner in its four layouts; each map of a file of several (-map2 ...)
 #   CellDesigner, SBGN-ML, Newt: also GraphML (standard sizes) for a map drawn at another scale,
 #            or for every map when standard (style.standard)
 #   GraphML: GraphML (standard sizes) only when standard
@@ -84,5 +84,16 @@ def outputs(path, standard=False):
         return [Output('-%s.graphml' % l, 'GraphML (%s)' % l, lambda l=l: graphml.write(cd(l))) for l in LAYOUTS] + \
                [std(lambda: celldesigner.read(path), 'CellDesigner')] + \
                sbgn(lambda: cd('advanced')) + [sb(lambda: cd('advanced'))]
-    return [Output('.graphml', 'GraphML', lambda: graphml.write(sbgnml.read(path))), std(lambda: sbgnml.read(path), 'Newt')] + \
-           cds(lambda: sbgnml.read(path)) + [sb(lambda: sbgnml.read(path)), qual(lambda: sbgnml.read(path))]
+    # SBGN-ML: every map of the file, the second and later ones with -map2, -map3 ... before the ending
+    try:
+        n = len(sbgnml.maps(path))
+    except Exception:
+        n = 0
+    if not n:  # not readable, or no map: made() says why
+        return [Output('', '', lambda: sbgnml.read(path))]
+    out = []
+    for k in range(n):
+        r = lambda k=k: sbgnml.read(path, k)
+        one = [Output('.graphml', 'GraphML', lambda r=r: graphml.write(r())), std(r, 'Newt')] + cds(r) + [sb(r), qual(r)]
+        out += one if not k else [Output('-map%d%s' % (k + 1, o.ending), 'Map %d: %s' % (k + 1, o.label), o.make, o.red) for o in one]
+    return out

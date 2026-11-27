@@ -49,7 +49,7 @@ def placed(diagram):
 
 
 # Newt (sbgnml-to-cytoscape bboxProp): a compartment's padding, 24 (its 14 and the compound 10),
-# with half a border and 1, 30 to be safe. Measured in Newt (notes/QUALITY.md): it keeps a
+# with half a border and 1, 30 to be safe. Measured in Newt: it keeps a
 # compartment from 28 px around a node or a complex (no padding of the complex's own), 28 around a
 # process without ports and about 40 with them (PORTS), and never grows one for a compartment inside it
 NEWT_PAD, PORTS = 30, 12

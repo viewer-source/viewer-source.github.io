@@ -1475,9 +1475,38 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
       var id = edges2[k].id, keep = /\|[mrp]\d+$/.test(id) ? id : id.replace(/\|[^|]*$/, '');
       return cdApply(function (t) { return f(t, id); }, [], [keep]);
     }
+    // a reaction's references (Properties, References; notes/annotation-editing.md): the reaction a selection is part of (its
+    // square, a line of it, a modifier's or a reduced notation's line), its RDF's links read once per file; PubMed and DOI
+    // under bqbiol:isDescribedBy are the reaction's own, every other link shown as the file has it
+    var cdRefsMemo;
+    function __run63() {   // run at start, in order (__start)
+    cdRefsMemo = [null, null, null];
+    }
+    function cdRefRid() {
+      if (!shared.cd || shared.selP.length || shared.svSel || shared.selN.length + shared.selE.length < 1) return null;
+      var rid = null, ok = true;
+      shared.selE.forEach(function (k) { var m = edges2[k] && edges2[k].id.match(/^(.*)\|(a|b|[mrp]\d+)$/); if (!m || (rid && rid !== m[1])) ok = false; else rid = m[1]; });
+      shared.selN.forEach(function (i) { var m = nodes2[i] && nodes2[i].id.match(/^(.*)\|proc$/); if (!m || (rid && rid !== m[1])) ok = false; else rid = m[1]; });
+      return ok ? rid : null;
+    }
+    function cdRefsOf() {
+      var rid = cdRefRid();
+      if (!rid) return null;
+      if (cdRefsMemo[0] !== rid || cdRefsMemo[1] !== shared.cd.now) { var L; try { L = cdMk.refs(shared.cd.now, rid); } catch (e) { L = null; } cdRefsMemo = [rid, shared.cd.now, L]; }
+      if (!cdRefsMemo[2]) return null;
+      var line = shared.selE.length === 1 && !shared.selN.length && /\|m\d+$/.test(edges2[shared.selE[0]].id);
+      return { id: rid, title: line ? 'References of its reaction' : 'References', items: cdRefsMemo[2].map(function (r) {
+        var c = r.key ? r.key.indexOf(':') : -1, db = c > 0 ? r.key.slice(0, c) : '', v = c > 0 ? r.key.slice(c + 1) : r.link;
+        return { key: r.key || r.link, db: db, val: v, q: r.q, own: r.q === 'bqbiol:isDescribedBy' && /^(pubmed|doi)$/.test(db), about: /^bqmodel:/.test(r.q) };
+      }) };
+    }
+    function cdRefsSet(rid, add, del) {   // keys (db:id); cd_make writes and finds each link in the file's own encoding
+      var keep = shared.selE.length === 1 && !shared.selN.length && /\|[mrp]\d+$/.test(edges2[shared.selE[0]].id) ? edges2[shared.selE[0]].id : rid;
+      return cdApply(function (t) { return cdMk.setRefs(t, rid, add, del); }, [], [keep]);
+    }
     var PF_CD;
     function __run33() {   // run at start, in order (__start)
-    PF_CD = { sizable: cdProp, size: cdSetSize, def: cdDef,
+    PF_CD = { sizable: cdProp, size: cdSetSize, def: cdDef, refs: { of: cdRefsOf, set: cdRefsSet },
       rx: { of: cdRxOf, set: cdReversible,   // a reaction's Reversible (propRx, create.js)
         counts: cdParts,   // its reactants' and products' numbers by name (rxCounts)
         setCount: function (rid, line, v) { return cdApply(function (t) { return cdMk.restoich(t, line, v); }, [], [rid]); } },
@@ -1740,5 +1769,5 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
       return { w: s[0], h: s[1], svg: '<svg width="100%" height="100%" viewBox="0 0 ' + s[0] + ' ' + s[1] + '" overflow="visible">' + (back || '') + shape + '</svg>' };
     }
 
-    export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run33(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run63(); __run33(); }   // the part's statements, in their order
     export { CD_DEF_KEY, CD_GATE, PF_CD, cdBgItems, cdCardDown, cdCheck, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdMoveSays, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvFar, cdSvList, cdSvMove, cdSvOpen };

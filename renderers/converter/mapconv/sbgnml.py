@@ -6,7 +6,7 @@
 import math, copy, os, re, urllib.parse
 from lxml import etree
 from . import report
-from .annotation import PHENOTYPE_CLASSES, from_graphml, from_notes, from_references, notes, references, sites, to_properties
+from .annotation import PHENOTYPE_CLASSES, bags as bags_of, from_graphml, from_notes, from_references, kept as keep_links, notes, references, sites
 from .layout import bends, border, centre, compartment_of, count_line, count_on, count_place, count_text, decorations, own_places, unbent
 from . import newt_layout
 from .graphml import DELAY, EQUIV, LINE, CHAR, touches, without_delays
@@ -38,6 +38,18 @@ def identifiers(urns):
     # MIRIAM URNs as identifiers.org links in Newt's form (db:id), those of the databases in DB
     return ['http://identifiers.org/%s:%s' % (DB[db], urllib.parse.quote(re.sub(r'^(CHEBI|HGNC):', '', urllib.parse.unquote(x)), safe=':/()-._~'))
             for db, _, x in (u[len('urn:miriam:'):].partition(':') for u in urns) if db in DB]
+
+
+def link(u):
+    # a kept link (annotation.kept) as an SBGN-ML link: a MIRIAM URN as an identifiers.org link (an accession that
+    # names its namespace, GO:0003873, alone; entrez.gene as ncbigene), any other address as written
+    if not u.startswith('urn:miriam:'):
+        return u
+    if identifiers([u]):
+        return identifiers([u])[0]
+    db, _, x = u[len('urn:miriam:'):].partition(':')
+    x = urllib.parse.unquote(x)
+    return 'http://identifiers.org/%s' % (x if ':' in x else '%s:%s' % ({'entrez.gene': 'ncbigene'}.get(db, db), x))
 
 
 def xml_id(i):
@@ -109,11 +121,23 @@ def note(el, lines):  # lines as the element's notes (xhtml)
 REACH = 20  # px beyond a process's or gate's box: a bend there that only imitates its antenna joins the antenna
 
 
-def write(diagram, newt=False):
+def write(diagram, newt=False, af=None):
     # the drawing of the source kept (bends, arcs at yEd ports), processes and gates with their antennas;
     # newt: the map adjusted as Newt needs it (newt_layout); without it the
-    # SBGN-ML of the source, its compartments as drawn
-    diagram = without_delays(shifted(diagram), 'SBGN Process Description')
+    # SBGN-ML of the source, its compartments as drawn; af False: Process Description whatever the map (sbml.write
+    # reads this drawing)
+    # an Activity Flow map (activities, no process glyph: read from SBGN-ML Activity Flow or SBML-qual) is written as one,
+    # its delays kept; every other map as Process Description
+    af = af is not False and not any(d.kind in PROCESSES for d in diagram.nodes.values()) and \
+        any(d.data.get('SBGN class') == 'biological activity' for d in diagram.nodes.values())
+    if af:  # only what Activity Flow can say: no complex drawn with members, no state variable, influences and logic arcs
+        inside = {d.parent for d in diagram.nodes.values()}
+        odd = [i for i, d in diagram.nodes.items() if (d.kind == 'Complex' and i in inside) or (d.kind in CLASS and d.states)] + \
+              [a.id for a in diagram.arcs if a.head not in (None, 'stimulation', 'inhibition', 'modulation', 'trigger')]
+        if odd:
+            af = False
+            report.say('changed', 'written as Process Description: Activity Flow has no form for %s' % ', '.join(odd[:5]))
+    diagram = shifted(diagram) if af else without_delays(shifted(diagram), 'SBGN Process Description')
     if newt:
         diagram = newt_layout.adjust(diagram)
     N = diagram.nodes
@@ -192,7 +216,7 @@ def write(diagram, newt=False):
 
     root = etree.Element(S + 'sbgn', nsmap={None: NS})
     # language, not version: libsbgn's schema lists no PD version after 1.3
-    m = etree.SubElement(root, S + 'map', id=xml_id(diagram.name.replace('-', '_')), language='process description')
+    m = etree.SubElement(root, S + 'map', id=xml_id(diagram.name.replace('-', '_')), language='activity flow' if af else 'process description')
 
     # colours and font sizes: one render style per fill, outline and size (the source's sizes kept)
     fills = {}
@@ -248,12 +272,14 @@ def write(diagram, newt=False):
             uris = identifiers(urns)
             if uris:
                 bags.append((BQBIOL, 'hasVersion' if family else 'is', uris))
+        bags += [({'bqbiol': BQBIOL, 'bqmodel': BQMODEL}[pre], q, [link(u) for u in links])
+                 for pre, q, links in bags_of(d.data) if pre in ('bqbiol', 'bqmodel')]  # the other links, as read
         refs = references(d.data.get('References'))  # a process's references (any glyph's), one bag each, as MINERVA holds them
         uris = identifiers(refs)
         if len(uris) < len(refs):
             report.say('left out', '%s: references of databases SBGN-ML links are not written for: %s' % (
                 lab or i, ' '.join(u for u in refs if u.split(':')[2] not in DB)))
-        bags += [(BQMODEL, 'isDescribedBy', [u]) for u in uris]
+        bags += [(BQBIOL, 'isDescribedBy', [u]) for u in uris]
         if bags:
             rdf(g, i, bags)
 
@@ -261,7 +287,7 @@ def write(diagram, newt=False):
         d = N[i]
         x, y, w, h = d.box
         if d.kind == 'Operator':
-            cls = {v: k for k, v in OPERATORS.items()}.get((d.labels[0] if d.labels else '').strip().upper())
+            cls = {v.upper(): k for k, v in OPERATORS.items()}.get((d.labels[0] if d.labels else '').strip().upper())  # τ: Τ
             if cls is None:
                 report.say('left out', 'gate %s: label %r is not AND, OR, NOT or %s, left out' % (i, d.labels[:1], EQUIV)); return
         elif d.kind in CLASS:
@@ -269,6 +295,8 @@ def write(diagram, newt=False):
             if DRAWN_AS.get(d.data.get('SBGN class')) == d.kind or (d.kind == 'Phenotype' and d.data.get('SBGN class') == 'submap'):
                 # only on the glyph it belongs to (changed in yEd: dropped); a submap from CellDesigner's notes: its phenotype
                 cls = d.data['SBGN class']
+            if af and d.kind in ACTIVITY.values() and d.kind != 'Phenotype':  # an activity, its entity in its unit
+                cls = 'biological activity'
             if i in term:
                 cls = 'terminal'
         else:
@@ -298,9 +326,17 @@ def write(diagram, newt=False):
             st = etree.SubElement(sv, S + 'state', value=txt.partition('@')[0])
             if site[k]: st.set('variable', site[k])
             bbox(sv, *box)
+        # an activity's first unit names its entity (its shape; the reader's SBGN unit), its label the molecule's name;
+        # none for a protein without a name in a unit, as the reader takes it
+        entity = af and cls == 'biological activity' and (d.kind != 'Macromolecule' or d.data.get('SBGN unit') or d.units or d.count > 1)
+        if entity and not d.units:
+            units = [('', (x + w / 2 - 20, y - 8, 40, 16))] + list(units)
         for k, (u, box) in enumerate(units):
             ui = etree.SubElement(g, S + 'glyph', {'class': 'unit of information', 'id': '%s_ui%d' % (ids[i], k)})
             etree.SubElement(ui, S + 'label', text=u)
+            if entity and k == 0:
+                etree.SubElement(ui, S + 'entity', name=d.data.get('SBGN unit') or
+                                 {v: k for k, v in ACTIVITY.items()}[d.kind] + (' multimer' if d.count > 1 else ''))
             bbox(ui, *box)
         for j in kids.get(i, []) if d.kind == 'Complex' else []:
             glyph(g, j)
@@ -390,6 +426,8 @@ def write(diagram, newt=False):
             pts = unbent(key, 5)[1:-1]
         if newt:
             pts = newt_layout.unaimed(pts, p0 if s in ports else centre(N[s]), p1 if t in ports else centre(N[t]))
+        if af:
+            cls = INFLUENCE.get(cls, cls)
         e = etree.SubElement(m, S + 'arc', {'class': cls, 'id': xml_id(a.id), 'source': src, 'target': tgt})
         if a.dashed:  # SBGN PD has no unknown arc: kept in its notes
             note(e, [UNKNOWN])
@@ -463,6 +501,7 @@ HEAD = {'consumption': None, 'logic arc': None, 'production': 'production', 'cat
 ACTIVITY = {'macromolecule': 'Macromolecule', 'nucleic acid feature': 'NucleicAcidFeature', 'simple chemical': 'SimpleChemical',
             'unspecified entity': 'UnspecifiedEntity', 'complex': 'Complex', 'perturbation': 'Phenotype'}
 HEAD.update({'positive influence': 'stimulation', 'negative influence': 'inhibition', 'unknown influence': 'modulation'})
+INFLUENCE = {'stimulation': 'positive influence', 'inhibition': 'negative influence', 'modulation': 'unknown influence'}  # written
 URN = {v: k for k, v in DB.items()}
 
 
@@ -476,6 +515,8 @@ def urn(uri):
     db, x = m.group(1) or m.group(2), m.group(3)
     if db is None or db.upper() == 'CHEBI':
         return 'urn:miriam:obo.chebi:CHEBI%3A' + x.split(':')[-1] if (db or x).upper().startswith('CHEBI') else None
+    if db.upper() == 'GO':  # an accession that names its namespace
+        return 'urn:miriam:obo.go:GO%3A' + x.split(':')[-1]
     return 'urn:miriam:%s:%s' % (URN.get(db, db.lower()), x)
 
 
@@ -518,7 +559,15 @@ def nearest(boxes, p, hub):
     return min(boxes, key=lambda c: (round(abs(far(c[1])), 3) if p else 0, c[2] != hub))[0]
 
 
-def read(path):
+def maps(path):
+    # the ids of the maps in an SBGN-ML file (libsbgn 0.3 allows several; the submaps of one pathway, Reactome's)
+    root = etree.parse(path, etree.XMLParser(remove_comments=True, remove_pis=True)).getroot()
+    return [m.get('id') or '' for m in root if isinstance(m.tag, str) and etree.QName(m).localname == 'map' and
+            (etree.QName(m).namespace or '').startswith('http://sbgn.org/libsbgn/')]
+
+
+def read(path, which=0):
+    # the file's map number which (0: the first); a file of several maps names them each in the messages
     root = etree.parse(path, etree.XMLParser(remove_comments=True, remove_pis=True)).getroot()  # a comment among a glyph's children is no element
     for e in root.iter(etree.Element):  # libsbgn 0.1 and 0.2 files: the same elements in an older namespace
         if e.tag.startswith('{http://sbgn.org/libsbgn/'):
@@ -530,7 +579,12 @@ def read(path):
         if e.tag.startswith(R):  # render attributes written with the namespace's prefix (ns1:idList, ns1:fill: libsbgn's
             for a in [a for a in e.attrib if a.startswith(R)]:  # Java writer) read as the plain ones
                 e.set(a[len(R):], e.attrib.pop(a))
-    m = root.find(S + 'map')
+    every = root.findall(S + 'map')
+    if not 0 <= which < len(every):
+        raise ValueError('the file has %d map%s: no map %d' % (len(every), '' if len(every) == 1 else 's', which + 1))
+    m = every[which]
+    if len(every) > 1:
+        report.say('summary', 'map %d of %d in the file (%s)' % (which + 1, len(every), m.get('id') or 'no id'))
     defs = {c.get('id'): c.get('value') for c in m.iter(R + 'colorDefinition')}
     for gr in (x for k in ('linearGradient', 'radialGradient') for x in m.iter(R + k)):  # a gradient: its middle colour,
         cs = [defs.get(s.get('stop-color'), s.get('stop-color')) or '' for s in gr.findall(R + 'stop')]  # halfway from first to last stop
@@ -592,15 +646,17 @@ def read(path):
         lb = lab.find(S + 'bbox') if lab is not None else None
         data = {}
         own = [c for c in g if etree.QName(c).localname in ('extension', 'annotation')]  # not a member's
-        refs = []
+        refs, bags = [], []
         for d in (x for c in own for x in c.iter('{%s}Description' % RDF)):
-            for q in d:
-                urns = [u for u in (urn(li.get('{%s}resource' % RDF) or '') for li in q.iter('{%s}li' % RDF)) if u]
-                if urns and etree.QName(q).localname in ('is', 'hasVersion'):
-                    data.update(to_properties(etree.QName(q).localname == 'hasVersion', urns))
-                if etree.QName(q).localname == 'isDescribedBy':  # a process's references (either qualifier set)
-                    refs += urns
+            for q in (q for q in d if isinstance(q.tag, str)):
+                links = [li.get('{%s}resource' % RDF) or '' for li in q.iter('{%s}li' % RDF)]
+                if etree.QName(q).localname == 'isDescribedBy':  # a glyph's references (either qualifier set)
+                    refs += [u for u in map(urn, links) if u]
+                elif any(links):  # the other bags, links as MIRIAM URNs where they are identifiers.org links
+                    bags.append(({BQBIOL: 'bqbiol', BQMODEL: 'bqmodel'}.get(etree.QName(q).namespace, etree.QName(q).namespace),
+                                 etree.QName(q).localname, [urn(u) or u for u in links if u]))
             break  # the glyph's own description
+        data.update(keep_links(bags))
         if refs:
             data['References'] = from_references(refs)
         data = from_notes(text_of(g), data)
@@ -684,4 +740,4 @@ def read(path):
         report.say('left out', '%s: %d left out (%s)' % (what, len(ids), ', '.join(ids[:5]) + (' ...' if len(ids) > 5 else '')))
     for d in nodes.values():
         d.unit_at = own_places(d)
-    return Map(name=os.path.basename(path).rsplit('.', 1)[0], nodes=nodes, arcs=arcs)
+    return Map(name=os.path.basename(path).rsplit('.', 1)[0] + ('-map%d' % (which + 1) if which else ''), nodes=nodes, arcs=arcs)

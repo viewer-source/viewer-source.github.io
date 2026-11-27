@@ -55,10 +55,10 @@ def to_properties(family, uris):
     members = []
     for u in uris:
         db, _, x = u.rpartition(':')
-        if db in ('urn:miriam:hgnc.symbol', 'urn:miriam:obo.chebi') or not members:
-            members.append({})
         k = {'urn:miriam:hgnc.symbol': 'HGNC symbol', 'urn:miriam:hgnc': 'HGNC', 'urn:miriam:uniprot': 'UniProt',
              'urn:miriam:obo.chebi': 'ChEBI'}.get(db)
+        if db in ('urn:miriam:hgnc.symbol', 'urn:miriam:obo.chebi') or not members or (family and k in members[-1]):
+            members.append({})  # a second link of one database: the next member
         if k: members[-1][k] = 'HGNC:' + x if k == 'HGNC' else x.replace('%3A', ':')
     if not family:  # one entity: every URN its own, whatever their order (MINERVA lists RefSeq first)
         return {k: v for m in reversed(members) for k, v in m.items()}
@@ -66,6 +66,59 @@ def to_properties(family, uris):
     return {'Members': '; '.join(m.get('HGNC symbol', m.get('ChEBI', '')) for m in members),
             'Member annotation': json.dumps([{'symbol': m.get('HGNC symbol', ''), 'props': [[k, m[k]] for k in order if k in m]}
                                              for m in members], ensure_ascii=False)}
+
+
+# Links a file gives that the four properties above do not hold (Entrez, Ensembl, RefSeq, GO, PubMed on a species, a
+# second UniProt of a family written one bag per gene as ACSN does), kept as read in the node property Identifiers:
+# one line per bag, its qualifier (bqbiol:isEncodedBy) and its links (MIRIAM URNs, or the address as written where it is
+# none), so each format writes them back
+NAMED = {'hgnc.symbol': 'HGNC symbol', 'hgnc': 'HGNC', 'uniprot': 'UniProt', 'obo.chebi': 'ChEBI'}
+# qualifiers whose links never say what the box is (identifiers book, the role of a qualifier)
+NOT_THE_BOX = ('isDescribedBy', 'encodes', 'isHomologTo', 'hasTaxon', 'occursIn', 'hasProperty', 'isPropertyOf')
+
+
+def kept(bags):
+    # a glyph's bags [(prefix, qualifier, [links])] as node properties: the four databases into their properties (a
+    # family's under hasVersion as Member annotation), a database with several accessions in bags of their own (ACSN's
+    # family members) and every other link into Identifiers, bag by bag
+    bags = [b for b in bags if b[0] in ('bqbiol', 'bqmodel')]  # BioModels.net's qualifiers; others have no form to write
+    family = any(q == 'hasVersion' for _, q, _ in bags)
+    # only is (one entity) or hasVersion (a family) into the four properties, which the writers write as such; a link
+    # under any other qualifier (isEncodedBy, isVersionOf, hasPart) stays in Identifiers with its qualifier
+    named = [u for _, q, links in bags if q == ('hasVersion' if family else 'is') for u in links if u.startswith('urn:miriam:') and
+             u[len('urn:miriam:'):].rpartition(':')[0] in NAMED]
+    many = {db for db in NAMED if not family and len({u for u in named if u.rpartition(':')[0] == 'urn:miriam:' + db}) > 1}
+    named = [u for u in named if u.rpartition(':')[0][len('urn:miriam:'):] not in many]
+    out = {}
+    if family:  # a family's members across its repeated bags
+        if len(bags) > 1 and all(len(links) == 1 for _, q, links in bags if q == 'hasVersion'):
+            # one link a bag (MINERVA): nothing pairs a gene's symbol with its accessions, so the members are the links
+            # of one database (the first of symbol, HGNC, UniProt, ChEBI there is), the others kept as read
+            lead = next((db for db in NAMED if any(u.rpartition(':')[0] == 'urn:miriam:' + db for u in named)), None)
+            named = [u for u in named if u.rpartition(':')[0] == 'urn:miriam:%s' % lead]
+        out = to_properties(True, named) if named else {}
+    else:  # bag by bag, each URN its own
+        for _, q, links in bags:
+            out.update(to_properties(False, [u for u in links if u in named]) if set(links) & set(named) else {})
+    taken, lines = set(named), []
+    for pre, q, links in bags:
+        rest = [u for u in links if u not in taken and not u.startswith('urn:sbgn:')]  # urn:sbgn: the viewer's site marks
+        if rest:
+            lines.append(' '.join(['%s:%s' % (pre, q)] + rest))
+    if lines:
+        out['Identifiers'] = '\n'.join(lines)
+    return out
+
+
+def bags(p):
+    # inverse of kept() for the property Identifiers: [(prefix, qualifier, [links])]
+    out = []
+    for line in (p.get('Identifiers') or '').splitlines():
+        q, *links = line.split()
+        pre, _, name = q.partition(':')
+        if links and name:
+            out.append((pre, name, links))
+    return out
 
 
 def units(p):

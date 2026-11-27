@@ -474,6 +474,11 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-ppic img[hidden], #m2-editwin .m2-ed-ppic button[hidden] { display: none; }
   #m2-editwin .m2-ed-ppicname { flex: 1 1 auto; width: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--m2-ed-value); }
   #m2-editwin .m2-ed-ppic button { flex: none; width: auto; margin: 0; padding: 1px 6px; font-size: 12px; }
+  #m2-editwin .m2-ed-prefs th[colspan] { padding-top: 8px; }   /* References: a heading as Cardinality's, one row per reference, the paste box under them */
+  #m2-editwin .m2-ed-prefs .m2-ed-ppic input[type="text"] { flex: 1 1 auto; width: 0; }   /* the box shares its row with Add, inside the panel */
+  #m2-editwin .m2-ed-prefs .m2-ed-px { padding: 1px 5px; }
+  #m2-editwin .m2-ed-pabout { color: var(--m2-ed-name); }   /* a bqmodel reference, about the map as a model */
+  #m2-editwin .m2-ed-prefs .m2-ed-psay td { height: auto; padding: 2px 0 4px; color: var(--m2-ed-name); white-space: normal; overflow-wrap: anywhere; }   /* what the last Add took in */
   /* several nodes selected whose values differ (create.js propsMany): the field empty and grey, a colour's swatch crossed by a thin line */
   #m2-editwin .m2-ed-ptab tr.m2-mixed input[type="text"], #m2-editwin .m2-ed-ptab tr.m2-mixed input[type="number"] { background: #f3f4f5; }
   #m2-editwin .m2-ed-ptab tr.m2-mixed input[type="color"] { background: linear-gradient(to top right, transparent calc(50% - .6px), #9aa0a6 50%, transparent calc(50% + .6px)); }

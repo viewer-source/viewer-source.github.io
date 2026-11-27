@@ -204,7 +204,8 @@
   }
 
   // the GraphML of sbgnText: baseGraphml with the places sbgnml.read takes from sbgnText (graphml.write's numbers)
-  function graphml(t, base, opt) {
+  function graphml(t, base, opt) { return refsIn(t, graphml0(t, base, opt), opt); }   // a glyph's references taken from the file last (refsIn)
+  function graphml0(t, base, opt) {
     var S = sbgn(t, opt), G = gml(base, opt), T = new Tags(base, G.doc), out = {}, St = styles(S);
     Object.keys(G.node).forEach(function (id) {   // a glyph deleted in the editor: its node and lines out
       if (S.glyph[id] || S.port[id] || S.arc[id] || id.indexOf('|') >= 0 || !classOfCfg(cfgOf(G.node[id].geo.parentNode))) return;
@@ -291,7 +292,7 @@
     // GraphML only now, so the arcs are read again onto it; the rest of a second pass changes nothing
     var late = Object.keys(S.arc).some(function (id) { var E = G.edge[id] && ends(S, S.arc[id]); return !!E && [0, 1].some(function (j) { return !G.node[E[j]] && !!S.glyph[E[j]]; }); });
     out2 = orderG(S, nestG(S, out2, opt), opt);   // a glyph the file holds in a complex that the base has beside it (joined in a draft the base predates); compartments stacked as the file has them
-    return late && out2 !== base ? graphml(t, out2, opt) : out2;
+    return late && out2 !== base ? graphml0(t, out2, opt) : out2;
   }
   // what the editor made or renamed that the base GraphML lacks (a draft reopened before the build has drawn it)
   function made(S, G, out, t, opt) {
@@ -570,7 +571,7 @@
   }
 
   // ---------- back into the SBGN-ML text ----------
-  function write(t, gtext, opt) { return countsOut(nest(write0(t, gtext, opt), gtext, opt, t), gtext, opt, t); }
+  function write(t, gtext, opt) { return refsOut(countsOut(nest(write0(t, gtext, opt), gtext, opt, t), gtext, opt, t), gtext, opt); }
   function write0(t, gtext, opt) {
     var dropped = {}, was = gone(gtext), t0 = t;   // dropped: glyphs one of whose units of information was deleted; was: ids never given again (the comment stays with the GraphML)
     var own = mapKind(t);   // the file's own kind before the glyphs deleted in the editor go (else the last process deleted leaves the map PD)
@@ -2860,7 +2861,7 @@
     return { g: g, ext: ext, ann: ann, rdf: rdf, desc: desc, hps: hps, items: items };
   }
   function siteWrite(T, r, items) {   // the glyph's site links set to items, none: taken out with what held only them
-    var g = r.g, pre = g.prefix ? g.prefix + ':' : '';
+    var g = r.g;
     if (r.desc && !items.length && r.hps.length && r.hps.every(function (h) { return h.all; }) && kids(r.desc).length === r.hps.length) {
       var top = r.desc;   // nothing else left: the description, and what held only it, out
       while (top.parentNode && top.parentNode !== g && kids(top.parentNode).length === 1) top = top.parentNode;
@@ -2868,15 +2869,21 @@
     }
     r.hps.forEach(function (h) { if (h.all) T.cut(h.el); else Array.prototype.forEach.call(h.el.getElementsByTagNameNS(RDF_NS, 'li'), function (li) { if ((li.getAttributeNS(RDF_NS, 'resource') || '').indexOf(SITE_URN) === 0) T.cut(li); }); });
     if (!items.length) return;
-    var base = r.desc ? T.indent(r.desc) + '  ' : null;
-    // the prefixes declared where the links go (Newt's files declare them once, on rdf:RDF) are not declared again
-    var known = function (el, pfx, uri) { for (var e = el; e && e.nodeType === 1; e = e.parentNode) { var v = e.getAttribute('xmlns:' + pfx); if (v) return v === uri; } return false; };
-    var decl = r.desc && known(r.desc, 'bqbiol', BQB) && known(r.desc, 'rdf', RDF_NS) ? '' : ' xmlns:bqbiol="' + BQB + '" xmlns:rdf="' + RDF_NS + '"';
-    var block = function (ind) {
+    var decl = bqDecl(r);
+    rdfPut(T, r, function (ind) {
       return '\n' + ind + '<bqbiol:hasProperty' + decl + '>\n' + ind + '  <rdf:Bag>\n' +
         items.map(function (x) { return ind + '    <rdf:li rdf:resource="' + esc(siteUrn(x.sv, x.full)) + '"/>\n'; }).join('') + ind + '  </rdf:Bag>\n' + ind + '</bqbiol:hasProperty>';
-    };
-    if (r.desc) { var at = T.at.get(r.desc)[1]; T.ed.push([at, at, block(base)]); return; }
+    });
+  }
+  // the prefixes declared where the links go (Newt's files declare them once, on rdf:RDF) are not declared again
+  function bqDecl(r) {
+    var known = function (el, pfx, uri) { for (var e = el; e && e.nodeType === 1; e = e.parentNode) { var v = e.getAttribute('xmlns:' + pfx); if (v) return v === uri; } return false; };
+    return r.desc && known(r.desc, 'bqbiol', BQB) && known(r.desc, 'rdf', RDF_NS) ? '' : ' xmlns:bqbiol="' + BQB + '" xmlns:rdf="' + RDF_NS + '"';
+  }
+  // a block of the glyph's RDF (block(indent): its text) put first in its description, made with what holds it where missing
+  function rdfPut(T, r, block) {
+    var g = r.g, pre = g.prefix ? g.prefix + ':' : '';
+    if (r.desc) { var at = T.at.get(r.desc)[1]; T.ed.push([at, at, block(T.indent(r.desc) + '  ')]); return; }
     var gi = T.indent(g) + '  ', about = g.getAttribute('id') || '';
     var desc = function (ind) { return '\n' + ind + '<rdf:Description xmlns:rdf="' + RDF_NS + '" rdf:about="#' + esc(about) + '">' + block(ind + '  ') + '\n' + ind + '</rdf:Description>'; };
     var rdf = function (ind) { return '\n' + ind + '<rdf:RDF xmlns:rdf="' + RDF_NS + '">' + desc(ind + '  ') + '\n' + ind + '</rdf:RDF>'; };
@@ -2889,6 +2896,130 @@
       var nt = kidL(g, 'notes'), a2 = nt ? T.end(nt) : T.at.get(g)[1];
       T.ed.push([a2, a2, '\n' + gi + '<' + pre + 'extension>' + ann(gi + '  ') + '\n' + gi + '</' + pre + 'extension>']);
     }
+  }
+
+  // ---------- a glyph's references (Properties, References): PubMed and DOI ----------
+  // In the editor's GraphML the node property References as graphml.write writes it (pubmed:N doi:10.x/y, separated by
+  // spaces: the converter's annotation.references); in the SBGN-ML file the glyph's isDescribedBy links, read under either
+  // qualifier set as sbgnml.read reads them (identifiers.org links and MIRIAM URNs; any other link is not a reference).
+  //   refsOf(g, id) -> the property's text ('' for none)
+  //   setRefs(g, id, text) -> g with the property set to text (empty: its data out), the key made where missing
+  //   write() writes a glyph whose references differ from its file's (refsOut): a link gone is cut from its
+  //   bqbiol:isDescribedBy bag (a bqmodel one stays), a new one goes into the first such bag, one made where missing
+  //   (http://identifiers.org/pubmed:N, as the converter writes); graphml() takes them from the file (refsIn).
+  var REFS = 'References';
+  function refKey(G) { return Array.prototype.filter.call(G.doc.getElementsByTagNameNS(GNS, 'key'), function (k) { return k.getAttribute('attr.name') === REFS && (k.getAttribute('for') || 'node') === 'node'; })[0] || null; }
+  function refData(G, id, k) { return k && G.node[id] ? kids(G.node[id].el, 'data').filter(function (d) { return d.getAttribute('key') === k.getAttribute('id'); })[0] || null : null; }
+  function refKeys(text) {   // the references of a property's text as db:id (pubmed, doi), the converter's references() rules
+    var out = [];
+    String(text || '').split(/\s+/).forEach(function (x) {
+      if (!x) return;
+      var c = x.indexOf(':'), db = /^10\./.test(x) ? 'doi' : c > 0 ? x.slice(0, c).toLowerCase() : /^\d+$/.test(x) ? 'pubmed' : '', id = /^10\./.test(x) || c < 0 ? x : x.slice(c + 1);
+      if (db === 'pmid') db = 'pubmed';
+      if (db && id && out.indexOf(db + ':' + id) < 0) out.push(db + ':' + id);
+    });
+    return out;
+  }
+  function refKeyOf(link) {   // a link of the file as db:id, null where it is no identifiers.org link or MIRIAM URN
+    var m = /^urn:miriam:([\w.]+):(.+)$/.exec(link) || /^https?:\/\/identifiers\.org\/(?:([\w.]+)\/|([\w.]+):)(.+)$/i.exec(link);
+    if (!m) return null;
+    var db = (m.length > 3 ? m[1] || m[2] : m[1]).toLowerCase(), id = m.length > 3 ? m[3] : m[2];
+    try { id = decodeURIComponent(id); } catch (e) {}
+    return db + ':' + id;
+  }
+  function refsOf(t, id, opt) { var G = gml(t, opt), d = refData(G, id, refKey(G)); return d ? (d.textContent || '').trim() : ''; }
+  function setRefs(t, id, text, opt) {
+    var G = gml(t, opt);
+    if (!G.node[id]) return t;
+    var T = new Tags(t, G.doc), k = refKey(G), d = refData(G, id, k), v = refKeys(text).join(' ');
+    if (d) {
+      if (!v) { T.cut(d); return T.text(); }
+      var s = T.at.get(d), close = s[2] ? null : t.lastIndexOf('</', T.end(d) - 1);
+      if (close == null) T.ed.push([s[0], s[1], t.slice(s[0], s[1] - 2).replace(/\s+$/, '') + '>' + esc(v) + '</data>']);
+      else T.ed.push([s[1], close, esc(v)]);
+      return T.text();
+    }
+    if (!v) return t;
+    var kid0 = k ? k.getAttribute('id') : null;
+    if (!kid0) {   // a key of its own, after the last key (the first id d0, d1, ... no key uses)
+      var keys = Array.prototype.slice.call(G.doc.getElementsByTagNameNS(GNS, 'key')), used = keys.map(function (x) { return x.getAttribute('id'); }), n = 0;
+      while (used.indexOf('d' + n) >= 0) n++;
+      kid0 = 'd' + n;
+      var line = '<key attr.name="' + REFS + '" attr.type="string" for="node" id="' + kid0 + '"/>';
+      if (keys.length) { var last = keys[keys.length - 1], e = T.end(last); T.ed.push([e, e, '\n' + T.indent(last) + line]); }
+      else { var r0 = T.at.get(G.doc.documentElement)[1]; T.ed.push([r0, r0, '\n  ' + line]); }
+    }
+    var n0 = G.node[id].el, a = T.at.get(n0)[1];
+    T.ed.push([a, a, '\n' + T.indent(n0) + '  <data key="' + kid0 + '">' + esc(v) + '</data>']);
+    return T.text();
+  }
+  function refDesc(g) {   // the glyph's own description as sbgnml.read takes it: the first in its own extension or annotation
+    var own = kids(g).filter(function (c) { return c.localName === 'extension' || c.localName === 'annotation'; });
+    for (var k = 0; k < own.length; k++) { var d = own[k].getElementsByTagNameNS(RDF_NS, 'Description')[0]; if (d) return d; }
+    return null;
+  }
+  function refLinks(d) {   // [{ el (its rdf:li), key (db:id or null), mine (under bqbiol:isDescribedBy), q (its qualifier element) }] of the isDescribedBy bags
+    var out = [];
+    if (d) kids(d).forEach(function (q) {
+      if (q.localName !== 'isDescribedBy') return;
+      Array.prototype.forEach.call(q.getElementsByTagNameNS(RDF_NS, 'li'), function (li) { var u = li.getAttributeNS(RDF_NS, 'resource') || ''; out.push({ el: li, key: refKeyOf(u), mine: q.namespaceURI === BQB, q: q }); });
+    });
+    return out;
+  }
+  function refLink(key) { var c = key.indexOf(':'); return 'http://identifiers.org/' + key.slice(0, c) + ':' + encodeURI(key.slice(c + 1)).replace(/%25/g, '%').replace(/[#?]/g, encodeURIComponent); }
+  //   refsAbout(st, id) -> the glyph's references under bqmodel:isDescribedBy in the file (db:id), which write() never cuts
+  function refsAbout(st, id, opt) { var S = sbgn(st, opt), g = S.glyph[id]; return g ? refLinks(refDesc(g.el)).filter(function (x) { return !x.mine && x.key; }).map(function (x) { return x.key; }) : []; }
+  function refCmp(k) { return /^doi:/.test(k) ? k.toLowerCase() : k; }   // a DOI compares without case
+  function refsOut(st, gtext, opt) {
+    if (gtext.indexOf('"' + REFS + '"') < 0) return st;   // no references in the GraphML: the file's own are as read
+    var G = gml(gtext, opt), k = refKey(G), S = sbgn(st, opt), T = null, crlf = st.indexOf('\r\n') >= 0;
+    Object.keys(S.glyph).forEach(function (id) {
+      if (!G.node[id]) return;
+      var d0 = refData(G, id, k), want = refKeys(d0 ? d0.textContent : ''), g = S.glyph[id].el, desc = refDesc(g), L = refLinks(desc);
+      // a link whose key the property cannot hold as it is (a space in it) is never taken for one gone
+      L.forEach(function (x) { if (x.key && refKeys(x.key).join(' ') !== x.key) x.key = null; });
+      var wantC = want.map(refCmp), have = L.map(function (x) { return x.key && refCmp(x.key); }).filter(Boolean);
+      var gone = L.filter(function (x) { return x.mine && x.key && wantC.indexOf(refCmp(x.key)) < 0; }), add = want.filter(function (x) { return have.indexOf(refCmp(x)) < 0; });
+      if (!gone.length && !add.length) return;
+      T = T || new Tags(st, S.doc);
+      var e0 = T.ed.length, cutQ = [];
+      gone.forEach(function (x) {   // a bag left with none: its qualifier out (the description with it when nothing else is left)
+        if (L.filter(function (y) { return y.q === x.q; }).every(function (y) { return gone.indexOf(y) >= 0; })) { if (cutQ.indexOf(x.q) < 0) cutQ.push(x.q); }
+        else T.cut(x.el);
+      });
+      var left = kids(desc || g).filter(function (c) { return cutQ.indexOf(c) < 0; });
+      if (desc && cutQ.length && !left.length && !add.length) {
+        var top = desc; while (top.parentNode && top.parentNode !== g && kids(top.parentNode).length === 1) top = top.parentNode;
+        T.cut(top);
+      } else {
+        cutQ.forEach(function (q) { T.cut(q); });
+        if (add.length) {
+          var bag = L.filter(function (x) { return x.mine && cutQ.indexOf(x.q) < 0; }).map(function (x) { return x.el.parentNode; })[0];
+          var lis = function (ind) { return add.map(function (x) { return '\n' + ind + '<rdf:li rdf:resource="' + esc(refLink(x)) + '"/>'; }).join(''); };
+          if (bag) {   // before the bag's end tag; on its own line when the end tag stands on one
+            var c = st.lastIndexOf('</', T.end(bag) - 1), nl = st.lastIndexOf('\n', c), alone = nl >= 0 && /^[ \t\r]*$/.test(st.slice(nl + 1, c));
+            if (alone) T.ed.push([st[nl - 1] === '\r' ? nl - 1 : nl, st[nl - 1] === '\r' ? nl - 1 : nl, lis(T.indent(bag) + '  ')]);
+            else T.ed.push([c, c, add.map(function (x) { return '<rdf:li rdf:resource="' + esc(refLink(x)) + '"/>'; }).join('')]);
+          } else {
+            var r = { g: g, desc: desc, ext: kidL(g, 'extension'), ann: kidL(kidL(g, 'extension'), 'annotation'), rdf: kidL(kidL(kidL(g, 'extension'), 'annotation'), 'RDF') }, decl = bqDecl(r);
+            rdfPut(T, r, function (ind) { return '\n' + ind + '<bqbiol:isDescribedBy' + decl + '>\n' + ind + '  <rdf:Bag>' + lis(ind + '    ') + '\n' + ind + '  </rdf:Bag>\n' + ind + '</bqbiol:isDescribedBy>'; });
+          }
+        }
+      }
+      if (crlf) for (var j = e0; j < T.ed.length; j++) T.ed[j][2] = T.ed[j][2].replace(/\r?\n/g, '\r\n');   // the file's line ends
+    });
+    return T ? T.text() : st;
+  }
+  function refsIn(st, gtext, opt) {   // graphml(): each glyph's References as its file gives them
+    if (st.indexOf('isDescribedBy') < 0 && gtext.indexOf('"' + REFS + '"') < 0) return gtext;
+    var S = sbgn(st, opt), G = gml(gtext, opt), k = refKey(G), out = gtext;
+    Object.keys(S.glyph).forEach(function (id) {
+      if (!G.node[id]) return;
+      var file = refKeys(refLinks(refDesc(S.glyph[id].el)).map(function (x) { return x.key; }).filter(Boolean).join(' '));
+      var now = refKeys(refData(G, id, k) ? refData(G, id, k).textContent : '');
+      if (file.join(' ') !== now.join(' ')) { out = setRefs(out, id, file.join(' '), opt); G = gml(out, opt); k = refKey(G); }
+    });
+    return out;
   }
   function sitesOut(t, opt) {
     if (t.charCodeAt(0) === 0xFEFF) return '﻿' + sitesOut(t.slice(1), opt);   // a byte-order mark kept, the text read after it
@@ -2946,6 +3077,6 @@
               moveInto: moveInto, connect: connect, reversible: reversible, reversibility: reversibility, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls,
               way: way, wayOfR: function (r) { return cfgOf(r) === 'Tag' ? wayOf(r) : null; }, wayOf: function (t, id, opt) { var G = gml(t, opt); return isTag(G, id) ? wayOf(G.node[id].geo.parentNode) : null; }, terminal: terminal,
-              countOf: countOf, recount: recount, countsAt: countsAt, countLens: lineLens, countMove: countMove, countsPlace: countsPlace, countOn: countOn, countAlong: countAlong, sitesIn: sitesIn, sitesOut: sitesOut, Tags: Tags, repr: repr, num: num };   // Tags, repr and num serve sbml_edit.js too
+              countOf: countOf, recount: recount, refsOf: refsOf, setRefs: setRefs, refsAbout: refsAbout, countsAt: countsAt, countLens: lineLens, countMove: countMove, countsPlace: countsPlace, countOn: countOn, countAlong: countAlong, sitesIn: sitesIn, sitesOut: sitesOut, Tags: Tags, repr: repr, num: num };   // Tags, repr and num serve sbml_edit.js too
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;
 })(typeof self !== 'undefined' ? self : this);

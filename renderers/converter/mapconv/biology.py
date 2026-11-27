@@ -6,10 +6,10 @@
 # joined), else the normalised label, which joins an annotated entity when it points to exactly
 # one identifier. Complexes by their members, families by their members' identifiers. A chain
 # length in the label (N:n, N:n+1) counts as the multimer count does.
-import collections, json, os, re
+import collections, json, os, re, urllib.parse
 from .celldesigner import CLASS, MOD, cd_class, plain_name, is_structural
 from .graphml import EQUIV
-from .annotation import units as hidden_units
+from .annotation import NOT_THE_BOX, bags, units as hidden_units
 from .model import HEADS, Annotation, Biology, Entity, Influence, Member, Reaction, StateVariable, UnitOfInformation
 
 PROCESSES = ('Process', 'OmittedProcess', 'UncertainProcess')
@@ -35,14 +35,70 @@ def identifier(p, kind):
     return None
 
 
+# namespaces whose keys say what a box is, a gene product or a molecule (the identifiers book's role table); the others
+# (GO, PubMed, Reactome's forms in a place, ...) describe it and never join boxes
+NAMES_THE_BOX = {'hgnc', 'hgnc.symbol', 'uniprot', 'ncbigene', 'ensembl', 'refseq', 'chebi', 'kegg.compound',
+                 'pubchem.compound', 'inchikey', 'complexportal'}
+RENAMED = {'entrez.gene': 'ncbigene', 'obo.chebi': 'chebi'}
+
+
+def keys(d):
+    # (the box's keys {(namespace, accession)}, whether they all come from isVersionOf): its four properties and the
+    # links kept as read (Identifiers) of a namespace that names the box, under a qualifier that says what it is; a
+    # family's hasVersion and a set's hasPart name its members, not the box
+    out = {(ns, d.data[k]) for k, ns in (('HGNC', 'hgnc'), ('UniProt', 'uniprot'), ('HGNC symbol', 'hgnc.symbol')) if d.data.get(k)}
+    if d.data.get('ChEBI'):
+        out.add(('chebi', d.data['ChEBI']))
+    weak = not out
+    for _, q, links in bags(d.data):
+        if q in NOT_THE_BOX or q in ('hasVersion', 'hasPart'):
+            continue
+        for u in links:
+            db, _, x = u[len('urn:miriam:'):].partition(':') if u.startswith('urn:miriam:') else ('', '', '')
+            db = RENAMED.get(db, db)
+            if db in NAMES_THE_BOX:
+                out.add((db, urllib.parse.unquote(x) if db != 'hgnc' else 'HGNC:' + urllib.parse.unquote(x)))
+                weak = weak and q == 'isVersionOf'
+    out = {(ns, CONJUGATE.get(x, x)) if ns == 'chebi' else (ns, x) for ns, x in out}
+    if d.kind == 'SimpleChemical':  # a metabolite by its molecule's keys only
+        out = {(ns, x) for ns, x in out if ns in ('chebi', 'kegg.compound', 'pubchem.compound', 'inchikey')}
+    return frozenset(out), weak and bool(out)
+
+
+def identities(N, glyphs, label):
+    # one identity per glyph with keys: two glyphs are one when they share a key and, in every namespace both have,
+    # hold the same keys (two UniProt accessions keep them apart, so do a family and one of its members); glyphs of
+    # different names join only when neither has its keys from isVersionOf alone (such files write a form in its name)
+    own = {i: keys(N[i]) for i in glyphs}
+    own = {i: v for i, v in own.items() if v[0]}
+    up, held = {i: i for i in own}, {i: own[i][0] for i in own}
+    def top(i):
+        while up[i] != i:
+            up[i] = up[up[i]]; i = up[i]
+        return i
+    def fits(a, b):
+        ns = lambda k: {x for x, _ in k}
+        return all({k for k in held[a] if k[0] == n} == {k for k in held[b] if k[0] == n} for n in ns(held[a]) & ns(held[b]))
+    by_key = collections.defaultdict(list)
+    for i in sorted(own, key=lambda i: [int(x) if x.isdigit() else x for x in re.split(r'(\d+)', i)]):
+        for k in sorted(own[i][0]):
+            for j in by_key[k]:  # one glyph per group and name: a shared key held by hundreds (water) stays linear
+                a, b = top(i), top(j)
+                if a != b and fits(a, b) and (label(N[i]) == label(N[j]) or not (own[i][1] or own[j][1])):
+                    up[b] = a; held[a] = held[a] | held[b]
+            if not any(top(j) == top(i) and label(N[j]) == label(N[i]) for j in by_key[k]):
+                by_key[k].append(i)
+    # a group with keys from isVersionOf alone holds one name (above), which tells it from another of the same keys
+    named = {top(i): label(N[i]) for i in own if own[i][1]}
+    return {i: ('ids', tuple(sorted(held[top(i)]))) + ((named[top(i)],) if top(i) in named else ()) for i in own}
+
+
 def own_identity(d):
-    # the identity a glyph's own annotation gives, or None
-    if d.kind not in ('Macromolecule', 'NucleicAcidFeature', 'SimpleChemical'):
+    # the identity a family's annotation gives (its members' identifiers), or None; other glyphs: identities()
+    if d.kind not in ('Macromolecule', 'NucleicAcidFeature', 'SimpleChemical') or not d.data.get('Member annotation'):
         return None
-    if d.data.get('Member annotation'):  # a family: its members' identifiers
-        ms = [identifier(dict(m['props']), d.kind) for m in json.loads(d.data['Member annotation'])]
-        return ('family', tuple(sorted(ms))) if ms and all(ms) else None
-    return identifier(d.data, d.kind)
+    ms = [identifier(dict(m['props']), d.kind) for m in json.loads(d.data['Member annotation'])]
+    return ('family', tuple(sorted(ms))) if ms and all(ms) else None
 
 
 # what a glyph states besides its entity key (a shape and its arcs are not all
@@ -117,10 +173,13 @@ def build(m):
         (('submap' if N[i].kind == 'Submap' else N[i].data.get('SBGN class') or '',) if cd_class(N[i]) == 'PHENOTYPE' else ())
     # identities: an identifier, or a label joining the one identifier it is given elsewhere
     ident = {i: own_identity(N[i]) for i in ents if N[i].kind != 'Complex'}
+    ident.update(identities(N, [i for i, x in ident.items() if x is None and
+                                N[i].kind in ('Macromolecule', 'NucleicAcidFeature', 'SimpleChemical')], label))
     seen = collections.defaultdict(set)
     for i, x in ident.items():
         if x: seen[label(N[i]), cls(i), state(i), comp(i)].add(x)
-    notes = ['%s: %d identifiers (%s), %d entities' % (k[0], len(v), ', '.join(sorted(x[1] if isinstance(x[1], str) else x[0] for x in v)), len(v))
+    shown = lambda x: ' '.join(a for _, a in x[1]) if x[0] == 'ids' else x[0]
+    notes = ['%s: %d identifiers (%s), %d entities' % (k[0], len(v), ', '.join(sorted(shown(x) for x in v)), len(v))
              for k, v in seen.items() if len(v) > 1 and k[0]]
     for i, x in ident.items():
         if x is None:

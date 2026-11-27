@@ -2363,6 +2363,8 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     var inW, inH, field, pNow;
     function __run44() {   // run at start, in order (__start)
     props.innerHTML = '<p>Properties</p>' + table(ROWS, ' m2-ed-pnode') + table(EROWS, ' m2-ed-pedge') + table(RROWS, ' m2-ed-prx') + '<table class="m2-ed-ptab m2-ed-pcard" hidden></table>' +
+      '<table class="m2-ed-ptab m2-ed-prefs" hidden><tbody class="m2-ed-prefl"></tbody><tbody><tr><td colspan="2"><span class="m2-ed-ppic"><input type="text" class="m2-ed-pin" aria-label="PubMed IDs, DOIs or links to add" placeholder="PubMed IDs, DOIs or links" spellcheck="false" autocomplete="off"><button type="button" class="m2-ed-pgo">Add</button></span></td></tr>' +
+      '<tr class="m2-ed-psay" hidden><td colspan="2"></td></tr></tbody></table>' +
       '<button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button>' +
       '<button type="button" class="m2-ed-pall" title="Every glyph of this kind on the map (every process, or every logic gate) takes this one\u2019s size and antenna">Apply to all of this kind</button>' +
       '<button type="button" class="m2-ed-pstd" title="The standard size and antenna of processes and logic gates, at the map\u2019s scale (Style, Standard sizes)">Standard size</button>';
@@ -2386,7 +2388,8 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // the rows a glyph has by its class: Label where sbgn_edit keeps a name (NAMED), Multimer where it writes one (MULTI); Set as default for the kinds the palette makes in a kept look
     function hasMulti(c) { return sbJs.MULTI.test(c); }   // a kind with a multimer (sbgn_edit MULTI): Properties' Multimer row and the menu's Make multimer
     function lookKey(cls, unit) { return cls === 'biological activity' ? cls + ':' + (unit || '') : cls; }   // Set as default's kind: the glyph's class, an activity's by its unit
-    function propsShow(all) {   // all: every field shown again, the one focused too (Esc)
+    function propsShow(all) { propsShow0(all); refsShow(); }   // the reaction's references after its other rows
+    function propsShow0(all) {   // all: every field shown again, the one focused too (Esc)
       var i = propNode(), k = propEdge(), r2 = function (v) { return String(Math.round(v * 100) / 100); }, ns = propNodes();
       props.querySelector('.m2-ed-prx').hidden = true; pcard.hidden = true;
       if (ns.length > 1 || (ns.length && shared.selN.length > 1)) return propsMany(ns, all, r2);
@@ -2525,6 +2528,85 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         }).join('');
       }
       c.forEach(function (p) { var f = pcard.querySelector('[data-line="' + p.line.replace(/"/g, '\\"') + '"]'); if (f && (all || document.activeElement !== f) && f.value !== p.value) f.value = p.value; });
+    }
+    // ---------- References: PubMed and DOI on the reaction a selection is part of (notes/annotation-editing.md) ----------
+    // A reaction's square, one of its lines, a modifier's or a reduced notation's line selected alone: its references, one row
+    // each, those it holds as its own (bqbiol:isDescribedBy) with a cross that takes one out, every other link as the file
+    // has it (a bqmodel one marked about the map). One box takes what is pasted: PubMed IDs, DOIs, their links or
+    // prefixes, several at once; the line under it says what came in. Each Add or cross one undo step. The format's part
+    // (PF_CD.refs, PF_SB.refs) reads and writes them: { of() -> { id, title, items: [{ key, db, val, q, own, about }] },
+    // set(id, add, del) }, keys as db:id (pubmed:19461003, doi:10.1038/nature08124)
+    var prefs, prefsKey, prefsSay, prefsRid, prefsFor, REF_DB;
+    function __run62() {   // run at start, in order (__start)
+    prefs = props.querySelector('.m2-ed-prefs'); prefsKey = null; prefsSay = null; prefsRid = null; prefsFor = null; REF_DB = { pubmed: 'PubMed', doi: 'DOI' };   // prefsSay: [the reaction, what the last Add said]
+    var pin = prefs.querySelector('.m2-ed-pin');
+    pin.addEventListener('keydown', function (e) { if (e.key === 'Escape') pin.value = ''; });   // left as it was (the panel's keys then blur it)
+    pin.addEventListener('paste', function (e) {   // lines pasted kept apart (a text field would join them)
+      var t = e.clipboardData && e.clipboardData.getData('text');
+      if (t == null || !/[\r\n]/.test(t)) return;
+      e.preventDefault();
+      var a = pin.selectionStart, b = pin.selectionEnd, v = t.replace(/\s*[\r\n]+\s*/g, ' ').trim();
+      pin.value = pin.value.slice(0, a) + v + pin.value.slice(b); pin.selectionStart = pin.selectionEnd = a + v.length;
+    });
+    pin.addEventListener('focus', function () { var pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null; prefsFor = R ? R.id : null; });   // the reaction the box was opened for
+    pin.addEventListener('change', function () { var pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null; if (R && R.id === prefsFor) refsAdd(); });   // left for another reaction: not added there
+    prefs.querySelector('.m2-ed-pgo').addEventListener('click', refsAdd);
+    prefs.addEventListener('click', function (e) {
+      var x = e.target.closest && e.target.closest('.m2-ed-px'), pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null;
+      if (!x || !R) return;
+      prefsSay = null;
+      if (!pf.refs.set(R.id, [], [x.dataset.key])) { prefsKey = null; refsShow(); }
+    });
+    }
+    // what was pasted as db:id keys, PubMed and DOI only: a link (pubmed.ncbi.nlm.nih.gov, ncbi.nlm.nih.gov/pubmed,
+    // doi.org, identifiers.org), a prefix (PMID:, pubmed:, doi:, urn:miriam:), a number (PubMed), 10. and the rest (a
+    // DOI); checked by identifiers.org's patterns (PubMed ^\d+$, DOI ^(doi:)?\d{2}\.\d{4}.*$)
+    function refsParse(text) {
+      var out = { keys: [], bad: [] }, t = String(text).replace(/\b(PMID|pubmed|doi)\s*:?\s+(?=\d)/gi, '$1:');
+      t.split(/\s+|,(?=\s|\d|$)|;(?=\s|$)/).forEach(function (x) {   // a DOI may hold a semicolon or a comma
+        x = x.replace(/^[(\[<"']+|[)\]>"'.,]+$/g, '');
+        if (!x) return;
+        var m, key = null, dec = function (v) { try { return decodeURIComponent(v); } catch (e) { return v; } };
+        if ((m = /^(?:https?:\/\/)?(?:www\.)?(?:pubmed\.ncbi\.nlm\.nih\.gov|ncbi\.nlm\.nih\.gov\/pubmed)\/(\d+)\/?(?:[?#].*)?$/i.exec(x))) key = 'pubmed:' + m[1];
+        else if ((m = /^(?:https?:\/\/)?(?:dx\.)?doi\.org\/(.+)$/i.exec(x))) key = 'doi:' + dec(m[1]);
+        else if ((m = /^(?:https?:\/\/)?identifiers\.org\/(pubmed|doi)[:\/](.+)$/i.exec(x)) || (m = /^urn:miriam:(pubmed|doi):(.+)$/i.exec(x))) key = m[1].toLowerCase() + ':' + dec(m[2]);
+        else if ((m = /^(?:pmid|pubmed):(.+)$/i.exec(x))) key = 'pubmed:' + m[1];
+        else if ((m = /^doi:(.+)$/i.exec(x))) key = 'doi:' + m[1];
+        else if (/^\d+$/.test(x)) key = 'pubmed:' + x;
+        else if (/^10\./.test(x)) key = 'doi:' + x;
+        var ok = key && (/^pubmed:\d{1,9}$/.test(key) || /^doi:\d{2}\.\d{4}\S*\/\S+$/.test(key));
+        if (!ok) out.bad.push(x); else if (out.keys.indexOf(key) < 0) out.keys.push(key);
+      });
+      return out;
+    }
+    function refsAdd() {
+      var pin = prefs.querySelector('.m2-ed-pin'), v = pin.value.trim(), pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null;
+      if (!v || !R) return;
+      var P = refsParse(v), had = R.items.map(function (x) { return x.key; }), add = P.keys.filter(function (k) { return had.indexOf(k) < 0; }), said = [];
+      if (add.length) said.push(add.length + ' added');
+      if (P.keys.length > add.length) said.push((P.keys.length - add.length) + ' already there');
+      if (P.bad.length) said.push('not read: ' + P.bad.join(' ') + ' (a PubMed ID is digits, as 19461003; a DOI starts 10., as 10.1038/nature08124)');
+      pin.value = P.bad.join(' ');   // what was not read stays to be put right
+      prefsSay = [R.id, said.join('; ') + '.'];
+      if (add.length && !pf.refs.set(R.id, add, [])) prefsSay = [R.id, 'Not written: the file did not take them.'];
+      prefsKey = null; refsShow();
+    }
+    function refsShow() {
+      var pf = propFmt(), R = !props.hidden && pf && pf.refs && propNodes().length <= 1 ? pf.refs.of() : null;
+      prefs.hidden = !R;
+      if (!R) { prefsKey = null; return; }
+      if (R.id !== prefsRid) { prefs.querySelector('.m2-ed-pin').value = ''; prefsRid = R.id; }   // another reaction: the box starts empty
+      if (prefsSay && prefsSay[0] !== R.id) prefsSay = null;   // what the last Add said, for its own reaction only
+      var key = R.id + '\u0000' + R.title + '\u0000' + R.items.map(function (x) { return x.key + '\u0001' + x.q + (x.own ? '' : '!'); }).join('\u0000') + '\u0000' + (prefsSay ? prefsSay[1] : '');
+      if (key === prefsKey) return;
+      prefsKey = key;
+      prefs.querySelector('.m2-ed-prefl').innerHTML = '<tr><th colspan="2">' + escHtml(R.title) + '</th></tr>' + R.items.map(function (x) {
+        var name = REF_DB[x.db] || x.db || 'Link', tip = name + ' ' + x.val + (x.own ? '' : ', ' + x.q + (x.about ? ': about the map as a model, kept as written' : ', kept as written'));
+        return '<tr title="' + escAttr(tip) + '"><th>' + escHtml(name) + '</th><td><span class="m2-ed-ppic"><span class="m2-ed-ppicname">' + escHtml(x.val) + (x.about ? ' <span class="m2-ed-pabout">about the map</span>' : '') + '</span>' +
+          (x.own ? '<button type="button" class="m2-ed-px" data-key="' + escAttr(x.key) + '" title="Remove ' + escAttr(name + ' ' + x.val) + '" aria-label="Remove">\u00d7</button>' : '') + '</span></td></tr>';
+      }).join('');
+      var say = prefs.querySelector('.m2-ed-psay');
+      say.hidden = !prefsSay; say.firstChild.textContent = prefsSay ? prefsSay[1] : '';
     }
     function escHtml(v) { return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
     function escAttr(v) { return escHtml(v).replace(/"/g, '&quot;'); }
@@ -2717,5 +2799,5 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function stdScale() { var D = sbJs.defaults(src(), null, 'process'); return D.w0 / sbJs.SIZE.process[0]; }   // the map's scale (sbgn_edit.defaults)
     function stdLetters() { return Math.round(sbJs.GATE_FONT * stdScale() * 2) / 2; }
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run47(); __run48(); __run50(); __run51(); __run52(); __run54(); __run55(); __run56(); __run57(); __run58(); __run61(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run47(); __run48(); __run50(); __run51(); __run52(); __run54(); __run55(); __run56(); __run57(); __run58(); __run61(); __run62(); }   // the part's statements, in their order
     export { ARCS, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, ddOpen, DEF_KEY, defOf, defsKept, EXTRA, field, freeId, hasMulti, hex, HUB_KINDS, hybOn, iconKeep, iconSpread, innermost, isMade, joinDo, joinPack, joinPlan, keepLook, keepMapChoice, keepSel, link, linkDown, linkEnd, linkMove, linkPaint, linkUp, lookKey, looksKept, mapCols, moveSays, nameAt, nameOf, origAll, pal, PAL_KEY, palBlocks, palDid, palDown, palDrop, palId, palLangNow, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, palUp, placedAt, pNow, propFmt, propNode, propNodes, propRows, props, sbgnStrict, setSize, sizable, SS, stdLetters, stdScale, styleRow, SV, svAddTo, svAt, svClash, svDelete, svDown, svHold, svIcons, svIconsOn, svIdx, svList, svMarks, svOnly, svParts, svPt, svR, svSettle, svTwin, svVar, tagTurnT, termScaled, termsFix, textsOf, tool, typeIn, UI };
