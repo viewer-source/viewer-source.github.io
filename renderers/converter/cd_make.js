@@ -1518,7 +1518,9 @@
   // keeps its RDF in its celldesigner:notes, as CellDesigner does, the notes made where missing and taken out again when
   // nothing else is left in them.
   var RDF_HEAD = '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:bqmodel="http://biomodels.net/model-qualifiers/">';
-  var NOTES_A = '<celldesigner:notes><html xmlns="http://www.w3.org/1999/xhtml"><head><title/></head><body>', NOTES_B = '</body></html></celldesigner:notes>';
+  // a member's notes as CellDesigner 4.4.2 saves them: a tag a line, the RDF's namespaces in alphabetical order
+  var NOTES_A = '<celldesigner:notes>\n<html xmlns="http://www.w3.org/1999/xhtml">\n<head>\n<title/>\n</head>\n<body>\n', NOTES_B = '</body>\n</html>\n</celldesigner:notes>';
+  var RDF_HEAD_NOTES = '<rdf:RDF xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:bqmodel="http://biomodels.net/model-qualifiers/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#">';
   function ownRdf(t, sp, inc) {   // an item's span, its annotation's (a reaction's before its lists; a complex's member's: its notes) and its RDF description's, each null where missing
     var lists = inc ? -1 : t.slice(sp[0], sp[1]).search(/<listOf/), an = span(t, inc ? '<celldesigner:notes[\\s>]' : '<annotation[\\s>]', sp[0], lists < 0 ? sp[1] : sp[0] + lists);
     if (an && lists >= 0 && an[1] > sp[0] + lists) an = null;
@@ -1578,7 +1580,7 @@
         var top = !/</.test(inner) && all(t, '<rdf:Description[\\s>]', R.rdf).length === 1 ? R.rdf : quals[k].sp;
         t = cut(t, top);
         var R2 = loc(t);   // a complex's member's notes made here for it, nothing else left in them: out again
-        if (top === R.rdf && R2.inc && R2.an && t.slice(R2.an[0], R2.an[1]) === NOTES_A + NOTES_B) t = put(t, R2.an[0], R2.an[1], '');
+        if (top === R.rdf && R2.inc && R2.an && t.slice(R2.an[0], R2.an[1]).replace(/\r\n/g, '\n') === NOTES_A + NOTES_B) { var nb = t.slice(R2.an[0] - 2, R2.an[0]) === '\r\n' ? 2 : t[R2.an[0] - 1] === '\n' ? 1 : 0; t = put(t, R2.an[0] - nb, R2.an[1], ''); }
         else if (top === R.rdf && R2.inc && R2.an) { var eb = t.indexOf('<body></body>', R2.an[0]); if (eb >= 0 && eb < R2.an[1]) t = put(t, eb, eb + 13, '<body/>'); }   // an empty body written short again
         return;
       }
@@ -1598,11 +1600,11 @@
     }
     var h = head(t, R.rs), meta = at(h, 'metaid') || at(h, 'id'), desc = '<rdf:Description rdf:about="#' + meta + '">\n' + block + '</rdf:Description>\n';
     if (R.rdf) { var re0 = t.lastIndexOf('</rdf:RDF>', R.rdf[1]); return put(t, re0, re0, desc); }
-    var rdf = RDF_HEAD + '\n' + desc + '</rdf:RDF>\n';
+    var rdf = (R.inc ? RDF_HEAD_NOTES : RDF_HEAD) + '\n' + desc + '</rdf:RDF>\n';
     if (/\/>$/.test(h)) refuse('This item cannot hold identifiers in the file.');
     var hi = R.rs[0] + h.length;
     if (R.inc) {   // a complex's member: in its notes' body, the notes made where missing (as CellDesigner writes them, right after the member's tag)
-      if (!R.an) return put(t, hi, hi, NOTES_A + rdf + NOTES_B);
+      if (!R.an) return put(t, hi, hi, '\n' + NOTES_A + rdf + NOTES_B);
       var be = t.lastIndexOf('</body>', R.an[1]), bs = t.indexOf('<body/>', R.an[0]);
       if (be < R.an[0] && bs >= 0 && bs < R.an[1]) return put(t, bs, bs + 7, '<body>' + rdf + '</body>');   // an empty body written short
       if (be < R.an[0]) be = t.lastIndexOf('</celldesigner:notes>', R.an[1]);
