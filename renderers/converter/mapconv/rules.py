@@ -154,10 +154,14 @@ def clean(m, found):
             q = N[q].parent
         return q
     nodes = {i: d if kept(d.parent) == d.parent else replace(d, parent=kept(d.parent)) for i, d in N.items() if not left_out(i)}
-    arcs = [e for e in m.arcs if e.id not in gone and e.source in nodes and e.target in nodes]
-    ends = {(e.source, e.target, e.head) for e in arcs}
-    out = []
-    for e in arcs:
+    return joined(replace(m, nodes=nodes, arcs=[e for e in m.arcs if e.id not in gone and e.source in nodes and e.target in nodes]))
+
+
+def joined(m):
+    # the map with every arc at a complex's member joined to the complex, or left out (to_complex); for every input
+    # before it is written (GraphML in clean, CellDesigner and SBGN-ML in routes), not when a file is only shown
+    nodes, ends, out = m.nodes, {(e.source, e.target, e.head) for e in m.arcs}, []
+    for e in m.arcs:
         j = to_complex(nodes, e)
         if j is not e and j is not None and (j.source, j.target, j.head) in ends:  # the complex has that arc already
             report.say('left out', '%s (arc %s → %s): drawn to a member, the same arc as its complex\'s, left out' % (
@@ -166,7 +170,7 @@ def clean(m, found):
         if j is not None:
             ends.add((j.source, j.target, j.head))
             out.append(j)
-    return replace(m, nodes=nodes, arcs=out)
+    return replace(m, arcs=out) if out != m.arcs else m
 
 
 def to_complex(N, e):

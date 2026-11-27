@@ -183,7 +183,7 @@ function viewerHunks() {   // [old, new] pieces of the styles page's viewer chan
     await key(); await page.waitForTimeout(1500); await lsIs('atlas-map-source', src0, 'Cmd+Z: Source back');
     await key(true); await page.waitForTimeout(1500); ok('Cmd+Shift+Z: the other source again', (await ls('atlas-map-source')) !== src0);
     if (await page.$eval('.m2-set-shapes', function (x) { return x.style.display !== 'none'; }).catch(function () { return false; })) {
-      var sh0b = await ls('atlas-sbgn-shapes'), other = sh0b === 'process' ? 'specific' : 'process';
+      var sh0b = await ls('atlas-sbgn-shapes'), other = sh0b === 'sbgn' ? 'process' : 'sbgn';
       await page.$eval('#m2-set-shapes button[data-shapes="' + other + '"]', function (x) { x.click(); }); await page.waitForTimeout(1200);
       ok('Shapes changed', (await ls('atlas-sbgn-shapes')) !== sh0b);
       await key(); await page.waitForTimeout(1200); await lsIs('atlas-sbgn-shapes', sh0b, 'Cmd+Z: Shapes back');

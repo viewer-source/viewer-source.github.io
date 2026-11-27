@@ -697,6 +697,7 @@ KIND = {'PROTEIN': 'Macromolecule', 'GENE': 'NucleicAcidFeature', 'RNA': 'Nuclei
 UNIT = {'GENE': 'ct:gene', 'RNA': 'ct:mRNA', 'ANTISENSE_RNA': 'ct:asRNA'}  # when the file has no ct: unit
 PROCESS = {'KNOWN_TRANSITION_OMITTED': 'OmittedProcess', 'UNKNOWN_TRANSITION': 'UncertainProcess'}  # others: Process
 PROCESSES = ('Process',) + tuple(PROCESS.values())
+BINDING = {'HETERODIMER_ASSOCIATION': 'association', 'DISSOCIATION': 'dissociation'}  # TRUNCATION stays a process (a covalent bond broken)
 HEAD = {v: k for k, v in MOD.items()}
 HEAD.update({'UNKNOWN_CATALYSIS': 'catalysis', 'UNKNOWN_INHIBITION': 'inhibition',
              'TRANSCRIPTIONAL_ACTIVATION': 'stimulation', 'TRANSLATIONAL_ACTIVATION': 'stimulation',
@@ -705,7 +706,6 @@ HEAD.update({'UNKNOWN_CATALYSIS': 'catalysis', 'UNKNOWN_INHIBITION': 'inhibition
              'REDUCED_PHYSICAL_STIMULATION': 'stimulation', 'REDUCED_MODULATION': 'modulation',
              'REDUCED_TRIGGER': 'trigger'})
 HEAD.update({'UNKNOWN_' + k: v for k, v in list(HEAD.items()) if k.startswith(('POSITIVE', 'NEGATIVE', 'REDUCED'))})
-REDUCED_TYPES = {k for k in HEAD if 'INFLUENCE' in k or 'REDUCED' in k} | {'PHYSICAL_STIMULATION'}  # between entities in older files (SREBP, ACLY)
 
 
 # a compartment's one paint colour: its two lines in it, the band between them in it at alpha 63 (as
@@ -911,12 +911,12 @@ def read(path):
         x = f(rx, 's:annotation/cd:extension')
         typ = f(x, 'cd:reactionType').text
         rid = rx.get('id') or rx.get('metaid')  # an id is required by SBML, but VMH's Recon2 has a reaction with only a metaid
-        if typ in REDUCED_TYPES or typ == 'BOOLEAN_LOGIC_GATE':
+        if typ in HEAD or typ == 'BOOLEAN_LOGIC_GATE':
             refs(rx) and unplaced.append(rid)
         br, bp = list(xs(x, 'cd:baseReactants/cd:baseReactant')), list(xs(x, 'cd:baseProducts/cd:baseProduct'))
         if any(alias_of(e) not in nodes for e in br + bp):
             report.say('left out', 'reaction %s: an end is not converted, left out' % rid); continue
-        if typ in REDUCED_TYPES:  # reduced notation: an arc between the entities, its ends at their
+        if typ in HEAD:  # a reaction typed by an arrowhead is one arc between the entities, its ends at their
             # ports and its edit points in the frame between them, as a process's main line
             A, B, s_, t_ = end(br[0]), end(bp[0]), alias_of(br[0]), alias_of(bp[0])
             arcs.append(Arc(id=rid, source=s_, target=t_, head=HEAD[typ],
@@ -994,8 +994,10 @@ def read(path):
         else:
             report.say('left out', 'reaction %s (%s): %d base reactants, %d base products, left out' % (rid, typ, len(br), len(bp))); continue
         S = 18.0  # the process size in the atlas yEd maps
-        nodes[rid] = Node(id=rid, kind=PROCESS.get(typ, 'Process'), box=(sq[0] - S / 2, sq[1] - S / 2, S, S), labels=[''],
-                          data={'References': refs(rx)} if refs(rx) else {})
+        data = {'References': refs(rx)} if refs(rx) else {}
+        if typ in BINDING and rx.get('reversible') == 'false':  # the author's choice of a non-covalent binding kept as SBGN's
+            data['SBGN class'] = BINDING[typ]  # glyph (DRAWN_AS), drawn as a process here; reversible: a process (SBGN's are irreversible)
+        nodes[rid] = Node(id=rid, kind=PROCESS.get(typ, 'Process'), box=(sq[0] - S / 2, sq[1] - S / 2, S, S), labels=[''], data=data)
         reversible = rx.get('reversible') != 'false'
         stoich = {(sr.findtext('s:annotation/cd:extension/cd:alias', None, ns), lst == 'Reactants'): count_text(sr.get('stoichiometry'))
                   for lst in ('Reactants', 'Products') for sr in xs(rx, 's:listOf%s/s:speciesReference' % lst)}

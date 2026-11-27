@@ -767,7 +767,6 @@ page, so its styles keep the base they were made on).
   /* the lines a click lights (lit, drawLit): a soft marker band under them, the map's own lines kept over it (multiply) */
   #m2-hl { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; mix-blend-mode: multiply; display: none; }
   #m2-hl path { fill: none; stroke: #8db4f0; stroke-opacity: .7; stroke-linecap: round; stroke-linejoin: round; }
-  #m2-hl .m2-hl-proc { fill: #8db4f0; fill-opacity: .7; }
   .m2-editing #m2-hl { display: none !important; }
   #m2-pin { position: absolute; left: 0; top: 0; width: 24px; height: 32px; margin: -32px 0 0 -12px; pointer-events: none; display: none; filter: drop-shadow(0 1px 1px #0005); }
   .m2-info { grid-column: 3; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); max-height: calc(100vh / var(--zoom, 1) - 140px); overflow-y: auto; overscroll-behavior: contain; overflow-wrap: anywhere; }
@@ -1125,10 +1124,10 @@ page, so its styles keep the base they were made on).
     return c && c !== '-' ? c : null;
   }
   try { localStorage.removeItem('atlas-map-colours'); } catch (e) {}   // a recolouring kept from the former Settings row, dropped
-  // Association and dissociation (Settings): SBGN's circles as the renderer draws them (the default), or
-  // the generic process it keeps hidden beside them (<g class="sbgn-generic">), shown for a map whose entry has 'shapes'
-  var GENERIC = false;
-  try { GENERIC = localStorage.getItem('atlas-sbgn-shapes') === 'process'; } catch (e) {}
+  // Association and dissociation (Settings): the generic process the renderer keeps hidden beside SBGN's circles
+  // (<g class="sbgn-generic">, the default), or the circles themselves (Specific); shown for a map whose entry has 'shapes'
+  var GENERIC = true;
+  try { GENERIC = localStorage.getItem('atlas-sbgn-shapes') !== 'sbgn'; } catch (e) {}
   function shaped(url) {   // a picture with SBGN's circles (its entry's 'shapes', or its SBGN-ML drawing's): only these change
     return maps.some(function (m) { return [m, m.sbgn].some(function (e) { return e && e.shapes && url.indexOf(e.image) === 0; }); });
   }
@@ -1517,7 +1516,7 @@ page, so its styles keep the base they were made on).
     if (g === GENERIC) return;
     setDid(setShapes, GENERIC, g);
     GENERIC = g;
-    try { if (GENERIC) localStorage.setItem('atlas-sbgn-shapes', 'process'); else localStorage.removeItem('atlas-sbgn-shapes'); } catch (e) {}
+    try { if (GENERIC) localStorage.removeItem('atlas-sbgn-shapes'); else localStorage.setItem('atlas-sbgn-shapes', 'sbgn'); } catch (e) {}
     dropPictures();
     showSettings();
     if (current) show(current, true);
@@ -3049,8 +3048,8 @@ page, so its styles keep the base they were made on).
     return best;
   }
   // the band under what is lit, in the picture's pixels, placed and sized as the picture: 6 screen pixels wide, at
-  // least 5 picture pixels (several times a line's width) so zoomed in it still shows round the thicker line; a
-  // process's glyph a disc of 9 screen pixels, at least 9 picture pixels so it stays round the square. The band is left
+  // least 5 picture pixels (several times a line's width) so zoomed in it still shows round the thicker line; the
+  // process's glyph itself is not marked: its lit lines show it. The band is left
   // out inside the process's square (a disc of 5 at its centre: CellDesigner's square is 10), where a CellDesigner
   // line runs through to the centre under the white square
   var litHtml = null;   // what the band holds, made once per lit; a move or zoom only places it
@@ -3073,13 +3072,10 @@ page, so its styles keep the base they were made on).
       html += '<g' + mask + '>';
       on.forEach(function (l) { html += '<path d="' + l.d + '"/>'; });
       html += '</g>';
-      if (lit.proc) html += '<circle class="m2-hl-proc" cx="' + cx + '" cy="' + cy + '"/>';
       hl.innerHTML = html; litHtml = lit;
     }
     var bw = Math.max(6 * k / z, 5);
     hl.querySelectorAll('path').forEach(function (p) { p.setAttribute('stroke-width', bw); });
-    var c = hl.querySelector('.m2-hl-proc');
-    if (c) c.setAttribute('r', Math.max(9 * k / z, 9));
   }
   function pick(vx, vy) {
     if (!nodes) return;

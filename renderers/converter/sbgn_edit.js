@@ -571,7 +571,90 @@
   }
 
   // ---------- back into the SBGN-ML text ----------
-  function write(t, gtext, opt) { return idsOut(refsOut(countsOut(nest(write0(t, gtext, opt), gtext, opt, t), gtext, opt, t), gtext, opt), gtext, opt); }
+  function write(t, gtext, opt) { return binding(t, writeAll(t, gtext, opt), opt); }
+  function writeAll(t, gtext, opt) { return idsOut(refsOut(countsOut(nest(write0(t, gtext, opt), gtext, opt, t), gtext, opt, t), gtext, opt), gtext, opt); }
+
+  // ---------- association and dissociation in a file's style ----------
+  // A process made in the editor (its id not in the file it was opened from) is written as an association or a
+  // dissociation when the file is in that style: more than half of the file's processes whose shape is one of them
+  // (bindingOf) already use the glyph. The file's own glyphs are never changed, a square or a circle. The shape (SBGN PD
+  // L1 V2.1, 2.6.4, 2.6.5, 3.5.2.2-3): an association consumes two or more entities (counted with their cardinality)
+  // and produces one complex whose members are exactly those entities, states unchanged; or consumes one entity with a
+  // cardinality of 2 or more and produces its multimer, states unchanged. A dissociation is the mirror. A source or
+  // sink, a state changed, several in and several out, a macromolecule product: a process.
+  var BINDS = /^(process|association|dissociation)$/, ENT_RE = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|complex|perturbing agent)( multimer)?$/;
+  function bindingLabel(g) { var l = kid(g, 'label'); return l ? (l.getAttribute('text') || '').replace(/\s+/g, ' ').trim() : ''; }
+  function bindingStates(g) {
+    return kids(g, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; }).map(function (c) {
+      var st = kid(c, 'state'); return st ? (st.getAttribute('variable') || '') + '=' + (st.getAttribute('value') || '') : '';
+    }).filter(function (v) { return !/^=(ct|mt|pc):/.test(v); }).sort().join(';');   // a material or type written as a state (Newt's gene) is no state
+  }
+  function bindingSelf(g) {   // one entity as it is: class, name, states, members
+    var mem = kids(g, 'glyph').filter(function (c) { return ENT_RE.test(c.getAttribute('class') || ''); }).map(bindingSelf).sort();
+    return (g.getAttribute('class') || '') + '|' + bindingLabel(g) + '|' + bindingStates(g) + '|' + mem.join(',');
+  }
+  function bindingLeaves(g) {   // what a complex is made of, nested complexes opened; anything else itself
+    var cls = g.getAttribute('class') || '';
+    if (!ENT_RE.test(cls)) return null;
+    var mem = kids(g, 'glyph').filter(function (c) { return ENT_RE.test(c.getAttribute('class') || ''); });
+    if (cls !== 'complex' || !mem.length) return [bindingSelf(g)];
+    var out = [];
+    for (var i = 0; i < mem.length; i++) { var l = bindingLeaves(mem[i]); if (!l) return null; out = out.concat(l); }
+    return out;
+  }
+  function bindingCount(a) { var n = arcCount(a); if (n == null) return 1; var v = Number(n); return v >= 1 && Math.round(v) === v ? v : null; }
+  function bindingArcs(S) {   // every process's [ins, outs] as [glyph, count], each arc read once (arcs without an id too)
+    if (S.binds) return S.binds;
+    var B = S.binds = {}, el = function (x) { return S.glyph[x] ? S.glyph[x].el : null; }, at = function (x) { return B[x] || (B[x] = [[], []]); };
+    Array.prototype.forEach.call(S.doc.getElementsByTagName('*'), function (a) {
+      if (a.localName !== 'arc') return;
+      var c = a.getAttribute('class'), s = a.getAttribute('source'), t = a.getAttribute('target'), sg = S.portOf[s] || s, tg = S.portOf[t] || t;
+      if (c === 'consumption') at(tg)[0].push([el(sg), bindingCount(a)]);
+      else if (c === 'production') { at(sg)[1].push([el(tg), bindingCount(a)]); at(tg)[0].push([null, 1]); }   // a production into a process: reversible, a process
+    });
+    return B;
+  }
+  function bindingOf(S, pid) {   // 'association', 'dissociation' or null for the process pid, by its shape alone
+    var io = bindingArcs(S)[pid] || [[], []], ins = io[0], outs = io[1];
+    var bad = function (L) { return L.some(function (q) { return !q[0] || q[1] == null; }); };
+    if (!ins.length || !outs.length || bad(ins) || bad(outs)) return null;
+    var one = function (L) { return L.length === 1 && L[0][1] === 1 ? L[0][0] : null; };
+    var many = function (L) { var out = []; for (var i = 0; i < L.length; i++) { var l = bindingLeaves(L[i][0]); if (!l) return null; for (var k = 0; k < L[i][1]; k++) out = out.concat(l); } return out; };
+    var same = function (a, b) { return !!a && !!b && a.length === b.length && a.slice().sort().join('\n') === b.slice().sort().join('\n'); };
+    var multimerOf = function (L, m) {   // one entity with a cardinality of 2 or more, m its multimer (states and members alike)
+      if (L.length !== 1 || L[0][1] < 2 || !m || !/ multimer$/.test(m.getAttribute('class') || '')) return false;
+      var e = L[0][0], k = bindingSelf(e).split('|'), q = bindingSelf(m).split('|');
+      return k[0] === q[0].replace(/ multimer$/, '') && k.slice(1).join('|') === q.slice(1).join('|');
+    };
+    var cx = function (g) { return !!g && g.getAttribute('class') === 'complex'; };
+    var two = function (L) { var n = 0; L.forEach(function (q) { n += q[1]; }); return n >= 2; };   // 3.5.2.2-3: two or more on the other side (a complex moved whole is a process)
+    var P = one(outs), C = one(ins);
+    if (P && ((cx(P) && two(ins) && same(many(ins), bindingLeaves(P))) || multimerOf(ins, P))) return 'association';
+    if (C && ((cx(C) && two(outs) && same(many(outs), bindingLeaves(C))) || multimerOf(outs, C))) return 'dissociation';
+    return null;
+  }
+  function bindingStyle(S) {   // the file uses the glyphs: more than half of its binding shapes drawn as them
+    var n = 0, k = 0;
+    Object.keys(S.glyph).forEach(function (id) {
+      var c = S.glyph[id].el.getAttribute('class') || '';
+      if (BINDS.test(c) && bindingOf(S, id)) { n++; if (c !== 'process') k++; }
+    });
+    return k * 2 > n;
+  }
+  var bindingMemo = [null, null];
+  function binding(t0, t, opt) {   // the processes made in the editor written in the style of the file t0 (as opened)
+    if (!/class\s*=\s*["'](association|dissociation)["']/.test(t0)) return t;   // no glyph in the file: no style
+    if (bindingMemo[0] !== t0) { var s0 = sbgn(t0, opt); bindingMemo = [t0, bindingStyle(s0) ? s0 : null]; }   // the file as opened is the same on every save
+    var S0 = bindingMemo[1];
+    if (!S0) return t;
+    var S = sbgn(t, opt), T = null;
+    Object.keys(S.glyph).forEach(function (id) {
+      var g = S.glyph[id].el, k;
+      if (S0.glyph[id] || g.getAttribute('class') !== 'process' || !(k = bindingOf(S, id))) return;
+      T = T || new Tags(t, S.doc); T.set(g, 'class', k);
+    });
+    return T ? T.text() : t;
+  }
   function write0(t, gtext, opt) {
     var dropped = {}, was = gone(gtext), t0 = t;   // dropped: glyphs one of whose units of information was deleted; was: ids never given again (the comment stays with the GraphML)
     var own = mapKind(t);   // the file's own kind before the glyphs deleted in the editor go (else the last process deleted leaves the map PD)
@@ -1002,7 +1085,7 @@
     // an arc's end moved onto a glyph made in this editing (a bare process and its first arc): that glyph is in the file
     // only now, so the arcs are written again on the text that has it (else the move is lost on save); the
     // rest of a second pass changes nothing, the file already holding it
-    if (Object.keys(G.edge).some(function (k) { return S.arc[k] && (made[G.edge[k].s] || made[G.edge[k].t]); })) return write(T.text(), gtext, opt);
+    if (Object.keys(G.edge).some(function (k) { return S.arc[k] && (made[G.edge[k].s] || made[G.edge[k].t]); })) return writeAll(T.text(), gtext, opt);
     // arcs made in the editor: written after the file's arcs, naming their glyphs, their ends where the
     // GraphML has them; the second pass then gives a process end its port (a bare process its two, and its orientation)
     var out = T.text(), S2 = null, add = [];
@@ -1029,7 +1112,7 @@
     var T2 = new Tags(out, S2.doc), mapEl2 = kids(S2.doc.documentElement, 'map')[0], arcs2 = kids(mapEl2, 'arc'), glyphs2 = kids(mapEl2, 'glyph');
     var after = arcs2.length ? arcs2[arcs2.length - 1] : glyphs2[glyphs2.length - 1], ind3 = T2.indent(after), at3 = T2.end(after);
     T2.ed.push([at3, at3, add.map(function (q) { return '\n' + ind3 + q.xml + q.body.map(function (x) { return '\n' + ind3 + '  ' + x; }).join('') + '\n' + ind3 + q.end; }).join('')]);
-    return write(T2.text(), gtext, opt);
+    return writeAll(T2.text(), gtext, opt);
   }
 
   // ---------- membership: what holds a glyph ----------
@@ -3210,7 +3293,7 @@
     return any ? T.text() : t;
   }
 
-  var api = { unique: unique, LOOKS: LOOKS, ANT: ANT, GATE_FONT: GATE_FONT, SIZE: SIZE, antennas: antennas, antenna: antenna, fit: fit, GLT: GLT, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, colours: colours, lineOf: lineOf, recolour: recolour, widthOf: widthOf, rewidth: rewidth, label: label, state: state, stateValue: stateValue, stateMove: stateMove, unitMove: unitMove, entityKind: entityKind, ENTITIES: ['macromolecule', 'simple chemical', 'nucleic acid feature', 'unspecified entity'], stateDelete: stateDelete,
+  var api = { unique: unique, LOOKS: LOOKS, ANT: ANT, GATE_FONT: GATE_FONT, SIZE: SIZE, antennas: antennas, antenna: antenna, fit: fit, GLT: GLT, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, binding: binding, bindingOf: function (t, id, opt) { return bindingOf(sbgn(t, opt), id); }, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, colours: colours, lineOf: lineOf, recolour: recolour, widthOf: widthOf, rewidth: rewidth, label: label, state: state, stateValue: stateValue, stateMove: stateMove, unitMove: unitMove, entityKind: entityKind, ENTITIES: ['macromolecule', 'simple chemical', 'nucleic acid feature', 'unspecified entity'], stateDelete: stateDelete,
               unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, MAKE: MAKE, kind: kind, PROCESSES: ['process'].concat(Object.keys(SIGN)), SIGN: SIGN, remove: remove, resize: resize, scaleEnds: scaleEnds, gone: gone, nameable: nameable,
               moveInto: moveInto, connect: connect, reversible: reversible, reversibility: reversibility, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls,

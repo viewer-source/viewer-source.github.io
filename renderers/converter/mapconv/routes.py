@@ -12,6 +12,7 @@
 #   GraphML, SBGN-ML, Newt, an Activity Flow map: SBML-qual with layout (sbml.write_qual: its Boolean model, drawn)
 # Every file made in another format is counted against its input (count.check): a difference no message explains is
 # said as a check message.
+# Every input: an arc at a complex's member joined to the complex, one within a complex left out (rules.joined).
 import contextlib, io
 from dataclasses import dataclass
 from . import annotation, celldesigner, count, graphml, report, rules, sbgnml, sbml, style
@@ -105,9 +106,10 @@ def _outputs(path, standard=False):
             o.explain = problems
         return out + ([Output('-marked.graphml', 'GraphML (marked)', marked, red=True)] if found else [])
     if ext == 'xml':
-        cd = lambda l: at_centres(aligned(celldesigner.read(path))) if l == 'straight' else aligned(celldesigner.read(path))
+        read = lambda: rules.joined(celldesigner.read(path))
+        cd = lambda l: at_centres(aligned(read())) if l == 'straight' else aligned(read())
         return [Output('-%s.graphml' % l, 'GraphML (%s)' % l, lambda l=l: graphml.write(cd(l))) for l in LAYOUTS] + \
-               [std(lambda: celldesigner.read(path), 'CellDesigner')] + \
+               [std(read, 'CellDesigner')] + \
                sbgn(lambda: cd('advanced')) + [sb(lambda: cd('advanced'))]
     # SBGN-ML: every map of the file, the second and later ones with -map2, -map3 ... before the ending
     try:
@@ -118,7 +120,7 @@ def _outputs(path, standard=False):
         return [Output('', '', lambda: sbgnml.read(path))]
     out = []
     for k in range(n):
-        r = lambda k=k: sbgnml.read(path, k)
+        r = lambda k=k: rules.joined(sbgnml.read(path, k))
         one = [Output('.graphml', 'GraphML', lambda r=r: graphml.write(r())), std(r, 'Newt')] + cds(r) + [sb(r), qual(r)]
         out += one if not k else [Output('-map%d%s' % (k + 1, o.ending), 'Map %d: %s' % (k + 1, o.label), o.make, o.red, map=k) for o in one]
     return out

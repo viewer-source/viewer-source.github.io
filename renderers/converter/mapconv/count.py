@@ -305,7 +305,7 @@ def explained(kind, gain, only, said):
             return True
         if any(has(w, t) for w in words_) or any(len(n) > 2 and has(n.lower(), t) for n in only):
             return True
-        if k == 'problem' and '(arc ' in t and kind in MODIFIERS + (FLUX, 'logic arc'):  # an arc the rules left out
+        if k in ('problem', 'left out') and '(arc ' in t and kind in MODIFIERS + (FLUX, 'logic arc'):  # an arc left out
             return True
     return False
 
