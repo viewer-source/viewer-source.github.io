@@ -100,6 +100,12 @@ function py(args) { return cp.spawnSync('python3', ['-I', path.join(forge, 'scri
   ok('the same entries give the same bytes', zz.equals(zz2));
 })().catch(function (e) { bad++; console.log('WRONG ' + e.stack); }).then(function () {
   fs.rmSync(tmp, { recursive: true, force: true });
+  // the editor's background layer, written not visible by earlier versions, goes out visible (MINERVA hides it otherwise); a
+  // reader's own hidden layer stays hidden
+  var mk = require(path.join(__dirname, '..', 'renderers', 'converter', 'cd_make.js')), tb = mk.background(mk.empty({ id: 'bgv' }), 'glyphs/b.png', [0, 0, 100, 100]).text;
+  var old = tb.replace(/(name="Background images"[^>]*visible=")true"/, '$1false"').replace('</celldesigner:listOfLayers>', '<celldesigner:layer id="9" name="Mine" locked="false" visible="false"/>\n</celldesigner:listOfLayers>');
+  var ev = M.packEntries([{ path: 'bgv.xml', text: old }], {}, {}, []).entries[0].data;
+  ok('the background layer goes out visible, a reader\'s hidden layer stays hidden', /name="Background images"[^>]*visible="true"/.test(ev) && /name="Mine"[^>]*visible="false"/.test(ev) && /visible="false"/.test(old), ev.slice(ev.indexOf('<celldesigner:listOfLayers'), ev.indexOf('<celldesigner:listOfLayers') + 300));
   console.log(bad ? bad + ' WRONG' : 'all ok');
   process.exit(bad ? 1 : 0);
 });

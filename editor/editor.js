@@ -6766,10 +6766,15 @@
     var w = Math.max(size[0], size[1] * r), h = w / r, k = Math.min(1, 8e3 / Math.max(w, h));
     return [Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k))];
   }
+  function bgVisible(text) {
+    return text.replace(/<celldesigner:layer\b[^>]*\sname="Background (?:images|pictures)"[^>]*>/g, function(h) {
+      return h.replace(/\svisible="false"/, ' visible="true"');
+    });
+  }
   function packEntries(maps, pics, kept, missing) {
     var z = [], gone = [], entries = [];
     maps.forEach(function(m) {
-      var r = reckonZ(m.text);
+      var r = reckonZ(bgVisible(m.text));
       if (r.changed) z.push(bareName(m.path));
       entries.push({ name: m.path, data: r.text });
     });

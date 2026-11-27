@@ -1453,8 +1453,8 @@
     }).filter(Boolean);
   }
   function bgText(t, n) { var x = layerTexts(t)[n]; if (!x || !backgrounds(t).some(function (g) { return g.n === n; })) fail('No background image ' + n + ' on the map.'); return x; }
-  // a background added: a text of the layer Background images (made, not visible, when the map has none: CellDesigner
-  // then shows no words of it; a name of its own, so a reader's own layer, Background or any, is never written into or
+  // a background added: a text of the layer Background images (made visible when the map has none, as MINERVA hides a
+  // layer marked not visible and every picture on it; CellDesigner then shows the note's words in the text's box; a name of its own, so a reader's own layer, Background or any, is never written into or
   // removed), its notes the picture under everything (Z-Index -1, as MINERVA's backgrounds), its box the given one.
   // { text, n }
   function background(t, name, box) {
@@ -1469,7 +1469,7 @@
       return { text: add(t, CD + 'listOfTexts', item, L[0], L[1], eol(t, h)), n: n };
     }
     var ids_ = ids(t, '<celldesigner:layer(?=\\s)').map(Number).filter(isFinite), lid = (ids_.length ? Math.max.apply(null, ids_) : 0) + 1;
-    var layer = '<celldesigner:layer id="' + lid + '" name="' + BG_LAYER + '" locked="false" visible="false">\n<celldesigner:listOfTexts>\n' + item + '\n</celldesigner:listOfTexts>\n</celldesigner:layer>';
+    var layer = '<celldesigner:layer id="' + lid + '" name="' + BG_LAYER + '" locked="false" visible="true">\n<celldesigner:listOfTexts>\n' + item + '\n</celldesigner:listOfTexts>\n</celldesigner:layer>';
     var bd = t.indexOf('<celldesigner:listOfBlockDiagrams'), e = extEnd(t);
     return { text: add(t, CD + 'listOfLayers', layer, 0, t.length, bd >= 0 ? bd : e), n: n };
   }

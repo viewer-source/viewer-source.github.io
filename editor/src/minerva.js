@@ -321,12 +321,18 @@
       return [Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k))];
     }
     // the zip's entries: maps [{ path, text }] (top level first), pictures { name: bytes } (PNG), kept { path: bytes } and
-    // the project's maps no longer in it (missing: their zip paths); Z-Index reckoned in the maps' copies. Gives
+    // the project's maps no longer in it (missing: their zip paths); Z-Index reckoned and the background layer made
+    // visible in the maps' copies. Gives
     // { entries, z: maps whose Z-Index was written, gone: links left out }
+    // the editor's own background layer (Background images, earlier Background pictures) marked visible in the zip's copy:
+    // MINERVA hides a layer marked not visible and every picture on it; maps made before the writer marked it visible
+    function bgVisible(text) {
+      return text.replace(/<celldesigner:layer\b[^>]*\sname="Background (?:images|pictures)"[^>]*>/g, function (h) { return h.replace(/\svisible="false"/, ' visible="true"'); });
+    }
     function packEntries(maps, pics, kept, missing) {
       var z = [], gone = [], entries = [];
       maps.forEach(function (m) {
-        var r = reckonZ(m.text);
+        var r = reckonZ(bgVisible(m.text));
         if (r.changed) z.push(bareName(m.path));
         entries.push({ name: m.path, data: r.text });
       });
