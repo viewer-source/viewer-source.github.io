@@ -34,9 +34,19 @@ var thrown=null;try{cd.render(tn,{DOMParser:DP,glyph:function(){return 'data:z';
 ok('a hidden layer\'s text with no notes: skipped, no error',!thrown,thrown||'');
 // AD/UC: compartments and 3 species
 r=draw(Z+'AD_UC_comparison','AD_UC_comparison.xml');s=r.svg;
-var n=(s.match(/<image /g)||[]).length;
+var n=(s.match(/<image /g)||[]).length-(s.match(/<symbol /g)||[]).length+(s.match(/<use /g)||[]).length;   // a node's image: its own <image>, or a <use> of one kept once
 ok('AD/UC: compartments and the titles and logo drawn as pictures',n>=24&&/butad.png/.test(s)&&/butuc.png/.test(s)&&/z4.png/.test(s),n+' pictures');
 ok('AD/UC: no title name drawn',!/>ATOPIC DERMATITIS</.test(s)&&!/>LOGO</.test(s));
+// an image used by several nodes kept once: each address once in the drawing, every node a <use> of it
+var hs=(s.match(/href="data:[^"]*"/g)||[]),uq=hs.filter(function(h,i){return hs.indexOf(h)===i;});
+ok('AD/UC: every image\'s data once in the drawing, the nodes sharing one drawn by <use>',hs.length===uq.length&&/<use href="#m2img-/.test(s),hs.length+' addresses, '+uq.length+' different, '+(s.match(/<use /g)||[]).length+' uses');
+// 200 nodes with one image: the drawing one image larger, not 200
+var big='data:image/png;base64,'+'A'.repeat(30000),tt=fs.readFileSync(Z+'AD_UC_comparison/AD_UC_comparison.xml','utf8');
+var sp=(tt.match(/<celldesigner:speciesAlias id="[^"]+"/g)||[]).length;
+var t200=tt.replace(/<species [^>]*>/g,function(m){return m;}).replace(/(<species [^>]*>\s*)(?!<notes>)/g,'$1<notes><html xmlns="http://www.w3.org/1999/xhtml"><head><title/></head><body>Glyph: glyphs/same.png</body></html></notes>');
+var s0=cd.render(t200,{DOMParser:DP,groups:true,glyph:function(){return null;}}),s1=cd.render(t200,{DOMParser:DP,groups:true,glyph:function(p){return p==='glyphs/same.png'?big:null;}});
+var uses=(s1.match(/<use [^>]*href="#m2img-[^"]*"/g)||[]).length,copies=s1.split(big).length-1;
+ok('many nodes with one image: its data once, the drawing about one image larger',uses>=50&&copies===1&&s1.length-s0.length<2*big.length,uses+' nodes use it, '+copies+' copy, '+Math.round((s1.length-s0.length)/1024)+' KB larger for a '+Math.round(big.length/1024)+' KB image');
 // without glyph: as before (no image)
 var t=fs.readFileSync(Z+'asthma_map_bg/map.xml','utf8');s=cd.render(t,{DOMParser:DP});
 ok('AsthmaMap top without pictures: none drawn, names drawn, the hidden layer\'s text not drawn',!/<image/.test(s)&&/>pathway 1</.test(s)&&!/Asthma map Cellular/.test(s));

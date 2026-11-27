@@ -151,6 +151,38 @@ var SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" heigh
   ok('1. Remove picture: the note gone, the species drawn again', glyph(await now(), 's', 's_n3') === null && !(await imgs()).some(function (x) { return /png/.test(x.href) && x.g === SP; }));
   await select(SP);
   ok('1. without a picture: Upload shown, Remove hidden', JSON.stringify(await btns()) === '[false,true,true]', JSON.stringify(await btns()));
+  // 1b. several selected: the Image row on all of them; one image on both kept once in the drawing
+  var rowOf = function () { return page.$eval('.m2-ed-pnode tr[data-k="pic"]', function (r) { return { shown: !r.hidden && !r.closest('[hidden]'), name: r.querySelector('.m2-ed-ppicname').textContent, mixed: r.classList.contains('m2-mixed') }; }).catch(function () { return null; }); };
+  var rc = await box(CX); await page.keyboard.down('Shift'); await page.mouse.click(rc[0] + 4, rc[1] + 4); await page.keyboard.up('Shift'); await page.waitForTimeout(600);
+  var rm = await rowOf();
+  ok('1b. a species without and a complex with an image selected: the Image row, mixed, Upload shown', rm && rm.shown && rm.name === 'mixed' && rm.mixed && JSON.stringify(await btns()) === '[false,true,true]', JSON.stringify(rm) + ' ' + JSON.stringify(await btns()));
+  var tb = await now();
+  await choose(function () { return page.click('#m2-ed-pic'); }, { name: 'red cell.png', mimeType: 'image/png', buffer: RED });
+  var tb2 = await now(), rs = await rowOf();
+  ok('1b. Upload: the image on both', glyph(tb2, 's', 's_n3') === 'glyphs/red-cell.png' && glyph(tb2, 's', 's_n1') === 'glyphs/red-cell.png', glyph(tb2, 's', 's_n3') + ' ' + glyph(tb2, 's', 's_n1'));
+  ok('1b. the row shows the one image and Remove', rs && rs.name === 'red-cell.png' && !rs.mixed && JSON.stringify(await btns()) === '[true,false,true]', JSON.stringify(rs));
+  var shared1 = await page.evaluate(function () {
+    var s = document.getElementById('m2-img'), t = window.m2EditNow().svg || '';
+    var uses = s ? s.querySelectorAll('use').length : -1, syms = s ? s.querySelectorAll('symbol').length : -1, copies = (t.match(/href="data:image\/png[^"]*"/g) || []).length;
+    return new Promise(function (res) {   // the drawing as an image (view mode, downloads): red where each node is
+      var im = new Image(); im.onload = function () {
+        var c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; var x = c.getContext('2d'); x.drawImage(im, 0, 0);
+        var at = Array.prototype.map.call(new DOMParser().parseFromString(t, 'image/svg+xml').querySelectorAll('use'), function (u) { var d = x.getImageData(+u.getAttribute("x") + 3, +u.getAttribute("y") + 3, 1, 1).data; return d[0] > 180 && d[1] < 80 && d[2] < 80; });
+        res({ uses: uses, syms: syms, copies: copies, red: at });
+      }; im.onerror = function () { res({ uses: uses, syms: syms, copies: copies, red: null }); };
+      im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(t);
+    });
+  });
+  ok('1b. the drawing keeps the image once, both nodes drawn by <use>, red where each is as an image', shared1.uses === 2 && shared1.syms === 1 && shared1.copies === 1 && shared1.red && shared1.red.length === 2 && shared1.red.every(Boolean), JSON.stringify(shared1));
+  await undo();
+  ok('1b. undone in one step: as before', (await now()) === tb, glyph(await now(), 's', 's_n3') + ' ' + glyph(await now(), 's', 's_n1'));
+  await redo();
+  await select(SP); rc = await box(CX); await page.keyboard.down('Shift'); await page.mouse.click(rc[0] + 4, rc[1] + 4); await page.keyboard.up('Shift'); await page.waitForTimeout(600);   // undo and redo clear the selection (core.js)
+  await page.click('.m2-ed-pnode tr[data-k="pic"] .m2-ed-ppicoff'); await page.waitForTimeout(2000);
+  ok('1b. Remove: off both', glyph(await now(), 's', 's_n3') === null && glyph(await now(), 's', 's_n1') === null);
+  await undo(); await undo();
+  ok('1b. two undos: back to before the Upload', (await now()) === tb);
+  await select(SP);   // step 4 works on the species alone
   // 4. not a picture (on the species, its picture removed)
   t4 = await now();
   await choose(function () { return page.click('#m2-ed-pic'); }, { name: 'fake.png', mimeType: 'image/png', buffer: Buffer.from('not a picture') });

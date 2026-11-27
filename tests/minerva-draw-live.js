@@ -46,7 +46,10 @@ var t0 = Date.now(), ok = function (what, v, more) { if (!v) bad++; console.log(
     await (await ch).setFiles(files);
   };
   var records = function () {   // the reader's maps kept in this browser: title, group, the drawing's pictures in order
-    return page.evaluate(function () { return new Promise(function (res) { var q = indexedDB.open('atlas-edit-drafts'); q.onsuccess = function () { var g = q.result.transaction('mine').objectStore('mine').getAll(); g.onsuccess = function () { res(g.result.filter(function (r) { return r && r.svg; }).map(function (r) { return { title: r.title, group: r.group, pics: (r.svg.match(/<image href="data:image\/png;base64,[^"]{20}/g) || []).length, under: r.svg.indexOf('<image') >= 0 && r.svg.indexOf('<image') < r.svg.indexOf('<g data-n='), over: r.svg.lastIndexOf('<image') > r.svg.lastIndexOf('<g data-n='), names: />pathway 1<|>ATOPIC DERMATITIS<|>LOGO</.test(r.svg), glyphs: (r.text.match(/Glyph: ?glyphs\/[^\s<]+/g) || []).join(' '), first: (/<image href="(data:[^"]{0,200})/.exec(r.svg) || [])[1] || '' }; })); }; }; }); });
+    return page.evaluate(function () { return new Promise(function (res) { var q = indexedDB.open('atlas-edit-drafts'); q.onsuccess = function () { var g = q.result.transaction('mine').objectStore('mine').getAll(); g.onsuccess = function () { res(g.result.filter(function (r) { return r && r.svg; }).map(function (r) {
+          // a node's picture is its own <image> or a <use> of one kept once in <defs> (an image shared by several nodes, cdrender shared)
+          var d = r.svg.indexOf('</defs>'), body = d >= 0 ? r.svg.slice(d) : r.svg, fst = body.search(/<(image|use) /), lst = Math.max(body.lastIndexOf('<image '), body.lastIndexOf('<use '));
+          return { title: r.title, group: r.group, pics: (body.match(/<image href="data:image\/png;base64,[^"]{20}/g) || []).length + (body.match(/<use href="#m2img-/g) || []).length, under: fst >= 0 && fst < body.indexOf('<g data-n='), over: lst > body.lastIndexOf('<g data-n='), names: />pathway 1<|>ATOPIC DERMATITIS<|>LOGO</.test(r.svg), glyphs: (r.text.match(/Glyph: ?glyphs\/[^\s<]+/g) || []).join(' '), first: (/<image href="(data:[^"]{0,200})/.exec(r.svg) || [])[1] || '' }; })); }; }; }); });
   };
   var open = async function (group, title) {   // a map of the list shown
     await page.evaluate(function (q) { var x = Array.prototype.filter.call(document.querySelectorAll('#m2-list .m2-map:not(.m2-binned)'), function (m) { return m.dataset.group === q[0] && m.querySelector('.m2-name').textContent === q[1]; })[0]; if (x) x.click(); }, [group, title]);
@@ -56,7 +59,7 @@ var t0 = Date.now(), ok = function (what, v, more) { if (!v) bad++; console.log(
     await page.keyboard.press('e');
     await page.waitForFunction(function () { return document.querySelector('.m2-editing') !== null; }, null, { polling: 100, timeout: 60000 });
     await page.waitForTimeout(3000);
-    var count = function () { return page.evaluate(function () { var p = document.getElementById('m2-img'); return p && p.tagName.toLowerCase() === 'svg' ? Array.prototype.filter.call(p.querySelectorAll('image'), function (i) { return /^data:image\/(png|svg)/.test(i.getAttribute('href') || ''); }).length : -1; }); };
+    var count = function () { return page.evaluate(function () { var p = document.getElementById('m2-img'); return p && p.tagName.toLowerCase() === 'svg' ? Array.prototype.filter.call(p.querySelectorAll('image'), function (i) { return !i.closest('symbol') && /^data:image\/(png|svg)/.test(i.getAttribute('href') || ''); }).length + p.querySelectorAll('use[href^="#m2img-"]').length : -1; }); };   // its own <image>, or a <use> of a shared one
     var at = await count(), before = await page.evaluate(function () { return document.getElementById('m2-img').innerHTML.length; });
     await page.click('#m2-img', { position: { x: 5, y: 5 } }).catch(function () {});
     await page.keyboard.press('Control+a'); await page.keyboard.press('ArrowRight');

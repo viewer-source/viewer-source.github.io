@@ -73,6 +73,7 @@ with an AttributeError when the model was not found). The writer keeps such a fi
 
 - `self.extra = {}`: extras(): per alias, what does not depend on its box
 a compartment drawn as a picture (MINERVA's glyphs: 'Glyph: glyphs/x.png' in its notes): glyph(path) gives the picture's address, or None; with no glyph every compartment is drawn as lines aliases: id -> (class, box, alias element, species name, identity) where things are drawn, for a viewer's clicks: alias id -> box; reaction id -> lines and square
+an image on two or more nodes kept once: its data in <defs> as a <symbol> (100 by 100 units, stretched), each node a <use> at its own box; an image on one node stays an <image> (shared, at the end of svg)
 
 ## compartments
 

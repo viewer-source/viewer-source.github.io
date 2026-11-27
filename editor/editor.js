@@ -14187,10 +14187,22 @@
     props.querySelector(".m2-ed-pstd").hidden = !pf.hub || !ns.every(pf.hub);
     ROWS.forEach(function(r) {
       var tr = props.querySelector('.m2-ed-pnode tr[data-k="' + r[0] + '"]'), f = field(r[0]);
-      tr.hidden = r[0] === "label" || r[2] === "pic" || ns.some(function(i, j) {
+      tr.hidden = r[0] === "label" || ns.some(function(i, j) {
         pNow = Ls[j];
         return /^[wh]$/.test(r[0]) && (!sizable(i) || holds(i)) || pf.off(r[0], i);
       });
+      if (r[2] === "pic") {
+        if (tr.hidden) return;
+        var ps = Ls.map(function(L) {
+          return L.pic ? L.pic.name : "";
+        }), same = ps.every(function(p) {
+          return p === ps[0];
+        });
+        tr.classList.toggle("m2-mixed", !same);
+        picShow(f, same ? Ls[0].pic : null);
+        if (!same) f.parentNode.querySelector(".m2-ed-ppicname").textContent = "mixed";
+        return;
+      }
       if (tr.hidden || !all && document.activeElement === f) return;
       var vs = Ls.map(function(L) {
         return r[2] === "check" ? !!L[r[0]] : String(L[r[0]] == null ? "" : L[r[0]]);

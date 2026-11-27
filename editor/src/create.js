@@ -2450,7 +2450,17 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       props.querySelector('.m2-ed-pstd').hidden = !pf.hub || !ns.every(pf.hub);   // several processes or gates: Standard size for all of them
       ROWS.forEach(function (r) {
         var tr = props.querySelector('.m2-ed-pnode tr[data-k="' + r[0] + '"]'), f = field(r[0]);
-        tr.hidden = r[0] === 'label' || r[2] === 'pic' || ns.some(function (i, j) { pNow = Ls[j]; return (/^[wh]$/.test(r[0]) && (!sizable(i) || holds(i))) || pf.off(r[0], i); });   // a holder's size alone (holderSize)
+        tr.hidden = r[0] === 'label' || ns.some(function (i, j) { pNow = Ls[j]; return (/^[wh]$/.test(r[0]) && (!sizable(i) || holds(i))) || pf.off(r[0], i); });   // a holder's size alone (holderSize)
+        // the Image row on several selected nodes, to put one image on all of them: one image on all, its name and Remove (off all); none on any, Upload (on all); different ones, "mixed"
+        // and Upload (one image on all). Each one undo step (the part's buttons act on the whole selection)
+        if (r[2] === 'pic') {
+          if (tr.hidden) return;
+          var ps = Ls.map(function (L) { return L.pic ? L.pic.name : ''; }), same = ps.every(function (p) { return p === ps[0]; });
+          tr.classList.toggle('m2-mixed', !same);
+          picShow(f, same ? Ls[0].pic : null);
+          if (!same) f.parentNode.querySelector('.m2-ed-ppicname').textContent = 'mixed';
+          return;
+        }
         if (tr.hidden || (!all && document.activeElement === f)) return;
         var vs = Ls.map(function (L) { return r[2] === 'check' ? !!L[r[0]] : String(L[r[0]] == null ? '' : L[r[0]]); }), one = vs.every(function (v) { return v === vs[0]; });
         tr.classList.toggle('m2-mixed', !one);

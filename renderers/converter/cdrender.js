@@ -851,10 +851,32 @@
   };
   D.svg = function () {
     this.compartments(); this.species(); this.texts(); this.reactions();
+    var body = shared((this.GROUPS ? '<g transform="translate(0,0)">\n' : '') + this.under.map(function (s) { return s + '\n'; }).join('') + this.out.join('\n') + '\n' +
+      '<g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">\n' + this.halo.join('\n') + '\n</g>\n' + this.lines.join('\n') + '\n' + this.over.map(function (s) { return s + '\n'; }).join('') + (this.GROUPS ? '</g>\n' : ''));
     return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="' + fmt(this.W) + '" height="' + fmt(this.H) + '" viewBox="0 0 ' + fmt(this.W) + ' ' + fmt(this.H) + '">\n' +
-      '<rect width="100%" height="100%" fill="#fff"/>\n' + (this.GROUPS ? '<g transform="translate(0,0)">\n' : '') + this.under.map(function (s) { return s + '\n'; }).join('') + this.out.join('\n') + '\n' +
-      '<g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">\n' + this.halo.join('\n') + '\n</g>\n' + this.lines.join('\n') + '\n' + this.over.map(function (s) { return s + '\n'; }).join('') + (this.GROUPS ? '</g>\n' : '') + '</svg>\n';
+      body.defs + '<rect width="100%" height="100%" fill="#fff"/>\n' + body.text + '</svg>\n';
   };
+
+  // an image used by two or more nodes kept once, so the same image on 200 proteins does not make the drawing 200
+  // images heavy: its data in <defs> as a symbol stretched to whatever box uses it (100 units, not 1: a browser may draw
+  // an SVG image at its size in user units before scaling it), each node a <use> at its own box,
+  // so the drawing grows by one image whatever the number of nodes. An image used once stays an <image> as before (one()
+  // and the editor's live drawing of a single node write it so too, so one() differs there from the whole drawing's group). The symbol's id comes from the image's data, so two
+  // drawings in one page (the editor's and another) naming the same id name the same image.
+  var IMG = /<image href="([^"]*)" (x="[^"]*" y="[^"]*" width="[^"]*" height="[^"]*") preserveAspectRatio="none"([^>]*?)\/>/g;
+  function shared(text) {
+    var n = {}, id = {}, defs = '';
+    for (var m; (m = IMG.exec(text));) n[m[1]] = (n[m[1]] || 0) + 1;   // counted without a copy of the drawing (it can be many MB)
+    Object.keys(n).forEach(function (href) {
+      if (n[href] < 2) return;
+      var h1 = 0x811c9dc5, h2 = 0x01000193;
+      for (var i = 0; i < href.length; i++) { var c = href.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619) >>> 0; h2 = Math.imul(h2 + c, 2654435761) >>> 0; }
+      id[href] = 'm2img-' + h1.toString(36) + h2.toString(36);
+      defs += '<symbol id="' + id[href] + '" viewBox="0 0 100 100" preserveAspectRatio="none"><image href="' + href + '" width="100" height="100" preserveAspectRatio="none"/></symbol>\n';
+    });
+    if (!defs) return { defs: '', text: text };
+    return { defs: '<defs>\n' + defs + '</defs>\n', text: text.replace(IMG, function (m, href, box, extra) { return id[href] ? '<use href="#' + id[href] + '" ' + box + extra + '/>' : m; }) };
+  }
 
   function render(src, opt) { return new Drawing(src, opt).svg(); }
   // one element drawn alone, as render(src, { groups: true }) draws it: a species alias (its group), a compartment alias
