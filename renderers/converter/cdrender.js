@@ -297,7 +297,12 @@
     // gives the picture's address for that path, or nothing; with no opt.glyph everything is drawn as lines
     this.pic = opt.glyph ? function (s) { var m = /Glyph:[ \t]*([^\r\n<]+?\.(?:png|svg))[ \t\r]*(?:\n|<|$)/i.exec(s || ''); return m ? opt.glyph(m[1]) || null : null; } : function () { return null; };
     this.glyph = {}; this.spGlyph = {};
-    findall(model, 's:listOfCompartments/s:compartment').forEach(function (c) { var n = find(c, 's:notes'), href = n && self.pic(n.textContent); if (href) self.glyph[get(c, 'id')] = href; });
+    this.zIdx = {};   // a compartment's 'Z-Index:' in its notes, as MINERVA orders compartments by it
+    findall(model, 's:listOfCompartments/s:compartment').forEach(function (c) {
+      var n = find(c, 's:notes'), href = n && self.pic(n.textContent), z = n && /Z-Index:[ \t]*(-?\d+)/i.exec(n.textContent);
+      if (href) self.glyph[get(c, 'id')] = href;
+      if (z) self.zIdx[get(c, 'id')] = +z[1];
+    });
     findall(model, 's:listOfSpecies/s:species').forEach(function (s) { var n = find(s, 's:notes'), href = n && self.pic(n.textContent); if (href) self.spGlyph[get(s, 'id')] = href; });
     this.alias = new Map();
     findall(ext, 'cd:listOfComplexSpeciesAliases/cd:complexSpeciesAlias').concat(findall(ext, 'cd:listOfSpeciesAliases/cd:speciesAlias')).forEach(function (a) {
@@ -326,6 +331,13 @@
     var self = this, cs = findall(this.ext, 'cd:listOfCompartmentAliases/cd:compartmentAlias');
     var key = function (a) { var b = find(a, 'cd:bounds'); return b ? -F(get(b, 'w')) * F(get(b, 'h')) : 0; };   // a close-up compartment (SQUARE_CLOSEUP_*) has a point, no bounds
     cs = cs.map(function (a) { return [a, key(a)]; }).sort(function (p, q) { return p[1] - q[1]; }).map(function (p) { return p[0]; });
+    // the larger under the smaller, except among those with a Z-Index: they keep the places the area gave them, taken in
+    // the order of their Z-Index (the lower under), so a compartment with none stays where it was
+    var zOf = function (a) { return self.zIdx[get(a, 'compartment')]; }, withZ = cs.filter(function (a) { return zOf(a) != null; });
+    if (withZ.length > 1) {
+      var byZ = withZ.slice().sort(function (p, q) { return zOf(p) - zOf(q) || withZ.indexOf(p) - withZ.indexOf(q); }), k = 0;
+      cs = cs.map(function (a) { return zOf(a) != null ? byZ[k++] : a; });
+    }
     cs.forEach(function (a) {
       if (!find(a, 'cd:bounds')) return;
       if (self.GROUPS) self.out.push('<g data-n="' + attr(get(a, 'id')) + '">');

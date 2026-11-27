@@ -77,6 +77,12 @@ an image on two or more nodes kept once: its data in <defs> as a <symbol> (100 b
 
 ## compartments
 
+The larger drawn under the smaller (by the area of the box). Compartments whose notes give a `Z-Index:` keep the
+places the area gave them, taken in the order of their Z-Index, the lower under: MINERVA draws compartments by Z-Index,
+not by area (a smaller compartment at -4 is drawn wholly under a larger at -3). A compartment with none stays where
+the area put it. Among the open MINERVA zips this changes only AD/UC, where two nerve endings (-2) lie
+over two smaller blood vessels (-3).
+
 -- nodes ----------------------------------------------------------------------------
 
 ## compartment
