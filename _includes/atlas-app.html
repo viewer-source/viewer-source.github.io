@@ -783,10 +783,11 @@ page, so its styles keep the base they were made on).
   /* annotation of the clicked protein or metabolite: in the right column, or
      on narrower windows over the right side of the map */
   /* a map pin, as in MINERVA, with its tip on the clicked node; it keeps its size at every zoom */
-  /* the lines a click lights (lit, drawLit): a soft marker band under them, the map's own lines kept over it (multiply) */
+  /* the lines a click lights (lit, drawLit): a band of one solid colour, so overlaps never darken; multiply keeps the
+     map's black lines over it; cut square at the ends, so it stops where a line meets a shape */
   #m2-hl { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; mix-blend-mode: multiply; display: none; }
-  #m2-hl path { fill: none; stroke: #8db4f0; stroke-opacity: .7; stroke-linecap: round; stroke-linejoin: round; }
-  #m2-hl .m2-hl-proc { fill: #8db4f0; stroke: #8db4f0; opacity: .7; stroke-linejoin: round; }
+  #m2-hl path { fill: none; stroke: #afcaf4; stroke-linecap: butt; stroke-linejoin: round; }
+  #m2-hl .m2-hl-proc { fill: #afcaf4; stroke: #afcaf4; stroke-linejoin: round; }
   .m2-editing #m2-hl { display: none !important; }
   #m2-pin { position: absolute; left: 0; top: 0; width: 24px; height: 32px; margin: -32px 0 0 -12px; pointer-events: none; display: none; filter: drop-shadow(0 1px 1px #0005); }
   .m2-info { grid-column: 3; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); max-height: calc(100vh / var(--zoom, 1) - 140px); overflow-y: auto; overscroll-behavior: contain; overflow-wrap: anywhere; }
