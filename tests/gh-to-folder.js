@@ -96,7 +96,7 @@ var KEEP = ['colour-test', 'glycolysis-graphml', 'colour-glycolysis-sbgn', 'tag-
   await askOff(); await page.click('.m2-ask-copy');
   await page.waitForSelector('.m2-ask-done:not([hidden])', { timeout: 120000 });
   var doneSaid = await page.$eval('.m2-ask-done', function (e) { return e.textContent; });
-  ok('2. the window says where it now works, OK closes it', /Working from .* Every change is saved in this folder/.test(doneSaid), doneSaid);
+  ok('2. the window says where it now works, OK closes it', /Working from .*Every change is saved in this folder/.test(doneSaid), doneSaid);
   await page.click('.m2-ask-ok'); await page.waitForSelector('.m2-ask', { state: 'detached', timeout: 5000 });
   await page.waitForTimeout(2500);
   var rs = (await recs()).filter(function (r) { return r.from; }), fl = await inFolder();

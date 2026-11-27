@@ -77,14 +77,14 @@ var prot = function () { return (files[P].match(/<celldesigner:class>PROTEIN</g)
     var c = Array.prototype.map.call(document.querySelectorAll('.m2-ask-opt > button:first-child'), function (b) { return b.offsetHeight; });
     return c.length >= 1 && c.every(function (h) { return h === c[0]; }) && document.querySelectorAll('.m2-ask-opt .m2-itip').length === c.length;
   }));
-  await page.click('.m2-ask-opt:last-child .m2-itip'); await page.waitForTimeout(200);
-  var d = await bx('.m2-ask'), p = await bx('.m2-ipop'), o = await bx('.m2-ask-opt:last-child');
+  await page.click('.m2-ask-opt:last-of-type .m2-itip'); await page.waitForTimeout(200);
+  var d = await bx('.m2-ask'), p = await bx('.m2-ipop'), o = await bx('.m2-ask-opt:last-of-type');
   ok('2. the circled i: its text beside the dialog, level with its card, not over it', !!(d && p && o) && p.l >= d.r && Math.abs(p.t - o.t) < 2, JSON.stringify([d, p, o]));
   await page.mouse.click(20, 880); await page.waitForTimeout(200);
   ok('2. a click beside with the text open: the text closed, the dialog kept', !(await page.$('.m2-ipop')) && !!(await dlg()));
-  await page.click('.m2-ask-opt:last-child .m2-itip'); await page.waitForTimeout(200); await page.click('.m2-ask-opt:last-child .m2-itip'); await page.waitForTimeout(200);
+  await page.click('.m2-ask-opt:last-of-type .m2-itip'); await page.waitForTimeout(200); await page.click('.m2-ask-opt:last-of-type .m2-itip'); await page.waitForTimeout(200);
   ok('2. the circled i again closes its text', !(await page.$('.m2-ipop')) && !!(await dlg()));
-  await page.click('.m2-ask-opt:last-child .m2-itip'); await page.waitForTimeout(200); await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+  await page.click('.m2-ask-opt:last-of-type .m2-itip'); await page.waitForTimeout(200); await page.keyboard.press('Escape'); await page.waitForTimeout(200);
   ok('2. Esc with the text open: the text closed, the dialog kept', !(await page.$('.m2-ipop')) && !!(await dlg()));
   await page.mouse.click(20, 880); await page.waitForTimeout(200);
   ok('2. then a click beside closes the dialog, still connected', !(await dlg()) && (await tok()) === 'test-token');
