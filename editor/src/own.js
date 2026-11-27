@@ -1,4 +1,4 @@
-import { shared, V } from './state.js';
+import { formatOfMap, shared, V } from './state.js';
 import { ahead, api, b64, blobSha, changed, drawText, freeName, gh, graphmlOf, heldText, localBox, map, mapTop, note, on, origFolderDrop, origRead, origWrite, repo, site, src, stop, toFolder, token, unkeep, warn } from './core.js';
 import { cdMap, cdMk, cdPicSource, cdpy, isCd } from './celldesigner.js';
 import { noLayout } from './graphml.js';
@@ -581,8 +581,9 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         if (location.hash.slice(1) === k) setTimeout(function () { if (location.hash.slice(1) === k && V.byId[r.site]) V.go(r.site); }, 0);   // shown: the site's map in its place
       });
       list = siteNamed(list.filter(function (m) { return !held[m.id]; }));
-      var hid = siteHidden(), gh = !!(repo() && token()), pend = binPending(), n0 = Object.keys(pend).length, binned = [];
+      var moved = movedSites(), hid = siteHidden(), gh = !!(repo() && token()), pend = binPending(), n0 = Object.keys(pend).length, binned = [];
       list = list.filter(function (m) {
+        if (moved[m.id]) return false;   // copied to the folder and not back yet: its copy stands in its place (moveOut, moveBack)
         if (hiddenGone[m.id]) return false;   // deleted forever here, the build not run since
         var tb = twinBase(m), tp = tb && (ids[tb + '-graphml'] || ids[tb]), d = tp && m.deleted && m.deleted === tp.deleted ? binState(tp, pend) : (tp && binState(tp, pend)) || binState(m, pend);   // a twin in Deleted with its GraphML map (the build gives it the same date), or on its own
         if (!d && (!gh || hid.indexOf(m.id) < 0)) return true;   // an older version's hiding: without a token no longer hides (a map is kept or deleted), with one it is in Deleted until moved there (binMigrate)
@@ -591,7 +592,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       });
       if (Object.keys(pend).length !== n0) binPendingSet(pend);   // entries the build has now let go
       var own = mineShown().sort(function (a, b) { return a.title.localeCompare(b.title); }).map(mineEntry);
-      Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.hidden) binned.push(Object.assign(mineEntry(r), { binned: r.deleted || r.at })); });
+      Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.hidden && !r.gone) binned.push(Object.assign(mineEntry(r), { binned: r.deleted || r.at })); });
       return own.concat(list, binned);
     }
     // Example maps: the site's maps whose pages say example: true (and the SBGN-ML twins of those in the group GraphML);
@@ -901,6 +902,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         file: old ? old.file : name, text: back ? old.text : text, svg: back ? old.svg : d.svg, width: back ? old.width : d.width, height: back ? old.height : d.height,
         at: back ? old.at : Date.now(), src: old ? old.src || (id ? undefined : h) : h, hidden: false, group: group !== undefined ? group : old && old.group || '' };
       if (old && old.site) ['site', 'path', 'sha', 'saved', 'siteTitle'].forEach(function (k) { r[k] = old[k]; });   // on GitHub already: its file there, its new text sent once connected
+      if (old && old.from) r.from = old.from;   // a copy from GitHub (moveOut), changed in the folder: still where it came from
       return minePut(r).then(function () { return old && old.hidden ? folderMove(r.id, false) : null; }).then(function () { return r; });   // out of Deleted: its folder file too
     }
     // Files being added, shown at once in the list where they will stand (addPaint, after every list built): each file a
@@ -1518,7 +1520,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         return V.draftDo('readonly', function (st) { return st.get(id); }, 'mine').then(function (stored) {
           if (stored && stored.site && mine[id] && !mine[id].site) mine[id] = Object.assign({}, mine[id], ['site', 'path', 'sha', 'saved', 'siteTitle'].reduce(function (o, k) { o[k] = stored[k]; return o; }, {}));
           var r = mine[id];
-          if (!r || r.hidden) return null;
+          if (!r || r.hidden || r.from) return null;   // a folder copy: back to its own file by moveBack, never a new map
           if (r.site) return r;
           var ext = siteExt(r.text), title = r.title.replace(/\.(graphml|xml|sbgn|nwt)$/i, '');
           if (!ext) throw new Error(siteWhy(r.text));
@@ -1565,11 +1567,11 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       if (upRun) return upRun;
       var went = [], failed = [], fail = function (r) { return function (e) { failed.push(r.title + ' (' + (e && e.message ? e.message : e) + ')'); }; };
       var listIn = function (n) { return V.siteList || !n ? Promise.resolve() : new Promise(function (res) { setTimeout(res, 500); }).then(function () { return listIn(n - 1); }); };
-      return (upRun = mineIn.then(function () { return listIn(60); }).then(function () {
+      return (upRun = mineIn.then(moveBack).then(function () { return listIn(60); }).then(function () {
         return Object.keys(mine).reduce(function (q, id) {
           return q.then(function () {
             var r = mine[id];
-            if (!r || r.hidden || (on && site && site.id === id)) return;   // the map edited: its own way (toGh, push)
+            if (!r || r.hidden || r.from || (on && site && site.id === id)) return;   // the map edited: its own way (toGh, push); a folder copy not yet back: moveBack's
             if (!r.site) return upOne(id).then(function (n) { if (n) went.push(n.title); }, fail(r));
             if (r.path && r.saved != null && r.text !== r.saved) return putMine(r).then(function () { went.push(r.title); }, fail(r));
           });
@@ -1595,6 +1597,163 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
             api('/contents/' + r.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (x) { return x.text(); })])
             .then(function (f) { if (f[1] !== t) throw new Error('changed on GitHub since'); return learn(f[0].sha); });
         });
+    }
+    // ---------- The switch from GitHub to a folder (notes/from-scratch-plan.md, idea 3) ----------
+    // Copy my maps to a folder, then disconnect (core.js askOff): every map of the site's own that the list shows, and
+    // every map of the reader's on its way to the site, is written into the folder chosen as GitHub has it (with the
+    // moves this browser keeps for it, which then count as a change), each file read back before the next, with
+    // Original's colours (maps/colours/<id>.json) and the pictures of maps/glyphs/; the copies become maps of the
+    // reader's (their title and group kept) that remember where they came from (from: the site's id, path, sha, title,
+    // group, the text and colours copied). Only once every map is there is the token removed; GitHub is left as it is.
+    // While a copy has `from`, connected or not, it stands in the site's map's place (withMine) and is never sent as a
+    // new map (upAll, upOne). Connected again (moveBack, before upAll): unchanged, the copy goes and the site's map is
+    // shown; changed, its file (and colours) saved over GitHub's on the sha copied (changed there meanwhile: both kept,
+    // the copy then a map of its own), renamed or moved its page follows, and it is shown from this browser until the
+    // build has the save (a map on its way, as any sent); deleted, or deleted for good, while in the folder: the site's
+    // map into Deleted there. A step refused keeps `from`, so the next connection tries again from there
+    function movedSites() { var o = {}; Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.from) o[r.from.site] = k; }); return o; }
+    function toMove() {
+      var wait = Object.keys(mine).map(function (k) { return mine[k]; }).filter(function (r) { return r.site && !r.hidden && !r.from; });
+      return (V.maps || []).filter(function (m) { return !m.mine && !m.binned && !m.shownAs && graphmlOf(m) && formatOfMap(m); }).concat(wait);
+    }
+    function ghRaw(path) {   // GitHub's text of a file and its sha, or null when it is not there
+      return api('/contents/' + path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (r) {
+        if (r.status === 404) return null;
+        if (!r.ok) throw new Error('GitHub ' + r.status);
+        return r.text().then(function (t) { return blobSha(t).then(function (sha) { return { text: t, sha: sha }; }); });
+      });
+    }
+    function writeBack(dir, name, t) {   // the file written and read back; a file of that name with other content: beside it
+      return dir.getFileHandle(name).then(function (h) { return h.getFile().then(function (fl) { return fl.text(); }); }, function () { return null; }).then(function (old) {
+        return old === null || old === t ? name : freeName(dir, name, 2);
+      }).then(function (nm) {
+        var h;
+        return dir.getFileHandle(nm, { create: true }).then(function (x) { h = x; return h.createWritable(); })
+          .then(function (w) { return w.write(t).then(function () { return w.close(); }); })
+          .then(function () { return h.getFile(); }).then(function (fl) {
+            return fl.text().then(function (back) {
+              if (back !== t) throw new Error(nm + ' did not read back as written');
+              return { name: nm, mod: fl.lastModified, size: fl.size };
+            });
+          });
+      });
+    }
+    // say(text): the progress, in the window. Resolves to { n, dir, ids: site id -> copy id }; on a failure the copies
+    // made are let go from the list (their files stay in the folder, taken again by the next try) and the token stays
+    function moveOut(dir, say) {
+      var maps = toMove(), made = [], ids = {}, cols = {};
+      return mineIn.then(function () { return folder(); }).then(function (f) {
+        return f && f.dir.isSameEntry(dir).then(function (same) { return same; }, function () { return false; });
+      }).then(function (same) {
+        return same ? null : folderSet(dir);   // the same folder again: its record of the files kept (a copy stopped before)
+      }).then(function () {
+        return api('/contents/maps/colours?ref=main').then(function (r) { return r.status === 404 ? [] : ghJson(r); })
+          .then(function (l) { (Array.isArray(l) ? l : []).forEach(function (x) { cols[x.name] = x.sha; }); });
+      }).then(function () {
+        return maps.reduce(function (q, m, i) {
+          return q.then(function () {
+            var w0 = m.site !== undefined && mine[m.id] === m, sid = w0 ? m.site : m.id, title = w0 ? m.title : mapName(m), group = (w0 ? m.group : m.group) || '';
+            say('Copying ' + (i + 1) + ' of ' + maps.length + ': ' + title);
+            var url = w0 ? null : graphmlOf(m), F = w0 ? null : formatOfMap(m), path = w0 ? m.path : 'maps/' + url.split('?')[0].split('/').pop();
+            if (F && F.ahead && F.ahead.path) path = F.ahead.path(m);   // an SBGN-ML map edited as a copy of its own
+            var file = path.split('/').pop();
+            return (w0 ? Promise.resolve({ text: m.saved != null ? m.saved : m.text, sha: m.sha || null }) : ghRaw(path).then(function (g) {
+              return g || fetch(url, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error(title + ': ' + r.status); return r.text(); }).then(function (t) { return { text: t, sha: null }; });
+            })).then(function (g) {
+              var dr = !w0 && V.drafts[m.id], t = w0 ? m.text : dr && dr.text ? dr.text : g.text;   // moves kept in this browser: in the copy, a change to send back
+              return writeBack(dir, file, t).then(function (w) {
+                return drawText(t).then(function (d) {
+                  var r = { id: newId(), title: title, file: w.name, text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), src: textHash(t), hidden: false, group: group,
+                    from: { site: sid, path: path, sha: g.sha, saved: g.text, title: w0 ? m.siteTitle || title : title, group: group } };
+                  return minePut(r).then(function () { made.push(r.id); ids[sid] = r.id; return folderFile(r.id, w); }).then(function () {
+                    if (!cols[sid + '.json']) return;
+                    return ghRaw('maps/colours/' + sid + '.json').then(function (c) {
+                      if (!c) return;
+                      r.from.cols = c.text; r.from.colSha = c.sha;
+                      return minePut(r).then(folder).then(function (f) { return origWrite(f, w.name, JSON.parse(c.text)); });
+                    }).catch(function (e) { throw new Error(title + '’s own colours: ' + (e && e.message ? e.message : e)); });
+                  });
+                });
+              });
+            });
+          });
+        }, Promise.resolve());
+      }).then(function () {   // every picture of maps/glyphs/ (the ones the maps' notes name among them)
+        return api('/contents/maps/glyphs?ref=main').then(function (r) { return r.status === 404 ? [] : ghJson(r); }).then(function (list) {
+          return (Array.isArray(list) ? list : []).filter(function (x) { return x.type === 'file'; }).reduce(function (q, x) {
+            return q.then(function () {
+              say('Copying the pictures: ' + x.name);
+              return api('/contents/maps/glyphs/' + encodeURIComponent(x.name) + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } })
+                .then(function (r) { if (!r.ok) throw new Error('picture ' + x.name + ': GitHub ' + r.status); return r.arrayBuffer(); })
+                .then(function (a) {
+                  return putIn(dir, 'glyphs/' + x.name, a).then(function () { return dir.getDirectoryHandle('glyphs'); }).then(function (g) { return g.getFileHandle(x.name); })
+                    .then(function (h) { return h.getFile(); }).then(function (fl) { if (fl.size !== a.byteLength) throw new Error('picture ' + x.name + ' did not read back as written'); });
+                });
+            });
+          }, Promise.resolve());
+        });
+      }).then(function () {
+        if (made.length !== maps.length) throw new Error(made.length + ' of ' + maps.length + ' maps copied');
+        maps.forEach(function (m) { if (m.site !== undefined && mine[m.id] === m) dropCopy(m.id); });   // a map on its way: its copy in its place
+        V.refreshMine();
+        return { n: made.length, dir: dir, ids: ids };
+      }, function (e) {
+        return Promise.all(made.map(function (k) { return dropCopy(k); })).then(function () { V.refreshMine(); throw e; });
+      });
+    }
+    function dropCopy(k) {   // a copy's record let go from this browser (its file stays where it is)
+      delete mine[k]; var u = mineURLs[k]; if (u) { letGo(u.svg); letGo(u.text); } delete mineURLs[k]; mineFlag();
+      return V.draftDo('readwrite', function (st) { return st.delete(k); }, 'mine').catch(function () {});
+    }
+    function putOn(path, t, sha) {   // a file saved over GitHub's on the sha known: its new sha, or null when GitHub's was changed since
+      return api('/contents/' + path, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Moved in the viewer: ' + path.split('/').pop(), content: b64(t), sha: sha || undefined, branch: 'main' }) })
+        .then(function (q) {
+          if (q.ok) return q.json().then(function (d) { return d.content.sha; });
+          if (q.status !== 409 && q.status !== 422) throw new Error('GitHub ' + q.status);
+          return ghRaw(path).then(function (g) { return g && g.text === t ? g.sha : null; });
+        });
+    }
+    function moveBack() {
+      if (!(repo() && token())) return Promise.resolve();
+      var ks = Object.keys(mine).filter(function (k) { return mine[k].from; });
+      if (!ks.length) return Promise.resolve();
+      var both = [], failed = [];
+      return folder().catch(function () { return null; }).then(function (f) {
+        return ks.reduce(function (q, k) {
+          return q.then(function () {
+            var r = mine[k]; if (!r || !r.from) return;
+            var fr = r.from, t = r.text, keep = function () { return minePut(r); };
+            if (r.hidden) return siteBin(fr.site, true).then(function () { return dropCopy(k); });   // deleted (or for good) while in the folder: in Deleted on the site too
+            return (f ? origRead(f, r.file) : Promise.resolve(null)).then(function (c) {
+              var cols = c ? JSON.stringify(c) : null, colsWas = fr.cols ? JSON.stringify(JSON.parse(fr.cols)) : null;
+              var named = r.title === fr.title, grouped = (r.group || '') === fr.group, colsSame = !cols || cols === colsWas;
+              if (t === fr.saved && named && grouped && colsSame) { V.arrived[k] = fr.site; return dropCopy(k); }   // unchanged: the site's map in its place
+              return (t === fr.saved ? Promise.resolve(fr.sha) : putOn(fr.path, t, fr.sha)).then(function (sha) {
+                if (sha === null) { delete r.from; both.push(r.title); return keep(); }   // changed on GitHub meanwhile: both kept, the copy sent as a map of its own
+                fr.saved = t; fr.sha = sha; r.at = Date.now();
+                return keep().then(function () {
+                  if (colsSame) return;
+                  return putOn('maps/colours/' + fr.site + '.json', JSON.stringify(c, null, 1) + '\n', fr.colSha).then(function (cs) { if (cs) { fr.cols = cols; fr.colSha = cs; } return keep(); });
+                }).then(function () {
+                  if (/^maps\/sbgn-ml\//.test(fr.path)) return;   // an SBGN-ML copy of its own: no page of its own (canRename)
+                  if (!named) renamed[fr.site] = { was: fr.title, to: r.title };   // the list shows the new name until the build has the page
+                  return (named ? Promise.resolve() : toSiteName(fr.site, fr.title, r.title).then(function () { fr.title = r.title; return keep(); }, function (e) { delete renamed[fr.site]; throw e; }))
+                    .then(function () { return grouped ? null : toSiteGroup(fr.site, r.group || '', 0).then(function () { fr.group = r.group || ''; return keep(); }); });
+                }).then(function () {   // all of it on GitHub: a map on its way, shown from this browser until the build has the save
+                  var n = Object.assign({}, r, { site: fr.site, path: fr.path, sha: fr.sha || null, saved: t, siteTitle: fr.title });
+                  delete n.from;
+                  return minePut(n);
+                });
+              });
+            }).catch(function (e) { failed.push(r.title + ' (' + (e && e.message ? e.message : e) + ')'); });
+          });
+        }, Promise.resolve());
+      }).then(function () {
+        V.refreshMine();
+        if (failed.length) warn('Not back on GitHub yet, kept in this browser and the folder: ' + failed.join(', ') + '. Tried again when you connect next.');
+        else if (both.length) warn('Changed both in the folder and on GitHub since the copy, so both kept: ' + both.join(', ') + '.');
+      });
     }
     // ---------- Delete map, Deleted, Restore, Delete forever ----------
     // (as a mailbox's or the Mac's Bin). Delete map, the last line of the list's
@@ -1986,6 +2145,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       ms.forEach(function (m) {
         if (m.mine) {
           var r = mine[m.id]; if (!r) return;
+          if (r.from) { folderErase(m.id); minePut(Object.assign({}, r, { hidden: true, gone: true, text: '', svg: '' })).catch(function () {}); return; }   // a folder copy: a mark kept, so its site map goes into Deleted once connected (moveBack)
           if (r.site && gh) site.push(r.site);   // on the site already (Delete map is offered on it only with a token)
           var u = mineURLs[m.id]; if (u) { letGo(u.svg); letGo(u.text); }
           delete mine[m.id]; delete mineURLs[m.id]; mineFlag();
@@ -2150,4 +2310,4 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     }   // connected: the reader's maps kept in this browser go to GitHub
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); }   // the part's statements, in their order
-    export { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, openZipFolder, origGh, origPut, own, savedMine, toGh, upAll, upRun };
+    export { moveOut, toMove, draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, openZipFolder, origGh, origPut, own, savedMine, toGh, upAll, upRun };

@@ -1835,13 +1835,15 @@
       // sites kept in the notes put back on their circles (sbIn, written as Show sites says, sbOut); the moves written back
       // at once, so a file whose moves cannot be is said now, not at the first save
       open: function(t, g0, still) {
-        var t0 = t;
+        var t0 = t, members = [];
         return sbpy().then(function() {
-          var tin = sbIn(t), sited = function(x) {
+          var mo = sbJs && sbJs.membersOut ? sbJs.membersOut(t) : { text: t, said: [] };
+          members = mo.said;
+          var tin = sbIn(mo.text), sited = function(x) {
             return (x.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length;
           };
           if (tin === t) return g0;
-          if (g0 && sited(tin) === sited(t)) {
+          if (g0 && !members.length && sited(tin) === sited(t)) {
             t = tin;
             return g0;
           }
@@ -1856,7 +1858,7 @@
           if (ed0.unique) t = ed0.unique(t, g1);
           var g = sbGraphml(t, g1), sb1 = { base: t, g0: g1 };
           var n = !V.sites && sbJs && sbJs.sitesOut && isSb(t0) ? (t0.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length : 0;
-          var said = n ? n + (n > 1 ? " sites" : " site") + " kept as links on " + (n > 1 ? "their glyphs" : "its glyph") + " and drawn as the value alone, as Show sites (Settings, Display) is off." : null;
+          var said = [sbJs.membersSaid(members), n ? n + (n > 1 ? " sites" : " site") + " kept as links on " + (n > 1 ? "their glyphs" : "its glyph") + " and drawn as the value alone, as Show sites (Settings, Display) is off." : ""].filter(Boolean).join(" ") || null;
           return { g, t, t0, said, own: { sb: sb1, sbLast: [g, edOf(t).write(t, g), sb1] } };
         });
       },
@@ -6336,10 +6338,17 @@
       beside: function() {
         return null;
       },
-      open: function(t) {
-        return { g: t, t };
+      // edited as it is, but for lines at complex members put right (sbgn_edit.membersOut), said once the map is drawn and
+      // written at the next save; at once when the engine is loaded, else once it is
+      open: function(t, g0, still) {
+        var fix = function() {
+          var mo = sbJs.membersOut(t);
+          return { g: mo.text, t: mo.text, t0: t, said: sbJs.membersSaid(mo.said) };
+        };
+        return sbJs ? fix() : sbpy().then(function() {
+          return still && !still() ? null : fix();
+        });
       },
-      // edited as it is
       drawOwn: function(t) {
         var no2 = noLayout(t);
         if (no2) return Promise.reject(new Error(no2));
@@ -7853,8 +7862,9 @@
     list2 = siteNamed(list2.filter(function(m) {
       return !held2[m.id];
     }));
-    var hid = siteHidden(), gh2 = !!(repo() && token()), pend = binPending(), n0 = Object.keys(pend).length, binned = [];
+    var moved = movedSites(), hid = siteHidden(), gh2 = !!(repo() && token()), pend = binPending(), n0 = Object.keys(pend).length, binned = [];
     list2 = list2.filter(function(m) {
+      if (moved[m.id]) return false;
       if (hiddenGone[m.id]) return false;
       var tb = twinBase(m), tp = tb && (ids[tb + "-graphml"] || ids[tb]), d = tp && m.deleted && m.deleted === tp.deleted ? binState(tp, pend) : tp && binState(tp, pend) || binState(m, pend);
       if (!d && (!gh2 || hid.indexOf(m.id) < 0)) return true;
@@ -7867,7 +7877,7 @@
     }).map(mineEntry);
     Object.keys(mine).forEach(function(k) {
       var r = mine[k];
-      if (r.hidden) binned.push(Object.assign(mineEntry(r), { binned: r.deleted || r.at }));
+      if (r.hidden && !r.gone) binned.push(Object.assign(mineEntry(r), { binned: r.deleted || r.at }));
     });
     return own2.concat(list2, binned);
   }
@@ -8325,6 +8335,7 @@
     if (old && old.site) ["site", "path", "sha", "saved", "siteTitle"].forEach(function(k) {
       r[k] = old[k];
     });
+    if (old && old.from) r.from = old.from;
     return minePut(r).then(function() {
       return old && old.hidden ? folderMove(r.id, false) : null;
     }).then(function() {
@@ -9501,7 +9512,7 @@
           return o;
         }, {}));
         var r = mine[id];
-        if (!r || r.hidden) return null;
+        if (!r || r.hidden || r.from) return null;
         if (r.site) return r;
         var ext = siteExt(r.text), title = r.title.replace(/\.(graphml|xml|sbgn|nwt)$/i, "");
         if (!ext) throw new Error(siteWhy(r.text));
@@ -9575,13 +9586,13 @@
         return listIn(n - 1);
       });
     };
-    return upRun = mineIn.then(function() {
+    return upRun = mineIn.then(moveBack).then(function() {
       return listIn(60);
     }).then(function() {
       return Object.keys(mine).reduce(function(q, id) {
         return q.then(function() {
           var r = mine[id];
-          if (!r || r.hidden || on && site && site.id === id) return;
+          if (!r || r.hidden || r.from || on && site && site.id === id) return;
           if (!r.site) return upOne(id).then(function(n) {
             if (n) went.push(n.title);
           }, fail(r));
@@ -9622,6 +9633,286 @@
         if (f[1] !== t) throw new Error("changed on GitHub since");
         return learn(f[0].sha);
       });
+    });
+  }
+  function movedSites() {
+    var o = {};
+    Object.keys(mine).forEach(function(k) {
+      var r = mine[k];
+      if (r.from) o[r.from.site] = k;
+    });
+    return o;
+  }
+  function toMove() {
+    var wait = Object.keys(mine).map(function(k) {
+      return mine[k];
+    }).filter(function(r) {
+      return r.site && !r.hidden && !r.from;
+    });
+    return (V.maps || []).filter(function(m) {
+      return !m.mine && !m.binned && !m.shownAs && graphmlOf(m) && formatOfMap(m);
+    }).concat(wait);
+  }
+  function ghRaw(path) {
+    return api("/contents/" + path + "?ref=main", { headers: { Accept: "application/vnd.github.raw" } }).then(function(r) {
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error("GitHub " + r.status);
+      return r.text().then(function(t) {
+        return blobSha(t).then(function(sha) {
+          return { text: t, sha };
+        });
+      });
+    });
+  }
+  function writeBack(dir, name2, t) {
+    return dir.getFileHandle(name2).then(function(h) {
+      return h.getFile().then(function(fl) {
+        return fl.text();
+      });
+    }, function() {
+      return null;
+    }).then(function(old) {
+      return old === null || old === t ? name2 : freeName(dir, name2, 2);
+    }).then(function(nm) {
+      var h;
+      return dir.getFileHandle(nm, { create: true }).then(function(x) {
+        h = x;
+        return h.createWritable();
+      }).then(function(w) {
+        return w.write(t).then(function() {
+          return w.close();
+        });
+      }).then(function() {
+        return h.getFile();
+      }).then(function(fl) {
+        return fl.text().then(function(back2) {
+          if (back2 !== t) throw new Error(nm + " did not read back as written");
+          return { name: nm, mod: fl.lastModified, size: fl.size };
+        });
+      });
+    });
+  }
+  function moveOut(dir, say) {
+    var maps = toMove(), made2 = [], ids = {}, cols = {};
+    return mineIn.then(function() {
+      return folder();
+    }).then(function(f) {
+      return f && f.dir.isSameEntry(dir).then(function(same) {
+        return same;
+      }, function() {
+        return false;
+      });
+    }).then(function(same) {
+      return same ? null : folderSet(dir);
+    }).then(function() {
+      return api("/contents/maps/colours?ref=main").then(function(r) {
+        return r.status === 404 ? [] : ghJson(r);
+      }).then(function(l) {
+        (Array.isArray(l) ? l : []).forEach(function(x) {
+          cols[x.name] = x.sha;
+        });
+      });
+    }).then(function() {
+      return maps.reduce(function(q, m, i) {
+        return q.then(function() {
+          var w0 = m.site !== void 0 && mine[m.id] === m, sid = w0 ? m.site : m.id, title = w0 ? m.title : mapName(m), group = (w0 ? m.group : m.group) || "";
+          say("Copying " + (i + 1) + " of " + maps.length + ": " + title);
+          var url = w0 ? null : graphmlOf(m), F = w0 ? null : formatOfMap(m), path = w0 ? m.path : "maps/" + url.split("?")[0].split("/").pop();
+          if (F && F.ahead && F.ahead.path) path = F.ahead.path(m);
+          var file = path.split("/").pop();
+          return (w0 ? Promise.resolve({ text: m.saved != null ? m.saved : m.text, sha: m.sha || null }) : ghRaw(path).then(function(g) {
+            return g || fetch(url, { cache: "no-cache" }).then(function(r) {
+              if (!r.ok) throw new Error(title + ": " + r.status);
+              return r.text();
+            }).then(function(t) {
+              return { text: t, sha: null };
+            });
+          })).then(function(g) {
+            var dr = !w0 && V.drafts[m.id], t = w0 ? m.text : dr && dr.text ? dr.text : g.text;
+            return writeBack(dir, file, t).then(function(w) {
+              return drawText(t).then(function(d) {
+                var r = {
+                  id: newId(),
+                  title,
+                  file: w.name,
+                  text: t,
+                  svg: d.svg,
+                  width: d.width,
+                  height: d.height,
+                  at: Date.now(),
+                  src: textHash(t),
+                  hidden: false,
+                  group,
+                  from: { site: sid, path, sha: g.sha, saved: g.text, title: w0 ? m.siteTitle || title : title, group }
+                };
+                return minePut(r).then(function() {
+                  made2.push(r.id);
+                  ids[sid] = r.id;
+                  return folderFile(r.id, w);
+                }).then(function() {
+                  if (!cols[sid + ".json"]) return;
+                  return ghRaw("maps/colours/" + sid + ".json").then(function(c) {
+                    if (!c) return;
+                    r.from.cols = c.text;
+                    r.from.colSha = c.sha;
+                    return minePut(r).then(folder).then(function(f) {
+                      return origWrite(f, w.name, JSON.parse(c.text));
+                    });
+                  }).catch(function(e) {
+                    throw new Error(title + "\u2019s own colours: " + (e && e.message ? e.message : e));
+                  });
+                });
+              });
+            });
+          });
+        });
+      }, Promise.resolve());
+    }).then(function() {
+      return api("/contents/maps/glyphs?ref=main").then(function(r) {
+        return r.status === 404 ? [] : ghJson(r);
+      }).then(function(list2) {
+        return (Array.isArray(list2) ? list2 : []).filter(function(x) {
+          return x.type === "file";
+        }).reduce(function(q, x) {
+          return q.then(function() {
+            say("Copying the pictures: " + x.name);
+            return api("/contents/maps/glyphs/" + encodeURIComponent(x.name) + "?ref=main", { headers: { Accept: "application/vnd.github.raw" } }).then(function(r) {
+              if (!r.ok) throw new Error("picture " + x.name + ": GitHub " + r.status);
+              return r.arrayBuffer();
+            }).then(function(a) {
+              return putIn(dir, "glyphs/" + x.name, a).then(function() {
+                return dir.getDirectoryHandle("glyphs");
+              }).then(function(g) {
+                return g.getFileHandle(x.name);
+              }).then(function(h) {
+                return h.getFile();
+              }).then(function(fl) {
+                if (fl.size !== a.byteLength) throw new Error("picture " + x.name + " did not read back as written");
+              });
+            });
+          });
+        }, Promise.resolve());
+      });
+    }).then(function() {
+      if (made2.length !== maps.length) throw new Error(made2.length + " of " + maps.length + " maps copied");
+      maps.forEach(function(m) {
+        if (m.site !== void 0 && mine[m.id] === m) dropCopy(m.id);
+      });
+      V.refreshMine();
+      return { n: made2.length, dir, ids };
+    }, function(e) {
+      return Promise.all(made2.map(function(k) {
+        return dropCopy(k);
+      })).then(function() {
+        V.refreshMine();
+        throw e;
+      });
+    });
+  }
+  function dropCopy(k) {
+    delete mine[k];
+    var u = mineURLs[k];
+    if (u) {
+      letGo(u.svg);
+      letGo(u.text);
+    }
+    delete mineURLs[k];
+    mineFlag();
+    return V.draftDo("readwrite", function(st) {
+      return st.delete(k);
+    }, "mine").catch(function() {
+    });
+  }
+  function putOn(path, t, sha) {
+    return api("/contents/" + path, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "Moved in the viewer: " + path.split("/").pop(), content: b64(t), sha: sha || void 0, branch: "main" })
+    }).then(function(q) {
+      if (q.ok) return q.json().then(function(d) {
+        return d.content.sha;
+      });
+      if (q.status !== 409 && q.status !== 422) throw new Error("GitHub " + q.status);
+      return ghRaw(path).then(function(g) {
+        return g && g.text === t ? g.sha : null;
+      });
+    });
+  }
+  function moveBack() {
+    if (!(repo() && token())) return Promise.resolve();
+    var ks = Object.keys(mine).filter(function(k) {
+      return mine[k].from;
+    });
+    if (!ks.length) return Promise.resolve();
+    var both = [], failed = [];
+    return folder().catch(function() {
+      return null;
+    }).then(function(f) {
+      return ks.reduce(function(q, k) {
+        return q.then(function() {
+          var r = mine[k];
+          if (!r || !r.from) return;
+          var fr = r.from, t = r.text, keep = function() {
+            return minePut(r);
+          };
+          if (r.hidden) return siteBin(fr.site, true).then(function() {
+            return dropCopy(k);
+          });
+          return (f ? origRead(f, r.file) : Promise.resolve(null)).then(function(c) {
+            var cols = c ? JSON.stringify(c) : null, colsWas = fr.cols ? JSON.stringify(JSON.parse(fr.cols)) : null;
+            var named = r.title === fr.title, grouped = (r.group || "") === fr.group, colsSame = !cols || cols === colsWas;
+            if (t === fr.saved && named && grouped && colsSame) {
+              V.arrived[k] = fr.site;
+              return dropCopy(k);
+            }
+            return (t === fr.saved ? Promise.resolve(fr.sha) : putOn(fr.path, t, fr.sha)).then(function(sha) {
+              if (sha === null) {
+                delete r.from;
+                both.push(r.title);
+                return keep();
+              }
+              fr.saved = t;
+              fr.sha = sha;
+              r.at = Date.now();
+              return keep().then(function() {
+                if (colsSame) return;
+                return putOn("maps/colours/" + fr.site + ".json", JSON.stringify(c, null, 1) + "\n", fr.colSha).then(function(cs) {
+                  if (cs) {
+                    fr.cols = cols;
+                    fr.colSha = cs;
+                  }
+                  return keep();
+                });
+              }).then(function() {
+                if (/^maps\/sbgn-ml\//.test(fr.path)) return;
+                if (!named) renamed[fr.site] = { was: fr.title, to: r.title };
+                return (named ? Promise.resolve() : toSiteName(fr.site, fr.title, r.title).then(function() {
+                  fr.title = r.title;
+                  return keep();
+                }, function(e) {
+                  delete renamed[fr.site];
+                  throw e;
+                })).then(function() {
+                  return grouped ? null : toSiteGroup(fr.site, r.group || "", 0).then(function() {
+                    fr.group = r.group || "";
+                    return keep();
+                  });
+                });
+              }).then(function() {
+                var n = Object.assign({}, r, { site: fr.site, path: fr.path, sha: fr.sha || null, saved: t, siteTitle: fr.title });
+                delete n.from;
+                return minePut(n);
+              });
+            });
+          }).catch(function(e) {
+            failed.push(r.title + " (" + (e && e.message ? e.message : e) + ")");
+          });
+        });
+      }, Promise.resolve());
+    }).then(function() {
+      V.refreshMine();
+      if (failed.length) warn("Not back on GitHub yet, kept in this browser and the folder: " + failed.join(", ") + ". Tried again when you connect next.");
+      else if (both.length) warn("Changed both in the folder and on GitHub since the copy, so both kept: " + both.join(", ") + ".");
     });
   }
   var BIN_KEY;
@@ -10321,6 +10612,12 @@
       if (m.mine) {
         var r = mine[m.id];
         if (!r) return;
+        if (r.from) {
+          folderErase(m.id);
+          minePut(Object.assign({}, r, { hidden: true, gone: true, text: "", svg: "" })).catch(function() {
+          });
+          return;
+        }
         if (r.site && gh2) site2.push(r.site);
         var u = mineURLs[m.id];
         if (u) {
@@ -18283,15 +18580,20 @@
     w.setAttribute("role", "alertdialog");
     w.setAttribute("aria-modal", "true");
     w.setAttribute("aria-labelledby", "m2-ask-h");
-    w.innerHTML = '<h3 id="m2-ask-h">Disconnect from GitHub?</h3><p>Your moves will no longer be saved to ' + (repo() || "the site") + ' or shown on the site. They are kept in this browser only, and lost if its site data is cleared.</p><p>The token is removed from this browser. To save to the site again, you paste it again.</p><div class="m2-ask-row"><button type="button" class="m2-ask-no">Cancel</button><button type="button" class="m2-ask-yes">Disconnect</button></div>';
+    var n = canFolder ? toMove().length : 0;
+    w.innerHTML = '<h3 id="m2-ask-h">Disconnect from GitHub?</h3>' + (n ? "<p>To go on working with your maps on this computer, copy them to a folder first: the " + n + " maps on GitHub, with their colours and pictures, are written into a folder you choose and kept there from then on. Nothing on GitHub is changed or deleted. When you connect again, what you changed in the folder is saved back to GitHub.</p><p>Disconnecting without copying: your moves are no longer saved to " + (repo() || "the site") + ". They are kept in this browser only, and lost if its site data is cleared.</p>" : "<p>Your moves will no longer be saved to " + (repo() || "the site") + " or shown on the site. They are kept in this browser only, and lost if its site data is cleared." + (canFolder ? "" : " To copy your maps to a folder on this computer, open the site in Chrome or Edge.") + "</p>") + '<p>The token is removed from this browser. To save to the site again, you paste it again.</p><p class="m2-ask-say" hidden></p><div class="m2-ask-row"><button type="button" class="m2-ask-no">Cancel</button>' + (n ? '<button type="button" class="m2-ask-copy">Copy to a folder, then disconnect</button><button type="button" class="m2-ask-yes">Disconnect without copying</button>' : '<button type="button" class="m2-ask-yes">Disconnect</button>') + "</div>";
     veil.appendChild(w);
     document.body.appendChild(veil);
+    var busy = false;
     var close = function(yes2) {
+      if (busy) return;
       veil.remove();
       window.removeEventListener("keydown", key, true);
       if (back2 && back2.isConnected && back2.focus) back2.focus();
       if (yes2) go();
     };
+    var no2 = w.querySelector(".m2-ask-no"), yes = w.querySelector(".m2-ask-yes"), cp = w.querySelector(".m2-ask-copy"), say = w.querySelector(".m2-ask-say");
+    var order = [no2, cp, yes].filter(Boolean);
     var key = function(e) {
       e.stopImmediatePropagation();
       if (e.key === "Escape") {
@@ -18299,15 +18601,57 @@
         close(false);
       } else if (e.key === "Tab") {
         e.preventDefault();
-        (document.activeElement === no2 ? yes : no2).focus();
+        order[(order.indexOf(document.activeElement) + (e.shiftKey ? order.length - 1 : 1)) % order.length].focus();
       }
     };
-    var no2 = w.querySelector(".m2-ask-no"), yes = w.querySelector(".m2-ask-yes");
     no2.addEventListener("click", function() {
       close(false);
     });
     yes.addEventListener("click", function() {
       close(true);
+    });
+    if (cp) cp.addEventListener("click", function() {
+      window.showDirectoryPicker({ id: "atlas-maps", mode: "readwrite" }).then(function(dir) {
+        busy = true;
+        order.forEach(function(b) {
+          b.disabled = true;
+        });
+        say.hidden = false;
+        say.classList.remove("m2-ask-bad");
+        var cur = V.current && V.current.id;
+        if (on) {
+          var st = box.querySelector("#m2-ed-stop");
+          if (st && !st.hidden) st.click();
+        }
+        return Promise.resolve(saveTimer ? push() : saving).catch(function() {
+        }).then(function() {
+          return moveOut(dir, function(t) {
+            say.textContent = t;
+          });
+        }).then(function(res) {
+          busy = false;
+          close(false);
+          disconnect();
+          offSay = null;
+          buttons();
+          quiet();
+          localBox();
+          V.refreshMine();
+          status.textContent = "Disconnected from GitHub: " + res.n + " maps copied to the folder " + res.dir.name + " and kept there from now on; GitHub is unchanged. Connect again to save what you change back to GitHub.";
+          if (cur && res.ids[cur]) setTimeout(function() {
+            V.go(res.ids[cur]);
+          }, 0);
+        });
+      }).catch(function(e) {
+        if (e && e.name === "AbortError") return;
+        busy = false;
+        order.forEach(function(b) {
+          b.disabled = false;
+        });
+        say.hidden = false;
+        say.classList.add("m2-ask-bad");
+        say.textContent = "Not copied, still connected to GitHub: " + String(e && e.message ? e.message : e).replace(/\.$/, "") + ". Files already written stay in the folder; copying again goes on from them.";
+      });
     });
     veil.addEventListener("pointerdown", function(e) {
       if (e.target === veil) close(false);

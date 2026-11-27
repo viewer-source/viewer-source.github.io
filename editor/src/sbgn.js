@@ -200,11 +200,13 @@ import { sbJs, sbScript, sbpy } from './engines.js';
         // sites kept in the notes put back on their circles (sbIn, written as Show sites says, sbOut); the moves written back
         // at once, so a file whose moves cannot be is said now, not at the first save
         open: function (t, g0, still) {
-          var t0 = t;
+          var t0 = t, members = [];
           return sbpy().then(function () {
-            var tin = sbIn(t), sited = function (x) { return (x.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length; };
+            var mo = sbJs && sbJs.membersOut ? sbJs.membersOut(t) : { text: t, said: [] };   // lines at complex members put right (membersOut)
+            members = mo.said;
+            var tin = sbIn(mo.text), sited = function (x) { return (x.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length; };
             if (tin === t) return g0;
-            if (g0 && sited(tin) === sited(t)) { t = tin; return g0; }   // boxes widened only: the GraphML the site drew kept (it takes the places from the text)
+            if (g0 && !members.length && sited(tin) === sited(t)) { t = tin; return g0; }   // boxes widened only: the GraphML the site drew kept (it takes the places from the text)
             t = tin;
             return sbReader(t).then(function () { return sbOwn(t); });
           }).then(function (g1) {
@@ -216,7 +218,7 @@ import { sbJs, sbScript, sbpy } from './engines.js';
             // the sites the file draws on its state variables, written as their glyphs' links while Show sites is off
             // (sbOut): said once the map is drawn, as the file changes on entry
             var n = !V.sites && sbJs && sbJs.sitesOut && isSb(t0) ? (t0.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length : 0;
-            var said = n ? n + (n > 1 ? ' sites' : ' site') + ' kept as links on ' + (n > 1 ? 'their glyphs' : 'its glyph') + ' and drawn as the value alone, as Show sites (Settings, Display) is off.' : null;
+            var said = [sbJs.membersSaid(members), n ? n + (n > 1 ? ' sites' : ' site') + ' kept as links on ' + (n > 1 ? 'their glyphs' : 'its glyph') + ' and drawn as the value alone, as Show sites (Settings, Display) is off.' : ''].filter(Boolean).join(' ') || null;
             return { g: g, t: t, t0: t0, said: said, own: { sb: sb1, sbLast: [g, edOf(t).write(t, g), sb1] } };   // sbLast kept for src()
           });
         },

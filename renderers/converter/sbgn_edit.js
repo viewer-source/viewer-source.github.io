@@ -3081,6 +3081,70 @@
     });
     return T ? T.text() : st;
   }
+  // ---------- lines at a complex's members, put right on opening ----------
+  // A complex's member has no lines of its own (SBGN PD 2.1, 2.3.4: a subunit has no incoming or outgoing arcs). A copy
+  // of the converter's rule (rules.to_complex, its master; the same on every route there): a line drawn to or from a
+  // member is joined to the outermost complex around it, its end at the complex's centre (so drawn to its outline), and
+  // a line within one complex (two of its members, or a member and the complex) is taken out, as is a member's line
+  // that repeats one the complex has. SBGN-ML and yEd GraphML; only the ends and lines it touches change.
+  //   membersOut(t) -> { text, said: [one line per line changed] } (text unchanged and said empty when nothing is)
+  function membersOut(t, opt) {
+    if (t.charCodeAt(0) === 0xFEFF) { var r0 = membersOut(t.slice(1), opt); r0.text = '﻿' + r0.text; return r0; }
+    var doc = new (DP(opt))().parseFromString(t, 'application/xml'), top = doc.documentElement, said = [];
+    if (!top || (top.localName !== 'sbgn' && top.localName !== 'graphml')) return { text: t, said: said };
+    var yed = top.localName === 'graphml', T = null, nodes = new Map(), owner = new Map(), arcs = [];
+    var nameOf = function (el) {   // a node as found on the drawing: its label, else its kind
+      if (!el) return '?';
+      if (yed) { var l = Array.prototype.filter.call(el.getElementsByTagNameNS(YNS, 'NodeLabel'), function (x) { return !x.getAttribute('iconData'); })[0], c = cfg(el);
+        return (l && l.textContent.trim()) || (c ? c.replace('com.yworks.sbgn.', '') : 'node'); }
+      var lb = kid(el, 'label'); return (lb && (lb.getAttribute('text') || '').trim()) || el.getAttribute('class') || 'glyph';
+    };
+    var cfg = function (n) {   // a yEd node's shape (its realizer's configuration, a group's shown one)
+      var d = Array.prototype.filter.call(n.getElementsByTagNameNS(YNS, '*'), function (x) { return x.getAttribute('configuration'); })[0];
+      return d ? d.getAttribute('configuration') : '';
+    };
+    var isCx = function (el) { return yed ? cfg(el) === 'com.yworks.sbgn.Complex' : /^complex( multimer)?$/.test(el.getAttribute('class') || ''); };
+    var up = function (el) {   // the node or glyph holding el, or null
+      for (var p = el.parentNode; p && p.nodeType === 1; p = p.parentNode) if (p.localName === (yed ? 'node' : 'glyph')) return p;
+      return null;
+    };
+    var outer = function (el) { var out = null; for (var p = up(el); p; p = up(p)) if (isCx(p)) out = p; return out; };
+    Array.prototype.forEach.call(doc.getElementsByTagName('*'), function (el) {
+      if (el.localName === (yed ? 'node' : 'glyph') && el.getAttribute('id')) nodes.set(el.getAttribute('id'), el);
+      if (!yed && el.localName === 'port' && el.parentNode) owner.set(el.getAttribute('id'), el.parentNode);
+      if (el.localName === (yed ? 'edge' : 'arc')) arcs.push(el);
+    });
+    var at = function (id) { return nodes.get(id) || owner.get(id) || null; };   // a port's end is its glyph's
+    var head = function (a) { if (!yed) return a.getAttribute('class'); var ar = a.getElementsByTagNameNS(YNS, 'Arrows')[0]; return ar ? ar.getAttribute('target') : ''; };
+    var key = function (s, t, a) { return s.getAttribute('id') + '\u0000' + t.getAttribute('id') + '\u0000' + head(a); };
+    var ends = new Set();
+    arcs.forEach(function (a) { var s = at(a.getAttribute('source')), e = at(a.getAttribute('target')); if (s && e) ends.add(key(s, e, a)); });
+    arcs.forEach(function (a) {
+      var s = at(a.getAttribute('source')), e = at(a.getAttribute('target'));
+      if (!s || !e) return;
+      var cs = outer(s), ce = outer(e);
+      if (!cs && !ce) return;
+      T = T || new Tags(t, doc);
+      var what = nameOf(s) + ' → ' + nameOf(e);
+      if ((cs || s) === (ce || e)) { T.cut(a); said.push(what + ': within the complex ' + nameOf(cs || ce) + ', taken out'); return; }
+      var ns = cs || s, ne = ce || e, k = key(ns, ne, a);
+      if (ends.has(k)) { T.cut(a); said.push(what + ': drawn to a member, the same line as its complex\'s, taken out'); return; }
+      ends.add(k);
+      [[cs, 'source', 'start', 'sx', 'sy'], [ce, 'target', 'end', 'tx', 'ty']].forEach(function (x) {
+        var c = x[0];
+        if (!c) return;
+        T.set(a, x[1], c.getAttribute('id'));
+        if (yed) { var pt = a.getElementsByTagNameNS(YNS, 'Path')[0]; if (pt) { T.set(pt, x[3], '0.0'); T.set(pt, x[4], '0.0'); } }
+        else { var p = kid(a, x[2]), b = kid(c, 'bbox'); if (p && b) { T.set(p, 'x', num(F(b.getAttribute('x')) + F(b.getAttribute('w')) / 2)); T.set(p, 'y', num(F(b.getAttribute('y')) + F(b.getAttribute('h')) / 2)); } }
+      });
+      said.push(what + ': drawn to ' + [[cs, s], [ce, e]].filter(function (x) { return x[0]; }).map(function (x) { return nameOf(x[1]) + ', a member of ' + nameOf(x[0]); }).join(', and ') + ', joined to the complex');
+    });
+    return { text: T ? T.text() : t, said: said };
+  }
+  function membersSaid(said) {   // what membersOut put right, as one sentence for the status line, or null
+    if (!said.length) return null;
+    return (said.length > 1 ? said.length + ' lines' : 'A line') + ' at complex members put right, as a complex\'s member has no lines of its own in SBGN: ' + said.join('; ') + '.';
+  }
   function sitesOut(t, opt) {
     if (t.charCodeAt(0) === 0xFEFF) return '﻿' + sitesOut(t.slice(1), opt);   // a byte-order mark kept, the text read after it
     var doc = new (DP(opt))().parseFromString(t, 'application/xml'), T = new Tags(t, doc), any = false;
@@ -3137,6 +3201,6 @@
               moveInto: moveInto, connect: connect, reversible: reversible, reversibility: reversibility, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls,
               way: way, wayOfR: function (r) { return cfgOf(r) === 'Tag' ? wayOf(r) : null; }, wayOf: function (t, id, opt) { var G = gml(t, opt); return isTag(G, id) ? wayOf(G.node[id].geo.parentNode) : null; }, terminal: terminal,
-              countOf: countOf, recount: recount, refsOf: refsOf, setRefs: setRefs, refsAbout: refsAbout, idsOf: idsOf, setIds: setIds, countsAt: countsAt, countLens: lineLens, countMove: countMove, countsPlace: countsPlace, countOn: countOn, countAlong: countAlong, sitesIn: sitesIn, sitesOut: sitesOut, Tags: Tags, repr: repr, num: num };   // Tags, repr and num serve sbml_edit.js too
+              countOf: countOf, recount: recount, refsOf: refsOf, setRefs: setRefs, refsAbout: refsAbout, idsOf: idsOf, setIds: setIds, countsAt: countsAt, countLens: lineLens, countMove: countMove, countsPlace: countsPlace, countOn: countOn, countAlong: countAlong, sitesIn: sitesIn, sitesOut: sitesOut, membersOut: membersOut, membersSaid: membersSaid, Tags: Tags, repr: repr, num: num };   // Tags, repr and num serve sbml_edit.js too
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;
 })(typeof self !== 'undefined' ? self : this);
