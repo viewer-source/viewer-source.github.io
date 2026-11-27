@@ -688,6 +688,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           setBoxes(grown(out.map(function (m) { return at[m[0]]; }), boxOf, function (k) { return before[nodes2[k].id] || boxOf(k); }, function () { return false; }));
           refit(out.map(function (m) { return m[0]; }));
         }
+        if (what === 'grid') onNeighbour(new Set(points.map(function (p, i) { return i; })), 0.5);   // two bend points snapped onto one place, or onto the line's end: one kept
         render(); paint(); changed();
       }).catch(function (e) { warn('Not done: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); });
     }
@@ -3216,9 +3217,11 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // their squares overlap on screen: taken away in the same undo step, as it bends nothing and its square hides under
     // the other's (a bend snapped level with its end a fraction of a unit before it drew two squares one over the other,
     // a 1 px edge showing). Each point is weighed against the points kept before it and the one after
-    function onNeighbour(ps) {
+    // lim: a distance in the map's units in place of the squares' overlap, the selection then left as it is (Snap map to
+    // grid: bend points on a grid either coincide or lie a step apart)
+    function onNeighbour(ps, lim0) {
       if (!ps || !ps.size) return;
-      var lim = sq() / V.z, out = [], lines = [];
+      var lim = lim0 || sq() / V.z, out = [], lines = [];
       edges2.forEach(function (e, k) {
         if (e.s == null || e.t == null || !e.pts.some(function (pi) { return ps.has(pi); })) return;
         var all = ports(k), kept = all[0];
@@ -3230,6 +3233,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (!out.length) return;
       var ids = lines.map(function (k) { return edges2[k].id; });
       setText(GE.unbend(shared.text, out)); parse();
+      if (lim0) return;
       shared.selP = []; shared.selE = []; shared.part = null;
       edges2.forEach(function (q, k) { if (ids.indexOf(q.id) >= 0) shared.selE.push(k); });   // its line stays selected
     }

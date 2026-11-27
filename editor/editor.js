@@ -16954,6 +16954,9 @@
           return m[0];
         }));
       }
+      if (what === "grid") onNeighbour(new Set(points.map(function(p, i) {
+        return i;
+      })), 0.5);
       render();
       paint();
       changed();
@@ -20609,9 +20612,9 @@
     paint();
     return true;
   }
-  function onNeighbour(ps) {
+  function onNeighbour(ps, lim0) {
     if (!ps || !ps.size) return;
-    var lim = sq() / V.z, out = [], lines = [];
+    var lim = lim0 || sq() / V.z, out = [], lines = [];
     edges2.forEach(function(e, k) {
       if (e.s == null || e.t == null || !e.pts.some(function(pi) {
         return ps.has(pi);
@@ -20633,6 +20636,7 @@
     });
     setText(import_graphml_edit.default.unbend(shared.text, out));
     parse();
+    if (lim0) return;
     shared.selP = [];
     shared.selE = [];
     shared.part = null;

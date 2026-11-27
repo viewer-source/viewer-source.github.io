@@ -65,7 +65,43 @@ var base = args[0] || 'https://viewer-source.github.io/styles/';
   await drag(m4, [h4[0][0] + 1, h4[0][1]]);
   var h5 = await handles();
   ok('a new bend dropped on the start is not made (' + h5.length + ')', h5.length === h4.length);
+  // 5. the bend pressed and stepped by the arrow keys to one unit before the end: gone once the keys stop
+  await page.keyboard.press('Escape'); await page.mouse.click(mid[0], mid[1]); await page.waitForTimeout(800);
+  var h6 = await handles(), w = await page.$$eval('rect.m2-ed-bend', function (l) { return Math.max.apply(null, l.map(function (r) { return r.getBoundingClientRect().width; })); });
+  var B6 = h6[h6.length - 2], E6 = h6[h6.length - 1], z = w / 5, dx = (E6[0] - B6[0]) / z, dy = (E6[1] - B6[1]) / z;
+  await page.mouse.click(B6[0], B6[1]); await page.waitForTimeout(500);
+  var key = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'ArrowRight' : 'ArrowLeft') : (dy > 0 ? 'ArrowDown' : 'ArrowUp'), n = Math.round(Math.max(Math.abs(dx), Math.abs(dy))) - 1;
+  for (var i = 0; i < n; i++) await page.keyboard.press(key);
+  await page.waitForTimeout(1500);
+  var h7 = await handles();
+  ok('a bend stepped by the keys onto the end is gone (' + h6.length + ' to ' + h7.length + ', ' + n + ' steps)', h7.length === h6.length - 1);
   ok('no script error', !errs.length, errs.join(' | '));
+  // 6. Snap map to grid on a copy of the map whose first bent line has a second bend 0.8 units from its first, both
+  // inside one step of the line grid: one bend left there
+  var p2 = await b.newPage({ viewport: { width: 1400, height: 900 } });
+  if (local) { await p2.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); }); }
+  p2.on('pageerror', function (e) { errs.push(e.message); });
+  var twin = null, nIn = 0;
+  await p2.route(/\/downloads\/aspirin-graphml\.graphml/, async function (r) {
+    var t = await (await r.fetch()).text();
+    t = t.replace(/<edge id="([^"]+)"[\s\S]*?<\/edge>/g, function (m, id) {   // the first edge with a bend point
+      if (twin) return m;
+      nIn = (m.match(/<y:Point/g) || []).length + 1;   // its bends as served, the twin included
+      return m.replace(/<y:Point x="([-\d.]+)" y="([-\d.]+)"\/>/, function (q, x, y) {
+        twin = id; var X = Math.round(+x / 4) * 4 + 0.6, Y = Math.round(+y / 4) * 4 + 0.6;
+        return '<y:Point x="' + X + '" y="' + Y + '"/><y:Point x="' + (X + 0.8) + '" y="' + Y + '"/>';
+      });
+    });
+    r.fulfill({ contentType: 'application/xml', body: t });
+  });
+  await p2.goto(base + '#aspirin-graphml', { waitUntil: 'networkidle' }); await p2.waitForTimeout(2500);
+  await p2.click('button[data-win="edit"]'); await p2.waitForTimeout(3000);
+  var count = function () { return p2.evaluate(function (id) {   // the bend points of that line in the editor's drawing
+    var q = document.querySelector('#m2-img g[data-e="' + id + '"] path'); return q ? (q.getAttribute('d').match(/[ML]/g) || []).length - 2 : -1; }, twin); };
+  await p2.click('#m2-ed-tidy-grid'); await p2.waitForTimeout(3000);
+  var c1 = await count();
+  ok('Snap map to grid keeps one of two bends snapped onto one place (' + twin + ': ' + nIn + ' to ' + c1 + ')', twin && nIn >= 2 && c1 === nIn - 1);
+  ok('no script error after the snap', !errs.length, errs.join(' | '));
   await b.close();
   console.log(bad ? bad + ' wrong' : 'all ok');
   process.exit(bad ? 1 : 0);
