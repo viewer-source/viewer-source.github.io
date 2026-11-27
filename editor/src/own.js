@@ -297,7 +297,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         var ms = sel.map(function (id) { return V.byId[id]; }).filter(Boolean), mv = ms.filter(movable), del = ms.filter(function (x) { return canDelete(x, gh) && !(V.grid.classList.contains('m2-editing') && V.chosen && V.chosen.id === x.id); });
         if (mv.length && V.listGroups().length) mapItems.push(['Move ' + mv.length + ' maps to...', function () { moveMenuMany(mv, x, y); }]);
         var cds = ms.filter(function (q) { return !q.binned; });
-        if (cds.some(cdOf)) { if (mapItems.length) mapItems.push(null); mapItems.push(['Download ' + cds.length + ' maps as MINERVA zip', function () { packZip(cds, false, cds[0].group || mapName(cds[0])); }]); }
+        if (cds.some(cdOf)) { if (mapItems.length) mapItems.push(null); mapItems.push(packItem('Download ' + cds.length + ' maps as MINERVA zip', function () { packZip(cds, false, cds[0].group || mapName(cds[0])); })); }
         items = mapItems.length ? mapItems.concat([null], items) : items;
         if (del.length) items.last = [['Delete ' + del.length + ' maps', function () { binU(del, true); }, false, DEL_KEY]];
         return items;
@@ -309,10 +309,10 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       // the clicked map's or group's own items first, as file lists keep them; the new maps and groups under a line
       if (mapItems.length) items = mapItems.concat([null], items);
       items.mapItems = mapItems.length;   // the viewer puts the map's downloads after them
-      if (m && cdOf(m)) items.dl = [['Download as MINERVA zip', function () { packZip([m], false, mapName(m)); }]];   // after the map's own downloads
+      if (m && cdOf(m)) items.dl = [packItem('Download as MINERVA zip', function () { packZip([m], false, mapName(m)); })];   // after the map's own downloads
       var siteG = t && !m && tg && !ownGroup(tg) && !t.dataset.bin && canRenameGroup(tg) ? tg : null;   // a site group: renamed too
       var packG = t && !m && tg && !t.dataset.bin && inGroup(tg).some(cdOf) ? tg : null;   // a group of CellDesigner maps: packed whole
-      if (packG) items = [['Download as MINERVA zip', function () { packZip(inGroup(packG), true, packG); }], null].concat(items);
+      if (packG) items = [packItem('Download as MINERVA zip', function () { packZip(inGroup(packG), true, packG); }), null].concat(items);
       if (onGroup || siteG) items = [['Rename group', function () { renameGroup(siteG || g); }], null].concat(items);
       // items.last: put by the viewer under its own entries too, so Delete map is the menu's last line
       if (onGroup) items.last = [['Remove group', function () { removeU(g); }]];   // a removal: last, as Delete map
@@ -1357,8 +1357,10 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
     // Download as MINERVA zip: ms the maps in the list's order (a group's, one map, a selection), whole a group packed
     // whole (its kept files go back with it). The top level first: the group's first map if among them, else the first.
     // Refused whole with the reason; what is left out or changed on the way said once the zip is downloaded
+    // a menu's Download as MINERVA zip: while one zip is being made, greyed and saying so, in place of a pop-up
+    function packItem(label, go) { return packing ? ['Making the MINERVA zip...', go, true] : [label, go]; }
     function packZip(ms, whole, name) {
-      if (packing) return alert('A MINERVA zip is being made: wait for its download.');
+      if (packing) return;   // its menu item greyed meanwhile (packItem)
       packing = true; storedAll = null;   // the pictures this browser keeps read afresh: the last read may be up to 2 s old
       var said = [], fitted = [];
       ms = ms.filter(function (m) { return m && !m.binned; });

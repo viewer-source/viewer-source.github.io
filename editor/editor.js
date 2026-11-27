@@ -7443,9 +7443,9 @@
       });
       if (cds.some(cdOf)) {
         if (mapItems.length) mapItems.push(null);
-        mapItems.push(["Download " + cds.length + " maps as MINERVA zip", function() {
+        mapItems.push(packItem("Download " + cds.length + " maps as MINERVA zip", function() {
           packZip(cds, false, cds[0].group || mapName(cds[0]));
-        }]);
+        }));
       }
       items = mapItems.length ? mapItems.concat([null], items) : items;
       if (del.length) items.last = [["Delete " + del.length + " maps", function() {
@@ -7469,14 +7469,14 @@
     }]);
     if (mapItems.length) items = mapItems.concat([null], items);
     items.mapItems = mapItems.length;
-    if (m && cdOf(m)) items.dl = [["Download as MINERVA zip", function() {
+    if (m && cdOf(m)) items.dl = [packItem("Download as MINERVA zip", function() {
       packZip([m], false, mapName(m));
-    }]];
+    })];
     var siteG = t && !m && tg && !ownGroup(tg) && !t.dataset.bin && canRenameGroup(tg) ? tg : null;
     var packG = t && !m && tg && !t.dataset.bin && inGroup(tg).some(cdOf) ? tg : null;
-    if (packG) items = [["Download as MINERVA zip", function() {
+    if (packG) items = [packItem("Download as MINERVA zip", function() {
       packZip(inGroup(packG), true, packG);
-    }], null].concat(items);
+    }), null].concat(items);
     if (onGroup || siteG) items = [["Rename group", function() {
       renameGroup(siteG || g);
     }], null].concat(items);
@@ -9254,8 +9254,11 @@
       throw new Error("not a PNG this browser can read");
     });
   }
+  function packItem(label, go) {
+    return packing ? ["Making the MINERVA zip...", go, true] : [label, go];
+  }
   function packZip(ms, whole, name2) {
-    if (packing) return alert("A MINERVA zip is being made: wait for its download.");
+    if (packing) return;
     packing = true;
     storedAll = null;
     var said = [], fitted = [];
