@@ -10,7 +10,7 @@
 // The yEd template (mapconv/yed.graphml) is kept below as TEMPLATE.
 (function (root) {
   'use strict';
-  var VERSION = '5863f42';   // the converter's commit this copy was taken from
+  var VERSION = '499617b';   // the converter's commit this copy was taken from
   var NS = 'http://sbgn.org/libsbgn/0.3', RENDER = 'http://www.sbml.org/sbml/level3/version1/render/version1';
   var OLD_RENDER = 'http://projects.eml.org/bcb/sbml/render';
   var RDF = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
@@ -163,6 +163,31 @@
     return out;
   }
   function unitsOf(p) { return (p['Unit of information'] || '').split(/\r\n|[\n\r\v\f\x1c-\x1e\x85\u2028\u2029]/).filter(function (x) { return x.trim(); }).map(words); }
+  // sbgnml.site_of and hidden_sites: a site a circle stands for without drawing it, an RDF link on its glyph
+  // (bqbiol:hasProperty urn:sbgn:site:<state variable id>:<value>@<site>)
+  var SITE_URN = 'urn:sbgn:site:';
+  function siteOf(link) {
+    if (link.indexOf(SITE_URN) !== 0) return null;
+    var rest = link.slice(SITE_URN.length), c = rest.indexOf(':');
+    if (c < 0) return null;
+    var full = unquote(rest.slice(c + 1));
+    return full.indexOf('@') >= 0 ? [unquote(rest.slice(0, c)), full] : null;
+  }
+  function hiddenSites(states, svIds, links) {   // each on the circle it names (its value matching), else the first of its value showing no site
+    var left = links.slice(), got = states.map(function () { return null; }), val = function (f) { return f.split('@')[0]; };
+    states.forEach(function (s, k) {
+      var j = left.findIndex(function (x) { return x[0] === svIds[k] && val(x[1]) === s[0]; });
+      if (j >= 0) got[k] = left.splice(j, 1)[0][1];
+      else if (s[0].indexOf('@') >= 0) left = left.filter(function (x) { return x[0] !== svIds[k]; });
+    });
+    left.slice().forEach(function (x) {
+      var k = states.findIndex(function (s, k) { return got[k] === null && s[0].indexOf('@') < 0 && s[0] === val(x[1]); });
+      if (k >= 0) { got[k] = x[1]; left.splice(left.indexOf(x), 1); }
+    });
+    var out = [];
+    got.filter(Boolean).concat(left.map(function (x) { return x[1]; })).forEach(function (f) { if (out.indexOf(f) < 0) out.push(f); });
+    return out;
+  }
   function fromNotes(text, p) {
     var members = JSON.parse(p['Member annotation'] || '[]'), out = Object.assign({}, p);
     (text || '').split(/\r\n|[\n\r\v\f\x1c-\x1e\x85\u2028\u2029]/).forEach(function (line, n, all) {
@@ -360,13 +385,14 @@
       if (cls === 'terminal') kind = 'Tag';
       if (kind === null) { skip(cls, i); return; }
       sKids(g, 'port').forEach(function (p) { port.set(get(p, 'id'), i); atPort.set(get(p, 'id'), [pyFloat(get(p, 'x')), pyFloat(get(p, 'y'))]); });
-      var states = [], units = [], unitAt = [];
+      var states = [], units = [], unitAt = [], svIds = [];
       sKids(g, 'glyph').forEach(function (c) {
         var cb = sKid(c, 'bbox');
         if (get(c, 'class') === 'state variable') {
           var st = sKid(c, 'state'), v = st ? get(st, 'value') || '' : '', vr = st ? get(st, 'variable') || '' : '';
           var cx = pyFloat(get(cb, 'x')) + pyFloat(get(cb, 'w')) / 2, cy = pyFloat(get(cb, 'y')) + pyFloat(get(cb, 'h')) / 2;
           states.push([v + (vr ? '@' + vr : ''), (cx - x - w / 2) / w, (cy - y - h / 2) / h]);
+          svIds.push(get(c, 'id'));
         } else if (get(c, 'class') === 'unit of information' && (label(c) || cls !== 'biological activity')) {
           units.push(label(c));
           unitAt.push(cb && w && h ? [(pyFloat(get(cb, 'x')) + pyFloat(get(cb, 'w')) / 2 - x - w / 2) / w, (pyFloat(get(cb, 'y')) + pyFloat(get(cb, 'h')) / 2 - y - h / 2) / h] : null);
@@ -377,15 +403,22 @@
       var own = kids(g).filter(function (c) { return c.localName === 'extension' || c.localName === 'annotation'; });
       var desc = null;
       own.some(function (c) { var d = below(c, function (e) { return e.localName === 'Description' && e.namespaceURI === RDF; })[0]; if (d) desc = d; return !!d; });
-      var bags = [];
+      var bags = [], hidden = [];
       if (desc) kids(desc).forEach(function (q) {
         var links = below(q, function (e) { return e.localName === 'li' && e.namespaceURI === RDF; }).map(function (li) { return li.getAttributeNS(RDF, 'resource') || ''; });
+        if (q.localName === 'hasProperty' && q.namespaceURI === 'http://biomodels.net/biology-qualifiers/') {   // sites not drawn, never kept as links
+          var found = links.map(function (u) { return [u, siteOf(u)]; });
+          found.forEach(function (x) { if (x[1]) hidden.push(x[1]); });
+          links = found.filter(function (x) { return !x[1]; }).map(function (x) { return x[0]; });
+        }
         if (q.localName === 'isDescribedBy') refs = refs.concat(links.map(urn).filter(Boolean));
         else if (links.some(Boolean)) bags.push([{ 'http://biomodels.net/biology-qualifiers/': 'bqbiol', 'http://biomodels.net/model-qualifiers/': 'bqmodel' }[q.namespaceURI || ''] || q.namespaceURI || '',
                                                  q.localName, links.filter(Boolean).map(function (u) { return urn(u) || u; })]);
       });
       Object.assign(data, keptLinks(bags));
       if (refs.length) data.References = fromReferences(refs);
+      var ptm = hiddenSites(states, svIds, hidden);
+      if (ptm.length) data.PTM = ptm.join('\n');
       data = fromNotes(textOf(g), data);
       if (has(DRAWN_AS, cls)) data['SBGN class'] = cls;
       if (unit !== null) { data['SBGN class'] = cls; if (unit) data['SBGN unit'] = unit; }

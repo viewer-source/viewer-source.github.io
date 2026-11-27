@@ -8,8 +8,9 @@
 # of the GraphML (mark).
 #   python3 -m mapconv.rules <map.graphml> [<marked.graphml>]
 import sys
+from dataclasses import replace
 from lxml import etree
-from . import graphml
+from . import graphml, report
 from .graphml import DELAY, EQUIV
 from .celldesigner import CLASS
 
@@ -121,19 +122,25 @@ def problems(m):
     return out
 
 
+def name(N, n):
+    # a node as found on the drawing: its label, a complex without one by its members, else its kind
+    if N[n].labels and N[n].labels[0]:
+        return ' '.join(N[n].labels[0].split())
+    parts = [name(N, k) for k, d in N.items() if d.parent == n] if N[n].kind == 'Complex' else []
+    return ':'.join(parts) or N[n].kind
+
+
 def lines(m, found):
     # each problem as one line, the element by its id and as it is found on the drawing: a node
-    # by its label, an arc by its ends
+    # by its name, an arc by its ends
     N, arcs = m.nodes, {e.id: e for e in m.arcs}
-    lab = lambda n: ' '.join((N[n].labels[0] if N[n].labels and N[n].labels[0] else N[n].kind).split()) if n in N else n
-    what = lambda i: lab(i) if i in N else 'arc %s → %s' % (lab(arcs[i].source), lab(arcs[i].target))
+    what = lambda i: name(N, i) if i in N else 'arc %s → %s' % (name(N, arcs[i].source), name(N, arcs[i].target))
     return ['%s (%s): %s' % (i, what(i), r) for i, r in found]
 
 
 def clean(m, found):
     # the map without the problem elements and the arcs at removed nodes; a removed complex takes
     # its members with it, what a removed compartment holds moves to the compartment around it
-    from dataclasses import replace
     gone, N = {i for i, _ in found}, m.nodes
     def left_out(i):  # a problem element, or a member of a complex that is one
         q = i
@@ -147,7 +154,45 @@ def clean(m, found):
             q = N[q].parent
         return q
     nodes = {i: d if kept(d.parent) == d.parent else replace(d, parent=kept(d.parent)) for i, d in N.items() if not left_out(i)}
-    return replace(m, nodes=nodes, arcs=[e for e in m.arcs if e.id not in gone and e.source in nodes and e.target in nodes])
+    arcs = [e for e in m.arcs if e.id not in gone and e.source in nodes and e.target in nodes]
+    ends = {(e.source, e.target, e.head) for e in arcs}
+    out = []
+    for e in arcs:
+        j = to_complex(nodes, e)
+        if j is not e and j is not None and (j.source, j.target, j.head) in ends:  # the complex has that arc already
+            report.say('left out', '%s (arc %s → %s): drawn to a member, the same arc as its complex\'s, left out' % (
+                e.id, name(nodes, e.source), name(nodes, e.target)))
+            continue
+        if j is not None:
+            ends.add((j.source, j.target, j.head))
+            out.append(j)
+    return replace(m, nodes=nodes, arcs=out)
+
+
+def to_complex(N, e):
+    # an arc drawn to a complex's member joins the complex (the outermost, for a complex in a complex): a process
+    # consumes, makes or is modified by the complex, never by one of its parts; its bends kept, its end on the
+    # complex's border as any arc's. None for an arc within one complex
+    def outer(i):
+        q, out = N[i].parent, None
+        while q in N:
+            if N[q].kind == 'Complex':
+                out = q
+            q = N[q].parent
+        return out
+    s, t = outer(e.source), outer(e.target)
+    if not s and not t:
+        return e
+    lab = lambda n: name(N, n)
+    if (s or e.source) == (t or e.target):  # between two parts of one complex, or a part and its complex
+        report.say('left out', '%s (arc %s → %s): within the complex %s, left out' % (e.id, lab(e.source), lab(e.target), lab(s or t)))
+        return None
+    for member, c in ((e.source, s), (e.target, t)):
+        if c:
+            report.say('changed', '%s (arc %s → %s): drawn to %s, a member of %s, joined to the complex' % (
+                e.id, lab(e.source), lab(e.target), lab(member), lab(c)))
+    return replace(e, source=s or e.source, target=t or e.target,
+                   source_at=(0.0, 0.0) if s else e.source_at, target_at=(0.0, 0.0) if t else e.target_at)
 
 
 def mark(path, found):

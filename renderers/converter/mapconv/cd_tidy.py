@@ -131,12 +131,13 @@ def tidy(diagram, drawing, ents, members, label):
     geo = {p: drawing.geometry(p, fl, False) for p, fl in fls.items()}
     want = {}
     for p, g in geo.items():
+        at = drawing.spots(p, g, fls[p])
         for e in fls[p][2]:
             m = e.source
             if N[m].parent in ents or layout.turn([cen(m)] + layout.route(yed(e.points), cen(p), box[p]) + [cen(p)]):
                 continue  # complex members move with their complex; an L arc is straight already
             M = cen(m)
-            T = drawing.end(g, e, M, len(fls[p][2]) + len(fls[p][3]) > 1)
+            T = drawing.end(g, at[e.id])
             ax = 0 if abs(M[0] - T[0]) < abs(M[1] - T[1]) else 1  # the axis with the small offset
             want.setdefault((m, ax), []).append(T[ax] - M[ax])
     for (m, ax), ds in sorted(want.items()):

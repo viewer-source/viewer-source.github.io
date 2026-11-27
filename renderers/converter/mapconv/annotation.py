@@ -149,13 +149,23 @@ def sites(p, states):
 PHENOTYPE_CLASSES = ('submap', 'perturbing agent')
 
 
-def notes(p, undrawn=()):
+DRAWN = 'Unit of information, drawn: '  # units drawn in the input that CellDesigner, one unit per alias, cannot draw
+
+
+def drawn_units(text):
+    # the units of the note line DRAWN (notes()), read back as drawn units
+    return [u.strip() for l in (text or '').splitlines() if l.strip().startswith(DRAWN)
+            for u in l.strip()[len(DRAWN):].split('; ') if u.strip()]
+
+
+def notes(p, undrawn=(), drawn=()):
     # what MIRIAM cannot hold, as note lines: a family's name ("Family: ERK1/2"), its members' sites
     # ('MAPK3: P@T202 P@Y204') and the entity's own sites no state variable holds ('PTM: P@Y1189 P@Y1190')
     lines = ['Family: ' + ' '.join(p['Family'].split())] if p.get('Family') else []
     lines += ['PTM: ' + ' '.join(undrawn)] if undrawn else []
     # units not drawn, on one line: CellDesigner keeps only the first line of a complex member's note
     lines += ['Unit of information: ' + '; '.join(units(p))] if units(p) else []
+    lines += [DRAWN + '; '.join(drawn)] if drawn else []
     for m in json.loads(p.get('Member annotation') or '[]'):
         ptm = ' '.join((dict(m['props']).get('PTM') or '').split())
         if ptm:

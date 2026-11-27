@@ -48,8 +48,8 @@ from struct import pack, unpack
 from lxml import etree
 from . import cd_layout, cd_tidy, report
 from .cd_layout import ANCHOR, SQUARE, anchor_point, from_frame, square_point, to_frame
-from .layout import count_text, exit_point, visible
-from .annotation import PHENOTYPE_CLASSES, bags, from_notes, from_references, kept, notes, references
+from .layout import count_text, visible
+from .annotation import PHENOTYPE_CLASSES, bags, drawn_units, from_notes, from_references, kept, notes, references
 from .annotation import units as undrawn
 from .graphml import EQUIV, without_delays, without_tags
 from .model import Map, Node, Arc
@@ -97,14 +97,15 @@ NAME = [(' ', '_space_'), ('-', '_minus_'), ('/', '_slash_'), ('+', '_plus_'),
         ('φ', '_phi_'), ('χ', '_chi_'), ('ψ', '_psi_'), ('ω', '_omega_')]
 
 
-def cd_name(s):
+def cd_name(s):  # a line break as CellDesigner's _br_, its lines' spaces made single
+    s = '_br_'.join(' '.join(l.split()) for l in s.split('\n') if l.strip())
     for a, b in NAME:
         s = s.replace(a, b)
     return s
 
 
-def plain_name(s):  # inverse of cd_name: _space_, _alpha_ back to text
-    for a, b in NAME:
+def plain_name(s):  # inverse of cd_name: _space_, _alpha_ back to text, _br_ a line break
+    for a, b in NAME + [('\n', '_br_')]:
         s = s.replace(b, a)
     return s
 
@@ -310,7 +311,7 @@ def write(diagram, ann, layout='straight'):
     # twice (the pyrimidine map: ATP is species s11 with aliases n3 and n12);
     # a member's species belongs to its complex's species; a source or sink stays on its own (SBGN
     # does not clone the empty set)
-    rep, first = {}, {}
+    rep, first, more = {}, {}, {}  # more: per glyph, its units of information CellDesigner does not draw
     def rep_of(i):
         if i not in rep:
             d = ents[i]
@@ -358,9 +359,25 @@ def write(diagram, ann, layout='straight'):
             at = d.unit_at[k] if 0 <= k < len(d.unit_at) else None
             if at:  # placed in its file away from its slot: CellDesigner's angle for another place not known yet
                 report.say('changed', '%s: unit of information %s placed at the top (CellDesigner\'s default)' % (label[i], us[0]))
-            if us[1:]: report.say('left out', '%s: units of information %s left out (CellDesigner keeps one)' % (label[i], ', '.join(us[1:])))
+            more[i] = us[1:]
         else:
             sub(a, 'info', state='empty', angle='-1.5707963267948966')
+    # the units beyond the drawn one go into the species' notes (annotation.DRAWN), read back on every glyph of the
+    # species: so only those all its glyphs carry; the others are reported
+    glyphs = {}
+    for j in ents: glyphs.setdefault(rep[j], []).append(j)
+    kept_units = {}
+    for i, js in glyphs.items():
+        kept_units[i] = [u for u in more.get(js[0], ()) if all(u in more.get(j, ()) for j in js)]
+        for j in js:
+            if more.get(j):
+                lost = [u for u in more[j] if u not in kept_units[i]]
+                if len(more[j]) > len(lost):
+                    report.say('changed', '%s: units of information %s kept in the notes (CellDesigner draws one)' % (
+                        label[j], ', '.join(u for u in more[j] if u in kept_units[i])))
+                if lost:
+                    report.say('left out', '%s: units of information %s left out (CellDesigner draws one, and other '
+                               'glyphs of this species lack them)' % (label[j], ', '.join(lost)))
     sub(ext, 'listOfGroups')
     lp = sub(ext, 'listOfProteins')
     for lab, pid in prot.items():
@@ -467,12 +484,13 @@ def write(diagram, ann, layout='straight'):
     def facts(d, i):   # the note lines; a phenotype standing for a submap or a perturbing agent says so first
         c = 'submap' if d.kind == 'Submap' else d.data.get('SBGN class') if d.kind == 'Phenotype' else None
         c = 'perturbing agent' if c == 'perturbation' else c   # Activity Flow's perturbation: PD's perturbing agent
-        return (['SBGN class: ' + c] if c in PHENOTYPE_CLASSES else []) + notes(d.data, ptm(i))
+        return (['SBGN class: ' + c] if c in PHENOTYPE_CLASSES else []) + notes(d.data, ptm(i), kept_units.get(i, ()))
 
     def ptm(i):   # every site of the entity, its circles' first (value@site), then the property PTM's: the notes' line PTM:
         return list(dict.fromkeys([t for t, _ in sv.get(i, ()) if t.partition('@')[2]] + (ents[i].data.get('PTM') or '').split()))
     # a source/sink is named after its id, as CellDesigner names a new degraded species (s48)
-    name_of = lambda i: spec(i) if cls[i] == 'DEGRADED' else cd_name(label[i])
+    # the name as drawn, its line breaks kept (label: on one line, for the messages and the lists of proteins)
+    name_of = lambda i: spec(i) if cls[i] == 'DEGRADED' else cd_name(ents[i].labels[0] if ''.join(ents[i].labels[:1]).strip() else label[i])
     XH = 'http://www.w3.org/1999/xhtml'
     lsp = etree.SubElement(model, 'listOfSpecies')
     for i, d in ents.items():
@@ -480,7 +498,7 @@ def write(diagram, ann, layout='straight'):
             continue
         if d.parent in ents:
             # a complex member: an included species, its MIRIAM RDF in the notes (CellDesigner's convention)
-            s = sub(inc, 'species', id=spec(i), name=cd_name(label[i]))
+            s = sub(inc, 'species', id=spec(i), name=name_of(i))
             h = etree.SubElement(sub(s, 'notes'), '{%s}html' % XH, nsmap={None: XH})
             etree.SubElement(etree.SubElement(h, '{%s}head' % XH), '{%s}title' % XH)
             body = etree.SubElement(h, '{%s}body' % XH)
@@ -501,7 +519,7 @@ def write(diagram, ann, layout='straight'):
         an = etree.SubElement(s, 'annotation'); x = sub(an, 'extension')
         sub(x, 'positionToCompartment', 'inside')
         identity(x, i)
-        cat = list(dict.fromkeys(r for j in ents if rep[j] == i for r in catalysed.get(j, ())))
+        cat = list(dict.fromkeys(r for j in glyphs[i] for r in catalysed.get(j, ())))
         if cat:
             lc = sub(x, 'listOfCatalyzedReactions')
             for r in cat: sub(lc, 'catalyzed', reaction=r)
@@ -540,23 +558,29 @@ def write(diagram, ann, layout='straight'):
         sub(x, 'reactionType', REACTION.get(N[p].kind, 'STATE_TRANSITION'))
         br = sub(sub(x, 'baseReactants'), 'baseReactant', species=spec(r_), alias='sa_' + sid(r_)); ra and sub(br, 'linkAnchor', position=ra)
         bp = sub(sub(x, 'baseProducts'), 'baseProduct', species=spec(q_), alias='sa_' + sid(q_)); qa and sub(bp, 'linkAnchor', position=qa)
-        # added reactants and products: to the centre, no linkAnchor (as CellDesigner saves them)
+        # added reactants and products: to the centre, no linkAnchor (as CellDesigner saves them), but on a metabolite
+        # where its name is not; the input's bends as edit points
         for lst, tag, attr, es, end, idx in (('listOfReactantLinks', 'reactantLink', 'reactant', ins[1:], 'source', '-1,0'),
                                              ('listOfProductLinks', 'productLink', 'product', outs[1:], 'target', '-1,1')):
             if es:
                 l = sub(x, lst)
                 for e in es:
                     k = sub(l, tag, **{attr: spec(getattr(e, end))}, alias='sa_' + sid(getattr(e, end)), targetLineIndex=idx)
-                    line(k); sub(k, 'line', width='1.0', color='ff000000', type='Straight')
+                    at, pts = drawing.link(p, g, e, end == 'source')
+                    if at: sub(k, 'linkAnchor', position=at)
+                    line(k, len(pts) + 1)
+                    if pts: sub(k, 'editPoints', ' '.join('%s,%s' % q for q in pts))
+                    sub(k, 'line', width='1.0', color='ff000000', type='Straight')
         line(x, len(g['ep']) + 1, rectangleIndex=g['k'])
         if g['ep']:
             sub(x, 'editPoints', ' '.join('%s,%s' % q for q in g['ep']))
         sub(x, 'line', width='1.0', color='ff000000')
         if mods or gates:
             lm = sub(x, 'listOfModification')
+            spot = drawing.spots(p, g, fl)
             for e in mods:
                 m = e.source
-                i, M, T, at, pts = drawing.modifier(p, g, e, len(mods) + len(gates) > 1)
+                i, M, T, at, pts = drawing.modifier(p, g, e, len(mods) + len(gates) > 1, spot[e.id])
                 # a line to the centre has no linkTarget (a CellDesigner edit of estrogen)
                 k = sub(lm, 'modification', type=typed(e, MOD[e.head]), modifiers=spec(m), aliases='sa_' + sid(m),
                         targetLineIndex='-1,%d' % i)
@@ -744,7 +768,7 @@ def read(path):
     f = lambda x, q: x.find(q, ns)
     xs = lambda x, q: x.iterfind(q, ns)
     ext = f(r, 's:model/s:annotation/cd:extension')
-    name = lambda s: ' '.join(plain_name(s or '').split())
+    name = lambda s: '\n'.join(' '.join(l.split()) for l in plain_name(s or '').split('\n') if l.strip())
     nodes, arcs = {}, []
     # compartments: a box with its name where CellDesigner has it
     comps = {c.get('id'): c for c in xs(r, './/s:listOfCompartments/s:compartment')}
@@ -819,6 +843,7 @@ def read(path):
         info = f(a, 'cd:info')
         units = [info.get('label') if info.get('prefix') == 'free input' else '%s:%s' % (info.get('prefix'), info.get('label'))] \
             if info is not None and info.get('state') != 'empty' else []
+        units += drawn_units(note(s))  # the units beyond the one CellDesigner draws (annotation.DRAWN)
         if cls in UNIT and not any(u.startswith('ct:') for u in units):
             units.append(UNIT[cls])
         cnt = [int(u[2:]) for u in units if re.fullmatch(r'N:\d+', u)]
@@ -858,7 +883,7 @@ def read(path):
         d = nodes[alias_of(e)]
         if b is None or b.get('position') not in ANCHOR:
             return cen(d.id)
-        circle = d.kind in ('SimpleChemical', 'UnspecifiedEntity')
+        circle = d.kind in cd_layout.ROUND
         x_, y_, w_, h_ = d.box  # a multimer's anchors on its front shape, 6 smaller (cd_layout.draw)
         k = 6 if d.count > 1 and not circle else 0
         return anchor_point((x_, y_, w_ - k, h_ - k), b.get('position'), circle, d.kind == 'Phenotype')
@@ -870,11 +895,7 @@ def read(path):
         if b is not None and b.get('position') in ANCHOR:
             return P
         d = nodes[alias_of(e)]
-        if d.kind not in ('SimpleChemical', 'UnspecifiedEntity'):
-            return exit_point(d.box, P, Q)
-        dx, dy = Q[0] - P[0], Q[1] - P[1]
-        t = min(1.0, 1 / (math.hypot(dx / (d.box[2] / 2), dy / (d.box[3] / 2)) or 1))
-        return (P[0] + t * dx, P[1] + t * dy)
+        return cd_layout.rim(d.box, d.kind in cd_layout.ROUND, P, Q)
     # a reaction's references (isDescribedBy, either qualifier set; MINERVA reads both): the process's property References
     refs = lambda rx: from_references([li.get('{%s}resource' % ns['rdf']) for q in ('bq', 'bqm')
                                        for li in xs(rx, 's:annotation/rdf:RDF/rdf:Description/%s:isDescribedBy/rdf:Bag/rdf:li' % q)])
@@ -911,24 +932,40 @@ def read(path):
             arcs.append(Arc(id=op + '_out', source=op, target=alias_of(bp[0]), head=HEAD[mt], dashed=mt.startswith('UNKNOWN_')))
             continue
         if len(br) + len(bp) == 3:
-            # a branched reaction (association: two reactants, dissociation, truncation: two
-            # products) as one process at the branch point. The point: last edit
-            # point, in the frame of the three species (origin the first, axes to the other two);
-            # each branch's own edit points (num0, num1, num2) in the frame point -> its species
-            # (cd2sbgnml, AssociationReactionModel)
+            # a branched reaction (association: two reactants, dissociation, truncation: two products): three arms
+            # meeting at a point, the last edit point in the frame of the three species (origin the first, axes to the
+            # other two); each arm's own edit points (num0, num1, num2) in the frame point -> its species (cd2sbgnml,
+            # AssociationReactionModel). CellDesigner draws the process glyph midway on segment tShapeIndex of the
+            # single arm (from the point to the product of an association, from the reactant to the point of a
+            # dissociation; its PDF of ReconMap 2), so the process goes there and the two other arms run through the
+            # point to it
             three = [alias_of(e) for e in br + bp]
             O, X, Y = (cen(i) for i in three)
             u, v = pts[-1]
-            sq = (O[0] + u * (X[0] - O[0]) + v * (Y[0] - O[0]), O[1] + u * (X[1] - O[1]) + v * (Y[1] - O[1]))
+            J = (O[0] + u * (X[0] - O[0]) + v * (Y[0] - O[0]), O[1] + u * (X[1] - O[1]) + v * (Y[1] - O[1]))
             n = [int(ep.get('num%d' % k, 0)) for k in range(3)]
             arm = [pts[sum(n[:k]):sum(n[:k + 1])] for k in range(3)]
             ends = [end(e) for e in br + bp]
-            bent = [[from_frame(sq, ends[k], q) for q in arm[k]] for k in range(3)]
-            lines = [(three[k], k < len(br), bent[k][::-1] if k < len(br) else bent[k], port(three[k], ends[k])) for k in range(3)]
-            joins = None
-            Q = ends[2] if len(br) == 2 else ends[0]
-            L = math.hypot(Q[0] - sq[0], Q[1] - sq[1]) or 1
-            fl = ((Q[0] - sq[0]) / L, (Q[1] - sq[1]) / L) if len(br) == 2 else ((sq[0] - Q[0]) / L, (sq[1] - Q[1]) / L)
+            bent = [[from_frame(J, ends[k], q) for q in arm[k]] for k in range(3)]  # from the point out
+            assoc = len(br) == 2
+            s_ = 2 if assoc else 0  # the single arm, its line in the flow's direction
+            run = [J] + bent[2] + [ends[2]] if assoc else [ends[0]] + bent[0][::-1] + [J]
+            e_ = (br + bp)[s_]
+            if assoc: run[-1] = rim(e_, run[-1], run[-2])
+            else: run[0] = rim(e_, run[0], run[1])
+            k = min(int(ep.get('tShapeIndex', 0)), len(run) - 2)
+            P, Q = run[k], run[k + 1]
+            sq = ((P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2)
+            L = math.hypot(Q[0] - P[0], Q[1] - P[1]) or 1
+            fl = ((Q[0] - P[0]) / L, (Q[1] - P[1]) / L)
+            before, after = run[1:k + 1], run[k + 1:-1]  # the single arm's bends before and after the process
+            if assoc:  # each reactant through the point and the bends before the process; the product after it
+                lines = [(three[j], True, bent[j][::-1] + [J] + before, port(three[j], ends[j])) for j in (0, 1)] + \
+                        [(three[2], False, after, port(three[2], ends[2]))]
+            else:  # the reactant up to the process; each product through the bends after it and the point
+                lines = [(three[0], True, before, port(three[0], ends[0]))] + \
+                        [(three[j], False, after + [J] + bent[j], port(three[j], ends[j])) for j in (1, 2)]
+            link_ends = None  # where added links join the main line (none in a branched reaction)
         elif len(br) == 1 and len(bp) == 1:
             # the main line: its ends, edit points, the square midway on segment rectangleIndex
             A, B = end(br[0]), end(bp[0])
@@ -946,7 +983,7 @@ def read(path):
             # tests/celldesigner/added-link-bends.xml; all 22 such links of two PD map submaps fit)
             P = rim(br[0], P, Q) if k == 0 else P
             Q = rim(bp[0], Q, P) if k == len(line) - 2 else Q
-            joins = [(P[0] + t * (Q[0] - P[0]), P[1] + t * (Q[1] - P[1])) for t in (0.375, 0.625)]
+            link_ends = cd_layout.joins(P, Q)
         else:
             report.say('left out', 'reaction %s (%s): %d base reactants, %d base products, left out' % (rid, typ, len(br), len(bp))); continue
         S = 18.0  # the process size in the atlas yEd maps
@@ -970,9 +1007,9 @@ def read(path):
                 if alias_of(l) in nodes:
                     # its edit points in the frame species -> join (a product's: join -> species)
                     q, O = points(l.get('editPoints') or l.findtext('cd:editPoints', '', ns)), end(l)
-                    if q and joins is None:
+                    if q and link_ends is None:
                         report.say('left out', 'reaction %s: edit points of an added link left out (a branched reaction)' % rid); q = []
-                    J = joins[0 if into else 1] if joins else None
+                    J = link_ends[0 if into else 1] if link_ends else None
                     flow(alias_of(l), into, [from_frame(O, J, p) if into else from_frame(J, O, p) for p in q], port(alias_of(l), O))
         # modifiers: the arc ends at the point of the square targetLineIndex names (a side middle or a
         # corner); in yEd at that point of the 18 px process (corners at 9, 9)

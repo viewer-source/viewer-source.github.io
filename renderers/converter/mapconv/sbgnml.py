@@ -52,6 +52,25 @@ def link(u):
     return 'http://identifiers.org/%s' % (x if ':' in x else '%s:%s' % ({'entrez.gene': 'ncbigene'}.get(db, db), x))
 
 
+# A site a circle stands for without drawing it: an RDF link on its glyph (bqbiol:hasProperty), naming the state
+# variable and its value@site, as SBGN editors keep it (Newt keeps RDF links and drops a glyph's notes)
+SITE_URN = 'urn:sbgn:site:'
+
+
+def site_urn(sv, full):
+    q = lambda x: urllib.parse.quote(x, safe="@-_.!~*'()")  # encodeURIComponent, @ kept
+    return SITE_URN + q(sv) + ':' + q(full)
+
+
+def site_of(link):
+    # (state variable id, value@site) of a site link, None for any other link
+    if not link.startswith(SITE_URN):
+        return None
+    sv, c, full = link[len(SITE_URN):].partition(':')
+    full = urllib.parse.unquote(full)
+    return (urllib.parse.unquote(sv), full) if c and '@' in full else None
+
+
 def xml_id(i):
     # yEd's nested ids (n0::n1) are not XML ids
     return re.sub(r'[^\w.-]', '_', i if re.match(r'[A-Za-z_]', i) else '_' + i)
@@ -259,7 +278,7 @@ def write(diagram, newt=False, af=None):
             for u in uris:
                 etree.SubElement(bag, '{%s}li' % RDF, {'{%s}resource' % RDF: u})
 
-    def annotate(g, i, d, undrawn):
+    def annotate(g, i, d, undrawn, hidden=()):
         if d.kind not in CLASS or d.kind == 'Tag':
             return
         lines = notes(d.data, undrawn) if d.kind not in PROCESSES else []
@@ -280,6 +299,8 @@ def write(diagram, newt=False, af=None):
             report.say('left out', '%s: references of databases SBGN-ML links are not written for: %s' % (
                 lab or i, ' '.join(u for u in refs if u.split(':')[2] not in DB)))
         bags += [(BQBIOL, 'isDescribedBy', [u]) for u in uris]
+        if hidden:  # the sites a circle stands for without drawing them, each naming its circle
+            bags.append((BQBIOL, 'hasProperty', [site_urn(sv, full) for sv, full in hidden]))
         if bags:
             rdf(g, i, bags)
 
@@ -310,7 +331,9 @@ def write(diagram, newt=False, af=None):
         if d.kind == 'Tag':
             g.set('orientation', d.way or 'right')
         site, undrawn = sites(d.data, [t for t, _, _ in d.states])
-        annotate(g, i, d, undrawn)
+        # a site in the circle's text is drawn (written as its variable); one from PTM is not (a site link)
+        hidden = [('%s_sv%d' % (ids[i], k), txt + '@' + site[k]) for k, (txt, _, _) in enumerate(d.states) if site[k] and '@' not in txt]
+        annotate(g, i, d, undrawn, hidden)
         name = '' if d.kind in PROCESSES or not d.labels else d.labels[0]  # a second label is a unit (N:2)
         if d.kind != 'Operator' and name:
             lab = etree.SubElement(g, S + 'label', text=name)
@@ -324,7 +347,7 @@ def write(diagram, newt=False, af=None):
         for k, ((txt, _, _), box) in enumerate(zip(d.states, states)):
             sv = etree.SubElement(g, S + 'glyph', {'class': 'state variable', 'id': '%s_sv%d' % (ids[i], k)})
             st = etree.SubElement(sv, S + 'state', value=txt.partition('@')[0])
-            if site[k]: st.set('variable', site[k])
+            if '@' in txt and site[k]: st.set('variable', site[k])
             bbox(sv, *box)
         # an activity's first unit names its entity (its shape; the reader's SBGN unit), its label the molecule's name;
         # none for a protein without a name in a unit, as the reader takes it
@@ -529,6 +552,24 @@ def colour(c, defs):
     return v[:7] if len(v) == 9 and v.endswith('FF') else v
 
 
+def hidden_sites(states, sv_ids, links):
+    # the sites of a glyph's site links in the order of its circles: each on the circle it names when the value
+    # matches, else on the first circle of its value showing no site; a circle that draws its site keeps it (the
+    # link dropped); the sites no circle takes after
+    left, got = list(links), [None] * len(states)
+    for k, (txt, _, _) in enumerate(states):
+        j = next((j for j, (sv, full) in enumerate(left) if sv == sv_ids[k] and full.partition('@')[0] == txt), None)
+        if j is not None:
+            got[k] = left.pop(j)[1]
+        elif '@' in txt:
+            left = [x for x in left if x[0] != sv_ids[k]]
+    for sv, full in list(left):
+        k = next((k for k, (txt, _, _) in enumerate(states) if got[k] is None and '@' not in txt and txt == full.partition('@')[0]), None)
+        if k is not None:
+            got[k] = full; left.remove((sv, full))
+    return list(dict.fromkeys([x for x in got if x] + [full for _, full in left]))
+
+
 def unique_ids(m):
     """Glyph element -> the id it is read under: a glyph whose id an earlier glyph already has gets <id>_<k>
     (k from 2, the first id not in the map: glyphs, ports, arcs), so two glyphs of one id are both kept. sbgn_edit.js
@@ -630,7 +671,7 @@ def read(path, which=0):
         for p in g.findall(S + 'port'):
             port[p.get('id')] = i
             at_port[p.get('id')] = (float(p.get('x')), float(p.get('y')))
-        states, units, unit_at = [], [], []
+        states, units, unit_at, sv_ids = [], [], [], []
         for c in g.findall(S + 'glyph'):
             cb = c.find(S + 'bbox')
             if c.get('class') == 'state variable':
@@ -638,6 +679,7 @@ def read(path, which=0):
                 v, var = (st.get('value') or '', st.get('variable') or '') if st is not None else ('', '')
                 cx, cy = float(cb.get('x')) + float(cb.get('w')) / 2, float(cb.get('y')) + float(cb.get('h')) / 2
                 states.append((v + ('@' + var if var else ''), (cx - x - w / 2) / w, (cy - y - h / 2) / h))
+                sv_ids.append(c.get('id'))
             elif c.get('class') == 'unit of information' and (text(c) or cls != 'biological activity'):
                 units.append(text(c))  # with its place on the border, as a state variable's
                 unit_at.append(((float(cb.get('x')) + float(cb.get('w')) / 2 - x - w / 2) / w, (float(cb.get('y')) + float(cb.get('h')) / 2 - y - h / 2) / h) if cb is not None and w and h else None)
@@ -646,10 +688,14 @@ def read(path, which=0):
         lb = lab.find(S + 'bbox') if lab is not None else None
         data = {}
         own = [c for c in g if etree.QName(c).localname in ('extension', 'annotation')]  # not a member's
-        refs, bags = [], []
+        refs, bags, hidden = [], [], []
         for d in (x for c in own for x in c.iter('{%s}Description' % RDF)):
             for q in (q for q in d if isinstance(q.tag, str)):
                 links = [li.get('{%s}resource' % RDF) or '' for li in q.iter('{%s}li' % RDF)]
+                if q.tag == '{%s}hasProperty' % BQBIOL:  # sites not drawn (as the viewer's editor reads them), never kept as links
+                    found = [(u, site_of(u)) for u in links]
+                    hidden += [x for _, x in found if x]
+                    links = [u for u, x in found if not x]
                 if etree.QName(q).localname == 'isDescribedBy':  # a glyph's references (either qualifier set)
                     refs += [u for u in map(urn, links) if u]
                 elif any(links):  # the other bags, links as MIRIAM URNs where they are identifiers.org links
@@ -659,6 +705,9 @@ def read(path, which=0):
         data.update(keep_links(bags))
         if refs:
             data['References'] = from_references(refs)
+        ptm = hidden_sites(states, sv_ids, hidden)
+        if ptm:
+            data['PTM'] = '\n'.join(ptm)
         data = from_notes(text_of(g), data)
         if cls in DRAWN_AS:  # drawn as itself, read as the glyph the atlas maps use
             data['SBGN class'] = cls

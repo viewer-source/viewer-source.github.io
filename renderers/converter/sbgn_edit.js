@@ -2843,6 +2843,7 @@
   // value the fallback. A PTM line of the notes (the converter's place) is read too.
   var SITE_URN = 'urn:sbgn:site:', RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', BQB = 'http://biomodels.net/biology-qualifiers/';
   function kidL(el, name) { return el ? kids(el).filter(function (c) { return c.localName === name; })[0] || null : null; }
+  function dec(x) { try { return decodeURIComponent(x); } catch (e) { return x; } }   // a malformed %XX kept as written
   function siteUrn(sv, full) { return SITE_URN + encodeURIComponent(sv).replace(/%40/g, '@') + ':' + encodeURIComponent(full).replace(/%40/g, '@'); }
   function rdfOf(g) {   // the glyph's own RDF description and the site links in it
     var ext = kidL(g, 'extension'), ann = kidL(ext, 'annotation'), rdf = kidL(ann, 'RDF'), desc = kidL(rdf, 'Description'), hps = [], items = [];
@@ -2852,9 +2853,9 @@
       for (var k = 0; k < lis.length; k++) {
         var r = lis[k].getAttributeNS(RDF_NS, 'resource') || '';
         if (r.indexOf(SITE_URN) !== 0) continue;
-        var rest = r.slice(SITE_URN.length), c = rest.indexOf(':'), full = decodeURIComponent(rest.slice(c + 1));
+        var rest = r.slice(SITE_URN.length), c = rest.indexOf(':'), full = dec(rest.slice(c + 1));
         if (c < 0 || full.indexOf('@') < 0) continue;
-        ours++; items.push({ sv: decodeURIComponent(rest.slice(0, c)), full: full });
+        ours++; items.push({ sv: dec(rest.slice(0, c)), full: full });
       }
       if (ours) hps.push({ el: hp, all: ours === lis.length });
     });

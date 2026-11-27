@@ -145,7 +145,8 @@ def decorations(d):
     cx, cy = x + w / 2, y + h / 2
     states = []
     for txt, rx, ry in d.states:
-        sw = 15.0 if len(txt) <= 2 else 45.0  # as yEd's icons on the atlas maps
+        # as yEd's icons on the atlas maps; a longer text (a drawn site, Ac@K1234) as wide as it needs at this height
+        sw = 15.0 if len(txt) <= 2 else max(45.0, round((len(txt) * 5.4 + 12) * 15 / 18, 2))
         states.append((cx + rx * w - sw / 2, cy + ry * h - 7.5, sw, 15.0))
     units = []
     for u, rx, ry in unit_places(d):
@@ -370,9 +371,9 @@ def visible(m):
     return m
 
 
-def bends(route):
+def bends(route, eps=EPS):
     # the bends that shape a route (advanced layout), its ends left out
-    return _simplify(route, EPS)[1:-1]
+    return _simplify(route, eps)[1:-1]
 
 
 def corner(a, b, way):

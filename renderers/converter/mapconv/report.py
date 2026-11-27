@@ -1,10 +1,11 @@
 # The converter's messages, one list per conversion: each a kind and a text. Kinds: 'left out'
 # (not converted, dropped), 'changed' (moved, joined, written another way), 'warning' (converted,
 # worth a look), 'summary' (what a written file holds), 'problem' (a rule the map breaks,
-# rules.py). Outside collect() a message is printed, as on the command line.
+# rules.py), 'check' (the count check found a difference no message explains, count.py). Outside collect() a message
+# is printed, as on the command line.
 import contextlib
 
-KINDS = ('left out', 'changed', 'warning', 'summary', 'problem')
+KINDS = ('left out', 'changed', 'warning', 'summary', 'problem', 'check')
 _messages = None
 
 
