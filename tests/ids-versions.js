@@ -39,20 +39,16 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
     ok(f.hash + ': PDP found', !!at);
     if (!at) continue;
     await page.keyboard.press('Escape'); await page.mouse.click(at[0], at[1]); await page.waitForTimeout(800);
-    var vis = function () { return page.$$eval('.m2-ed-prefl tr', function (l) { var m = document.querySelector('.m2-ed-prefh .m2-ed-pmore'); return l.length + ' ' + (m ? m.getAttribute('aria-expanded') + ' ' + m.textContent + ' ' + m.querySelector('path').getAttribute('d') : ''); }); };
+    var vis = function () { return page.$$eval('.m2-ed-prefl tr', function (l) { var m = document.querySelector('.m2-ed-pfold .m2-ed-pmore'); return l.length + ' ' + (m ? m.getAttribute('aria-expanded') + ' ' + m.textContent : ''); }); };
     if (f.hash === 'pdh-celldesigner') {
-      var v0 = await vis(), n = +v0.split(' ')[2];
-      ok(f.hash + ': a long list folded to its first row, the heading showing the count and a right chevron', /^1 false \d+ M4 2l4 4-4 4$/.test(v0) && n >= 3, v0);
+      var v0 = await vis(), n = +v0.split(' ').pop();
+      ok(f.hash + ': a long list folded to its first row, Show all N under it', /^1 false Show all \d+$/.test(v0) && n >= 3, v0);
+      var lay = await page.evaluate(function () { var b = document.querySelector('.m2-ed-pfold .m2-ed-pmore').getBoundingClientRect(), r = document.querySelector('.m2-ed-prefl tr'), th = r.querySelector('th').getBoundingClientRect(), tr = r.getBoundingClientRect(); return { left: b.left + 4 - th.left, under: b.top - tr.bottom }; });
+      ok(f.hash + ': on the left, its text in line with the labels, under the row', Math.abs(lay.left) <= 1 && lay.under >= -0.5, JSON.stringify(lay));
       await page.click('.m2-ed-pmore'); await page.waitForTimeout(300);
-      ok(f.hash + ': the count opens the whole list, the chevron down', (await vis()) === n + ' true ' + n + ' M2 4l4 4 4-4', await vis());
+      ok(f.hash + ': it opens the whole list, Show fewer under it', (await vis()) === n + ' true Show fewer', await vis());
       await page.click('.m2-ed-pmore'); await page.waitForTimeout(300);
-      ok(f.hash + ': clicked again it folds', /^1 false /.test(await vis()), await vis());
-      await page.click('.m2-ed-prefh th', { position: { x: 5, y: 12 } }); await page.waitForTimeout(300);
-      ok(f.hash + ': the heading word opens it too', (await vis()).indexOf(n + ' true') === 0, await vis());
-      await page.click('.m2-ed-prefh th', { position: { x: 5, y: 12 } }); await page.waitForTimeout(300);
-      var bx = await page.evaluate(function () { var m = document.querySelector('.m2-ed-pmore').getBoundingClientRect(), p = document.querySelector('.m2-ed-pplus').getBoundingClientRect(); return Math.abs((m.top + m.bottom) / 2 - (p.top + p.bottom) / 2) <= 1.5 && Math.abs(m.height - p.height) <= 0.5; });
-      ok(f.hash + ': the count as tall as the + and on its line', bx);
-      ok(f.hash + ': and folded again', /^1 false /.test(await vis()), await vis());
+      ok(f.hash + ': Show fewer folds it again', (await vis()) === '1 false Show all ' + n, await vis());
     }
     var R = await rows();
     ok(f.hash + ': every member identifier has a cross', R.length >= 3 && R.every(function (x) { return / x$/.test(x); }), JSON.stringify(R));

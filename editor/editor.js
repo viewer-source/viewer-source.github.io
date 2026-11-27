@@ -14547,7 +14547,7 @@
   var field;
   var pNow;
   function __run442() {
-    props.innerHTML = "<p>Properties</p>" + table(ROWS, " m2-ed-pnode") + table(EROWS, " m2-ed-pedge") + table(RROWS, " m2-ed-prx") + '<table class="m2-ed-ptab m2-ed-pcard" hidden></table><table class="m2-ed-ptab m2-ed-prefs" hidden><tbody class="m2-ed-prefh"></tbody><tbody><tr class="m2-ed-padd" hidden><td colspan="2"><span class="m2-ed-ppic"><select class="m2-ed-pdb" aria-label="Database of the IDs typed"></select><input type="text" class="m2-ed-pin" aria-label="IDs or links to add" placeholder="IDs or links" spellcheck="false" autocomplete="off"><button type="button" class="m2-ed-pgo">Add</button></span></td></tr><tr class="m2-ed-psay" hidden><td colspan="2"></td></tr></tbody><tbody class="m2-ed-prefl"></tbody></table><button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button><button type="button" class="m2-ed-pall" title="Every glyph of this kind on the map (every process, or every logic gate) takes this one\u2019s size and antenna">Apply to all of this kind</button><button type="button" class="m2-ed-pstd" title="The standard size and antenna of processes and logic gates, at the map\u2019s scale (Style, Standard sizes)">Standard size</button>';
+    props.innerHTML = "<p>Properties</p>" + table(ROWS, " m2-ed-pnode") + table(EROWS, " m2-ed-pedge") + table(RROWS, " m2-ed-prx") + '<table class="m2-ed-ptab m2-ed-pcard" hidden></table><table class="m2-ed-ptab m2-ed-prefs" hidden><tbody class="m2-ed-prefh"></tbody><tbody><tr class="m2-ed-padd" hidden><td colspan="2"><span class="m2-ed-ppic"><select class="m2-ed-pdb" aria-label="Database of the IDs typed"></select><input type="text" class="m2-ed-pin" aria-label="IDs or links to add" placeholder="IDs or links" spellcheck="false" autocomplete="off"><button type="button" class="m2-ed-pgo">Add</button></span></td></tr><tr class="m2-ed-psay" hidden><td colspan="2"></td></tr></tbody><tbody class="m2-ed-prefl"></tbody><tbody class="m2-ed-pfold"></tbody></table><button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button><button type="button" class="m2-ed-pall" title="Every glyph of this kind on the map (every process, or every logic gate) takes this one\u2019s size and antenna">Apply to all of this kind</button><button type="button" class="m2-ed-pstd" title="The standard size and antenna of processes and logic gates, at the map\u2019s scale (Style, Standard sizes)">Standard size</button>';
     pal.insertAdjacentElement("afterend", props);
     props.insertAdjacentElement("afterend", pmap);
     inW = props.querySelector("#m2-ed-w"), inH = props.querySelector("#m2-ed-h");
@@ -14856,7 +14856,7 @@
     };
     var pin = prefs.querySelector(".m2-ed-pin");
     var enterAt = 0, pressAt = 0;
-    [".m2-ed-prefh", ".m2-ed-prefl"].forEach(function(q) {
+    [".m2-ed-prefh", ".m2-ed-prefl", ".m2-ed-pfold"].forEach(function(q) {
       prefs.querySelector(q).addEventListener("pointerdown", function() {
         pressAt = Date.now();
       }, true);
@@ -14913,7 +14913,7 @@
         refsOpen();
         return;
       }
-      if (e.target.closest && (e.target.closest(".m2-ed-pmore") || e.target.closest(".m2-ed-prefh th") && prefs.querySelector(".m2-ed-pmore"))) {
+      if (e.target.closest && e.target.closest(".m2-ed-pmore")) {
         prefsOpen = !prefsOpen;
         prefsKey = null;
         refsShow();
@@ -14969,9 +14969,6 @@
   }
   function signPlus() {
     return '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M6 1.5v9M1.5 6h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
-  }
-  function signFold(open) {
-    return '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="' + (open ? "M2 4l4 4 4-4" : "M4 2l4 4-4 4") + '" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
   function signX() {
     return '<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
@@ -15141,8 +15138,8 @@
     }).map(function(r) {
       return r[0];
     });
-    var fold = rows.length < 2 ? "" : '<button type="button" class="m2-ed-pmore" title="' + (prefsOpen ? "Show the first only" : "Show all " + rows.length) + '" aria-expanded="' + prefsOpen + '">' + rows.length + signFold(prefsOpen) + "</button>";
-    prefs.querySelector(".m2-ed-prefh").innerHTML = '<tr><th colspan="2">' + escHtml(R.title) + fold + '<button type="button" class="m2-ed-pplus" title="Add ' + (R.kind ? "identifiers" : "references") + '" aria-label="Add ' + (R.kind ? "identifiers" : "references") + '">' + signPlus() + "</button></th></tr>";
+    prefs.querySelector(".m2-ed-pfold").innerHTML = rows.length < 2 ? "" : '<tr><td colspan="2"><button type="button" class="m2-ed-pmore" aria-expanded="' + prefsOpen + '">' + (prefsOpen ? "Show fewer" : "Show all " + rows.length) + "</button></td></tr>";
+    prefs.querySelector(".m2-ed-prefh").innerHTML = '<tr><th colspan="2">' + escHtml(R.title) + '<button type="button" class="m2-ed-pplus" title="Add ' + (R.kind ? "identifiers" : "references") + '" aria-label="Add ' + (R.kind ? "identifiers" : "references") + '">' + signPlus() + "</button></th></tr>";
     prefs.querySelector(".m2-ed-prefl").innerHTML = rows.map(function(x, j) {
       if (!prefsOpen && j > 0) return "";
       var name2 = REF_DB[x.db] || x.db || "Link", tip = name2 + " " + x.val + (x.own ? "" : ", " + x.q + (x.about ? ": about the map as a model, kept as written" : ", kept as written"));

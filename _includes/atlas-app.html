@@ -486,10 +486,9 @@ page, so its styles keep the base they were made on).
     width: 22px; height: 22px; margin: 0; padding: 0; border-radius: 4px; color: #70757a; cursor: pointer; }
   #m2-editwin .m2-ed-prefs button.m2-ed-pplus { float: right; margin-top: -3px; border: 1px solid var(--m2-frame); background: var(--m2-bg); }
   #m2-editwin .m2-ed-prefs button.m2-ed-px { border: 0; background: none; }
-  #m2-editwin .m2-ed-prefs button.m2-ed-pmore { display: inline-flex; align-items: center; gap: 3px; vertical-align: middle; width: auto; height: 22px; margin: -3px 0 0 10px; padding: 0 4px; border: 0; border-radius: 4px; background: none; color: var(--m2-faint); font-size: 12px; cursor: pointer; }   /* a folded list's count and chevron after its heading; the chevron in the maps list's soft grey */
-  #m2-editwin .m2-ed-prefs button.m2-ed-pmore svg { color: #b4b4b4; }
+  #m2-editwin .m2-ed-prefs .m2-ed-pfold td { padding: 2px 0 0; }
+  #m2-editwin .m2-ed-prefs button.m2-ed-pmore { width: auto; height: 22px; margin: 0 0 0 -4px; padding: 0 4px; border: 0; border-radius: 4px; background: none; color: var(--m2-faint); font: inherit; font-size: 12px; cursor: pointer; }   /* Show all N under a folded list, Show fewer under the open one, on the left in the labels' column */
   #m2-editwin .m2-ed-prefs button.m2-ed-pmore:hover { background: var(--m2-soft); }
-  #m2-editwin .m2-ed-prefh th:has(.m2-ed-pmore) { cursor: pointer; }   /* the heading's word opens and folds too, as the count does */
   #m2-editwin .m2-ed-prefs button.m2-ed-pplus:hover, #m2-editwin .m2-ed-prefs button.m2-ed-px:hover { background: var(--m2-soft); color: #3c4043; }
   #m2-editwin .m2-ed-prefs button.m2-ed-pplus:hover { border-color: #c4c7c9; }
   #m2-editwin .m2-ed-prefs tr.m2-ed-pnew > th, #m2-editwin .m2-ed-prefs tr.m2-ed-pnew > td { background: var(--m2-soft); transition: background 0.8s; }   /* a row just added, where it landed in the list; faded out after a moment */
