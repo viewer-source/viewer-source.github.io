@@ -3353,6 +3353,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       keyDue = function () {   // what holds what settled as after a plain drag (regroup), the holders grown
         keyDue = null;
         var run = keyRun || [0, 0]; keyRun = null;
+        onNeighbour(ks.p);   // checked when the keys stop, not at each step: a bend passing close to its neighbour on its way stays
         var set = new Set(nodes2.map(function (n, i) { return kids.indexOf(n.id) >= 0 ? i : -1; }).filter(function (i) { return i >= 0; }));
         fixMoved(set);
         var B0 = function (k) { var b = boxOf(k); return set.has(k) ? [b[0] - run[0], b[1] - run[1], b[2], b[3]] : b; };

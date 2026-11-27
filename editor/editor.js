@@ -20871,6 +20871,7 @@
         keyDue = null;
         var run = keyRun || [0, 0];
         keyRun = null;
+        onNeighbour(ks.p);
         var set = new Set(nodes2.map(function(n, i) {
           return kids.indexOf(n.id) >= 0 ? i : -1;
         }).filter(function(i) {
