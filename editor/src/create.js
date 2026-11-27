@@ -1,5 +1,5 @@
 import { shared, V } from './state.js';
-import { G, GE, HANDLE, MODS, Y, asSpace, at, box, boxOf, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubEnd, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, takes, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
+import { G, GE, HANDLE, MODS, Y, asSpace, at, box, boxOf, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubEnd, hubPorts, inComplex, inRim, landBox, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, takes, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
 import { bx, livePose } from './live.js';
 import { GEO } from './sbgn.js';
 import { afKind, cardAll, cardAt, hubGroup, hybridActs, palKind, palOn, PF_SB, sbAnts, sbCols, sbColsRow, sbFileAf, sbReversible, svBase, svCopies, svDeleteSb, svShareMove, svShareText } from './sbcreate.js';
@@ -1976,7 +1976,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function linkEnd(P, not) {   // the innermost entity, process, gate, phenotype or submap under P (a complex, not its member: roleOf), not node `not`
       var R = 4 / V.z, best = -1, ba = Infinity, L = shared.F.line;   // a format's own lines (F.line, CellDesigner: cdcreate.js)
       nodes2.forEach(function (n, i) {
-        var b = boxOf(i), r = L ? L.role(i) : roleOf(i) || (hybOn() && nodes2[i].shape.kind === 'Submap' ? 'sub' : null);   // a submap, with Reduced notation ticked: linkKind0 decides
+        var b = L ? boxOf(i) : landBox(i, boxOf(i)), r = L ? L.role(i) : roleOf(i) || (hybOn() && nodes2[i].shape.kind === 'Submap' ? 'sub' : null);   // a submap, with Reduced notation ticked: linkKind0 decides
         if (i === not || !r || P[0] < b[0] - R || P[0] > b[0] + b[2] + R || P[1] < b[1] - R || P[1] > b[1] + b[3] + R) return;
         if (b[2] * b[3] < ba) { ba = b[2] * b[3]; best = i; }
       });

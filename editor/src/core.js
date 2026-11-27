@@ -2459,10 +2459,19 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function takes(k, end, i) {   // takes0, and the rules table for the line as it would be (create.js moveSays)
       return takes0(k, end, i) && !moveSays(k, end, i);
     }
+    // where a pointer counts as over node i, from its box b: the box, and for a process or gate on GraphML and SBGN-ML maps
+    // the box stretched to its two antennas' tips, so the square, the antennas and the space between them are one target;
+    // one rule for an end dragged (takerAt) and a line drawn (create.js linkEnd)
+    function landBox(i, b) {
+      var H = nodes2[i].hub && window.yrender && hubPorts()[nodes2[i].id];
+      if (!H || !H[0] || !H[1]) return b;
+      var x1 = Math.min(b[0], H[0][0], H[1][0]), y1 = Math.min(b[1], H[0][1], H[1][1]);
+      return [x1, y1, Math.max(b[0] + b[2], H[0][0], H[1][0]) - x1, Math.max(b[1] + b[3], H[0][1], H[1][1]) - y1];
+    }
     function takerAt(pp, P) {   // the innermost node under P that can take the end, or its own node; null over nothing that can
       var R = 4 / V.z, best = null, ba = Infinity;
       nodes2.forEach(function (n, i) {
-        var b = bx(i);
+        var b = landBox(i, bx(i));
         if (P[0] < b[0] - R || P[0] > b[0] + b[2] + R || P[1] < b[1] - R || P[1] > b[1] + b[3] + R) return;
         if (i !== pp.n && !takes(pp.k, pp.end, i)) return;
         if (b[2] * b[3] < ba) { ba = b[2] * b[3]; best = i; }
@@ -2477,9 +2486,12 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
     function aim(pp, P, free) {   // the dragged end's next place: on its own node, on a node that takes it, or free at the pointer (Alt or Ctrl, a process's port, or off the ports' grid)
       var i = takerAt(pp, P), b;
-      pp.n2 = null; pp.free = false;
+      pp.n2 = null; pp.free = false; pp.home = null;
       if (i == null && !pp.hub && !free && !shared.F.fixedEnds) i = pp.n;   // on the ports' grid, over nothing that takes it: on its own outline, nearest the pointer
-      if (i === pp.n) { pp.to = pp.hub ? null : spot(pp, P, free); return; }   // an end at a port stays with its process
+      if (i === pp.n) {   // an end at a port stays with its process: its port marked blue while the pointer is over the process, its antennas or between
+        if (pp.hub) { var q = ports(pp.k); pp.to = null; pp.home = q[pp.end ? q.length - 1 : 0]; return; }
+        pp.to = spot(pp, P, free); return;
+      }
       if (i != null) { pp.n2 = i; pp.to = portOn(pp, i, P, free); return; }
       b = bx(pp.n); pp.free = true; pp.to = [P[0] - b[0] - b[2] / 2, P[1] - b[1] - b[3] / 2];
     }
@@ -2556,7 +2568,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           var sqAt = function (n) { return glyphs.has(n) || shared.F.square(nodes2[n].id) != null; };   // an end at the reaction's square stays (portAt): no square drawn there
           if (grouped && ((j === 0 && sqAt(e.s)) || (j === all.length - 1 && sqAt(e.t)))) return;
           if (j === pj) return;   // the part the keys move: its four squares alone (below)
-          if (drag && drag.port && drag.port.to && drag.port.k === k && j === (drag.port.end ? all.length - 1 : 0)) return;   // the end dragged: its landing marks alone (below)
+          if (drag && drag.port && (drag.port.to || drag.port.home) && drag.port.k === k && j === (drag.port.end ? all.length - 1 : 0)) return;   // the end dragged: its landing marks alone (below)
           over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(sx(q[0]) - sq() / 2) + '" y="' + f1(sy(q[1]) - sq() / 2) + '" width="' + f1(sq()) + '" height="' + f1(sq()) + '"/>');
         });
       });
@@ -2576,6 +2588,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         over.push(pk.free ? landMarks((procSpots(pk) || hubSides(pk) || []).map(at0), null) + landMarks([], at0(pk.to), 'm2-ed-handle')
           : landMarks((placesOf({ k: pk.k, end: pk.end, n: n0 }) || []).map(at0), at0(pk.to)));
       }
+      if (drag && drag.port && drag.port.home) over.push(landMarks([], drag.port.home));   // over its own process: the port it stays on, blue
       if (!drag && keyGuides) keyGuides.forEach(function (g) {
         out.push('<path class="m2-ed-guide"' + gw() + ' d="M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])) + '"/>');
       });
@@ -3369,4 +3382,4 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); }   // the part's statements, in their order
-    export { asSpace, G, GE, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubEnd, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownCursors, ownMenus, paint, parse, parseFix, picWait, placed, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, takes, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };
+    export { asSpace, G, GE, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubEnd, hubPorts, inComplex, landBox, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownCursors, ownMenus, paint, parse, parseFix, picWait, placed, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, takes, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };

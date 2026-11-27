@@ -14025,7 +14025,7 @@
   function linkEnd(P, not) {
     var R = 4 / V.z, best = -1, ba = Infinity, L = shared.F.line;
     nodes2.forEach(function(n, i) {
-      var b = boxOf(i), r = L ? L.role(i) : roleOf(i) || (hybOn() && nodes2[i].shape.kind === "Submap" ? "sub" : null);
+      var b = L ? boxOf(i) : landBox(i, boxOf(i)), r = L ? L.role(i) : roleOf(i) || (hybOn() && nodes2[i].shape.kind === "Submap" ? "sub" : null);
       if (i === not || !r || P[0] < b[0] - R || P[0] > b[0] + b[2] + R || P[1] < b[1] - R || P[1] > b[1] + b[3] + R) return;
       if (b[2] * b[3] < ba) {
         ba = b[2] * b[3];
@@ -19554,10 +19554,16 @@
   function takes(k, end, i) {
     return takes0(k, end, i) && !moveSays(k, end, i);
   }
+  function landBox(i, b) {
+    var H2 = nodes2[i].hub && window.yrender && hubPorts()[nodes2[i].id];
+    if (!H2 || !H2[0] || !H2[1]) return b;
+    var x1 = Math.min(b[0], H2[0][0], H2[1][0]), y1 = Math.min(b[1], H2[0][1], H2[1][1]);
+    return [x1, y1, Math.max(b[0] + b[2], H2[0][0], H2[1][0]) - x1, Math.max(b[1] + b[3], H2[0][1], H2[1][1]) - y1];
+  }
   function takerAt(pp, P) {
     var R = 4 / V.z, best = null, ba = Infinity;
     nodes2.forEach(function(n, i) {
-      var b = bx(i);
+      var b = landBox(i, bx(i));
       if (P[0] < b[0] - R || P[0] > b[0] + b[2] + R || P[1] < b[1] - R || P[1] > b[1] + b[3] + R) return;
       if (i !== pp.n && !takes(pp.k, pp.end, i)) return;
       if (b[2] * b[3] < ba) {
@@ -19577,9 +19583,16 @@
     var i = takerAt(pp, P), b;
     pp.n2 = null;
     pp.free = false;
+    pp.home = null;
     if (i == null && !pp.hub && !free && !shared.F.fixedEnds) i = pp.n;
     if (i === pp.n) {
-      pp.to = pp.hub ? null : spot(pp, P, free);
+      if (pp.hub) {
+        var q = ports(pp.k);
+        pp.to = null;
+        pp.home = q[pp.end ? q.length - 1 : 0];
+        return;
+      }
+      pp.to = spot(pp, P, free);
       return;
     }
     if (i != null) {
@@ -19689,7 +19702,7 @@
         };
         if (grouped && (j === 0 && sqAt(e.s) || j === all.length - 1 && sqAt(e.t))) return;
         if (j === pj) return;
-        if (drag && drag.port && drag.port.to && drag.port.k === k && j === (drag.port.end ? all.length - 1 : 0)) return;
+        if (drag && drag.port && (drag.port.to || drag.port.home) && drag.port.k === k && j === (drag.port.end ? all.length - 1 : 0)) return;
         over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(sx(q[0]) - sq() / 2) + '" y="' + f1(sy(q[1]) - sq() / 2) + '" width="' + f1(sq()) + '" height="' + f1(sq()) + '"/>');
       });
     });
@@ -19708,6 +19721,7 @@
       };
       over.push(pk.free ? landMarks((procSpots(pk) || hubSides(pk) || []).map(at0), null) + landMarks([], at0(pk.to), "m2-ed-handle") : landMarks((placesOf({ k: pk.k, end: pk.end, n: n0 }) || []).map(at0), at0(pk.to)));
     }
+    if (drag && drag.port && drag.port.home) over.push(landMarks([], drag.port.home));
     if (!drag && keyGuides) keyGuides.forEach(function(g) {
       out.push('<path class="m2-ed-guide"' + gw() + ' d="M' + f1(sx(g[0][0])) + " " + f1(sy(g[0][1])) + "L" + f1(sx(g[1][0])) + " " + f1(sy(g[1][1])) + '"/>');
     });
