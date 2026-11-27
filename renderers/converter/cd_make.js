@@ -1463,8 +1463,13 @@
       '<celldesigner:bounds x="' + B[0] + '" y="' + B[1] + '" w="' + B[2] + '" h="' + B[3] + '"/>\n<celldesigner:paint color="ff000000"/>\n<celldesigner:font size="11"/>\n</celldesigner:layerSpeciesAlias>';
     var L = span(t, '<celldesigner:layer(?=\\s)[^>]*\\sname="' + BG_NAME + '"'), n = layerTexts(t).length;
     if (L) {
+      var h = t.indexOf('>', L[0]) + 1, lt = span(t, '<' + CD + 'listOfTexts[\\s>/]', L[0], L[1]);
+      if (lt && t[lt[0] + t.slice(lt[0]).indexOf('>') - 1] !== '/') {   // first in the layer, so drawn over the others: of one Z-Index the first in the file is on top, in MINERVA too
+        var at = eol(t, lt[0] + t.slice(lt[0]).indexOf('>') + 1);
+        n = layerTexts(t).filter(function (x) { return x.sp[0] < at; }).length;
+        return { text: put(t, at, at, (t[at - 1] === '\n' ? '' : '\n') + item + '\n'), n: n };
+      }
       n = layerTexts(t).filter(function (x) { return x.sp[0] < L[1]; }).length;
-      var h = t.indexOf('>', L[0]) + 1;
       if (t[h - 2] === '/') return { text: put(t, L[0], L[1], head(t, L).slice(0, -2) + '>\n<celldesigner:listOfTexts>\n' + item + '\n</celldesigner:listOfTexts>\n</celldesigner:layer>'), n: n };   // <layer .../>
       return { text: add(t, CD + 'listOfTexts', item, L[0], L[1], eol(t, h)), n: n };
     }
