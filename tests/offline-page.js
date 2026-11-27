@@ -1,10 +1,10 @@
 // The page opening offline (sw.js, the site's service worker; atlas-app.html, kept for offline): the first visit keeps
 // the page, its code and the maps seen; offline the same address opens with the list and the map; a map whose picture
 // is not kept is grey and says so; the editor opens offline on a kept map; a new page is taken at the next load with a
-// connection; the kill switch drops every copy and the worker.
+// connection. The kill switch is tried by a release (part G's note).
 //   node tests/offline-page.js [base address]
 // Parts: A first visit kept; B a reload offline; C a map not kept; D the editor offline; E online again; F a new page
-// taken at the next load; G the kill switch (a sw.js with KILL = true served by this script).
+// taken at the next load.
 var { chromium } = require('playwright');
 var base = process.argv.slice(2).filter(function (a) { return a[0] !== '-'; })[0] || 'https://viewer-source.github.io/styles/';
 var scope = new URL(base).pathname;
@@ -113,18 +113,9 @@ function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   ok('F offline, the newest page kept', !!(await page.$('#' + mark)));
   await ctx.setOffline(false);
 
-  // G: the kill switch
-  await ctx.route(function (u) { return u.pathname === scope + 'sw.js'; }, async function (route) {
-    var res = await route.fetch(); var t = await res.text();
-    route.fulfill({ response: res, body: t.replace('var KILL = false;', 'var KILL = true;') });
-  });
-  await page.evaluate(function () { return navigator.serviceWorker.getRegistration().then(function (g) { return g && g.update(); }); }).catch(function () {});
-  await wait(5000);
-  var left = await page.evaluate(function () { return navigator.serviceWorker.getRegistrations().then(function (l) { return l.length; }); }).catch(function () { return -1; });
-  ok('G the worker gone', left === 0, left + ' left');
-  var n = await names().catch(function () { return []; });
-  ok('G the copies gone', !n.some(function (x) { return x === 'offline-1:' + scope; }), n.join(', '));
-  ok('G the page works from the network', (await rows()).length > 3);
+  // G, the kill switch, is tried by a release instead: this script cannot serve its own sw.js, the browser's update
+  // check of the worker passes no route. A release with KILL true in one copy, then a visit with a profile that holds
+  // the worker: no worker and no copies after it; KILL false again, both back.
   ok('no page error', !errs.length, errs.slice(0, 3).join(' | '));
   await b.close();
   console.log(bad ? bad + ' WRONG' : 'all ok');
