@@ -14266,7 +14266,10 @@
         });
         tr.classList.toggle("m2-mixed", !same);
         picShow(f, same ? Ls[0].pic : null);
-        if (!same) f.parentNode.querySelector(".m2-ed-ppicname").textContent = "mixed";
+        if (!same) {
+          f.parentNode.querySelector(".m2-ed-ppicname").textContent = "mixed";
+          f.parentNode.querySelector(".m2-ed-ppicoff").hidden = false;
+        }
         return;
       }
       if (tr.hidden || !all && document.activeElement === f) return;

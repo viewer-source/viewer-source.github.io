@@ -155,7 +155,13 @@ var SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" heigh
   var rowOf = function () { return page.$eval('.m2-ed-pnode tr[data-k="pic"]', function (r) { return { shown: !r.hidden && !r.closest('[hidden]'), name: r.querySelector('.m2-ed-ppicname').textContent, mixed: r.classList.contains('m2-mixed') }; }).catch(function () { return null; }); };
   var rc = await box(CX); await page.keyboard.down('Shift'); await page.mouse.click(rc[0] + 4, rc[1] + 4); await page.keyboard.up('Shift'); await page.waitForTimeout(600);
   var rm = await rowOf();
-  ok('1b. a species without and a complex with an image selected: the Image row, mixed, Upload shown', rm && rm.shown && rm.name === 'mixed' && rm.mixed && JSON.stringify(await btns()) === '[false,true,true]', JSON.stringify(rm) + ' ' + JSON.stringify(await btns()));
+  ok('1b. a species without and a complex with an image selected: the Image row, mixed, Upload and Remove inside the panel', rm && rm.shown && rm.name === 'mixed' && rm.mixed && JSON.stringify(await btns()) === '[false,false,true]', JSON.stringify(rm) + ' ' + JSON.stringify(await btns()));
+  var tm = await now();
+  await page.click('.m2-ed-pnode tr[data-k="pic"] .m2-ed-ppicoff'); await page.waitForTimeout(2000);
+  ok('1b. mixed, Remove: off both', glyph(await now(), 's', 's_n3') === null && glyph(await now(), 's', 's_n1') === null, glyph(await now(), 's', 's_n1'));
+  await undo();
+  ok('1b. mixed Remove undone in one step', (await now()) === tm);
+  await select(SP); rc = await box(CX); await page.keyboard.down('Shift'); await page.mouse.click(rc[0] + 4, rc[1] + 4); await page.keyboard.up('Shift'); await page.waitForTimeout(600);
   var tb = await now();
   await choose(function () { return page.click('#m2-ed-pic'); }, { name: 'red cell.png', mimeType: 'image/png', buffer: RED });
   var tb2 = await now(), rs = await rowOf();

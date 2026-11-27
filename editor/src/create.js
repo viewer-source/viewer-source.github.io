@@ -2451,14 +2451,14 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       ROWS.forEach(function (r) {
         var tr = props.querySelector('.m2-ed-pnode tr[data-k="' + r[0] + '"]'), f = field(r[0]);
         tr.hidden = r[0] === 'label' || ns.some(function (i, j) { pNow = Ls[j]; return (/^[wh]$/.test(r[0]) && (!sizable(i) || holds(i))) || pf.off(r[0], i); });   // a holder's size alone (holderSize)
-        // the Image row on several selected nodes, to put one image on all of them: one image on all, its name and Remove (off all); none on any, Upload (on all); different ones, "mixed"
-        // and Upload (one image on all). Each one undo step (the part's buttons act on the whole selection)
+        // the Image row on several selected nodes, to put one image on all of them: one image on all, its name and Remove (off all); none on any, Upload (on all); different ones, "mixed",
+        // Upload (one image on all) and Remove (off all). Each one undo step (the part's buttons act on the whole selection)
         if (r[2] === 'pic') {
           if (tr.hidden) return;
           var ps = Ls.map(function (L) { return L.pic ? L.pic.name : ''; }), same = ps.every(function (p) { return p === ps[0]; });
           tr.classList.toggle('m2-mixed', !same);
           picShow(f, same ? Ls[0].pic : null);
-          if (!same) f.parentNode.querySelector('.m2-ed-ppicname').textContent = 'mixed';
+          if (!same) { f.parentNode.querySelector('.m2-ed-ppicname').textContent = 'mixed'; f.parentNode.querySelector('.m2-ed-ppicoff').hidden = false; }   // mixed: Remove too (off all), the one state with both buttons
           return;
         }
         if (tr.hidden || (!all && document.activeElement === f)) return;
