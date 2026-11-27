@@ -2118,9 +2118,11 @@
   // both: each modulation's end, or where it comes from when its end is at the centre
   function heldAxis(G, pid) {
     var c = centre(G.node[pid].box), held = Object.keys(G.edge).map(function (k) { return G.edge[k]; }).filter(function (e) { return e.t === pid && G.node[e.s] && MODS.test(headClass(headOf(e)) || ''); }).map(function (e) {
+      var b = G.node[pid].box, x = Math.abs(e.off[2]) / (b[2] / 2 || 1), y = Math.abs(e.off[3]) / (b[3] / 2 || 1);
+      if (x > 0.5 && y > 0.5) return null;   // at a corner: beside either axis, so it holds none
       if (Math.abs(e.off[2]) > 1e-9 || Math.abs(e.off[3]) > 1e-9) return Math.abs(e.off[2]) >= Math.abs(e.off[3]);
       var f = centre(G.node[e.s].box); return Math.abs(f[0] - c[0]) >= Math.abs(f[1] - c[1]);
-    });
+    }).filter(function (h) { return h !== null; });
     return held.length && held.every(function (h) { return h === held[0]; }) ? held[0] : null;
   }
   // an arc from glyph s to glyph t, id given: a consumption

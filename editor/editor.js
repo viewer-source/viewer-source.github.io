@@ -14619,8 +14619,8 @@
     return k >= 0 && f.line.colour(k) != null ? k : -1;
   }
   function atHub(k, end) {
-    var e = edges2[k], n = end ? e.t : e.s;
-    return n == null || !!nodes2[n].hub;
+    var e = edges2[k];
+    return (end ? e.t : e.s) == null || hubEnd(k, end) != null;
   }
   function edgeShow(k, all, r2, rxLine) {
     props.querySelector(".m2-ed-pdef").hidden = props.querySelector(".m2-ed-pall").hidden = props.querySelector(".m2-ed-pstd").hidden = true;
@@ -14633,7 +14633,10 @@
       var f = field(r[0]);
       var port = /^[st][xy]$/.test(r[0]);
       f.closest("tr").hidden = port && !pl.ports || r[0] === "card" && card === void 0;
-      if (port) f.disabled = atHub(k, r[0].charAt(0) === "t");
+      if (port) {
+        f.disabled = atHub(k, r[0].charAt(0) === "t");
+        f.closest("tr").title = f.disabled && hubEnd(k, r[0].charAt(0) === "t") ? "Fixed on the antenna: it moves with the process or gate (drag it, or Turn in its right-click menu)." : "";
+      }
       if (!all && document.activeElement === f) return;
       if (f.value !== now[r[0]]) f.value = now[r[0]];
       var pk = f.previousElementSibling;
@@ -18799,13 +18802,15 @@
     if (ka < 0) return null;
     var p = ports(ka), A = p[p.length - 2], C = p[p.length - 1], L = Math.hypot(C[0] - A[0], C[1] - A[1]), h = bx(n)[2] / 2;
     if (!L) return null;
-    var f = [(C[0] - A[0]) / L, (C[1] - A[1]) / L];
+    return sixPlaces([(C[0] - A[0]) / L, (C[1] - A[1]) / L], h, h);
+  }
+  function sixPlaces(f, hw, hh) {
     return [[0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]].map(function(s) {
-      return [h * (s[0] * f[0] - s[1] * f[1]), h * (s[0] * f[1] + s[1] * f[0])];
+      return [hw * (s[0] * f[0] - s[1] * f[1]), hh * (s[0] * f[1] + s[1] * f[0])];
     });
   }
-  function hubEnd(k, end) {
-    var e = edges2[k], n = end ? e.t : e.s;
+  function hubEnd(k, end, at2) {
+    var e = edges2[k], n = at2 != null ? at2 : end ? e.t : e.s;
     if (n == null || !nodes2[n].hub) return null;
     if (end) return e.arr[1] === "none" ? "in" : null;
     return !(e.t != null && nodes2[e.t].hub) && e.arr[0] === "none" && e.arr[1] === "none" && !nodes2[n].eq ? "in" : "out";
@@ -18819,7 +18824,8 @@
     if (!n.hub || hubEnd(pp.k, pp.end) || !window.yrender) return null;
     var P = hubPorts()[n.id], b = bx(pp.n);
     if (!P) return null;
-    return Math.abs(P[1][0] - P[0][0]) >= Math.abs(P[1][1] - P[0][1]) ? [[0, -b[3] / 2], [0, b[3] / 2]] : [[-b[2] / 2, 0], [b[2] / 2, 0]];
+    var hz = Math.abs(P[1][0] - P[0][0]) >= Math.abs(P[1][1] - P[0][1]);
+    return sixPlaces(hz ? [Math.sign(P[1][0] - P[0][0]) || 1, 0] : [0, Math.sign(P[1][1] - P[0][1]) || 1], b[2] / 2, b[3] / 2);
   }
   function turn(i) {
     var P = hubPorts()[nodes2[i].id], b = boxOf(i), c = [b[0] + b[2] / 2, b[1] + b[3] / 2];
@@ -18847,7 +18853,7 @@
     if (list2.length) setPorts(list2);
   }
   function placesOf(pp) {
-    if (nodes2[pp.n].hub && !(MODS.test(edges2[pp.k].arr[1]) && pp.end) && window.yrender && hubPorts()[nodes2[pp.n].id]) return null;
+    if (hubEnd(pp.k, pp.end, pp.n) && window.yrender && hubPorts()[nodes2[pp.n].id]) return null;
     var N = places(pp.n);
     return procSpots(pp) || hubSides(pp) || N && [[0, 0]].concat(N) || (shared.F.fixedEnds ? fivePlaces(pp.n) : null);
   }
@@ -19124,7 +19130,7 @@
   }
   function portOn(pp, i, P, free) {
     var b = bx(i), e = edges2[pp.k], H2 = nodes2[i].hub && window.yrender && hubPorts()[nodes2[i].id];
-    if (!H2 || MODS.test(e.arr[1]) && pp.end) return spot({ k: pp.k, end: pp.end, n: i }, P, free);
+    if (!H2 || !hubEnd(pp.k, pp.end, i)) return spot({ k: pp.k, end: pp.end, n: i }, P, free);
     var q = pp.end || e.arr[1] === "none" && !nodes2[e.t].hub ? H2[0] : H2[1];
     return [q[0] - b[0] - b[2] / 2, q[1] - b[1] - b[3] / 2];
   }

@@ -1,5 +1,5 @@
 import { shared, V } from './state.js';
-import { G, GE, HANDLE, MODS, Y, asSpace, at, box, boxOf, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, takes, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
+import { G, GE, HANDLE, MODS, Y, asSpace, at, box, boxOf, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubEnd, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, takes, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
 import { bx, livePose } from './live.js';
 import { GEO } from './sbgn.js';
 import { afKind, cardAll, cardAt, hubGroup, hybridActs, palKind, palOn, PF_SB, sbAnts, sbCols, sbColsRow, sbFileAf, sbReversible, svBase, svCopies, svDeleteSb, svShareMove, svShareText } from './sbcreate.js';
@@ -2696,7 +2696,9 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var k = edges2.findIndex(function (q) { return q.id.indexOf(r.rid + '|') === 0 && !/\|[mrp]\d+$/.test(q.id); });   // not a line with its own colour
       return k >= 0 && f.line.colour(k) != null ? k : -1;
     }
-    function atHub(k, end) { var e = edges2[k], n = end ? e.t : e.s; return n == null || !!nodes2[n].hub; }
+    // an end the Properties' port fields cannot move: one at no node, or at a process's or gate's antenna (a consumption's,
+    // a product's, a gate's input or output: it goes with the process); a modifier's end at a process or gate is free
+    function atHub(k, end) { var e = edges2[k]; return (end ? e.t : e.s) == null || hubEnd(k, end) != null; }
     function edgeShow(k, all, r2, rxLine) {   // rxLine: the line of a whole reaction selected (its colour, not one participant's number)
       props.querySelector('.m2-ed-pdef').hidden = props.querySelector('.m2-ed-pall').hidden = props.querySelector('.m2-ed-pstd').hidden = true;
       var e = edges2[k], pl = propFmt().line, card = !rxLine && pl.count ? pl.count(k) : undefined;
@@ -2706,7 +2708,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         var f = field(r[0]);
         var port = /^[st][xy]$/.test(r[0]);
         f.closest('tr').hidden = (port && !pl.ports) || (r[0] === 'card' && card === undefined);   // the ports as offsets: yEd's, not every format's; a number only on a consumption or production
-        if (port) f.disabled = atHub(k, r[0].charAt(0) === 't');
+        if (port) { f.disabled = atHub(k, r[0].charAt(0) === 't'); f.closest('tr').title = f.disabled && hubEnd(k, r[0].charAt(0) === 't') ? 'Fixed on the antenna: it moves with the process or gate (drag it, or Turn in its right-click menu).' : ''; }
         if (!all && document.activeElement === f) return;
         if (f.value !== now[r[0]]) f.value = now[r[0]];
         var pk = f.previousElementSibling;

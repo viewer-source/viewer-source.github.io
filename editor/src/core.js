@@ -2182,16 +2182,21 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (ka < 0) return null;
       var p = ports(ka), A = p[p.length - 2], C = p[p.length - 1], L = Math.hypot(C[0] - A[0], C[1] - A[1]), h = bx(n)[2] / 2;
       if (!L) return null;
-      var f = [(C[0] - A[0]) / L, (C[1] - A[1]) / L];
-      return [[0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]].map(function (s) { return [h * (s[0] * f[0] - s[1] * f[1]), h * (s[0] * f[1] + s[1] * f[0])]; });
+      return sixPlaces([(C[0] - A[0]) / L, (C[1] - A[1]) / L], h, h);
+    }
+    // the six places round a glyph whose main line (or antennas) runs along unit f: the middles of the two sides off it,
+    // then the four corners, in cdrender SQUARE's order (2 to 7); hw, hh half the box's width and height (so for f along an
+    // axis, or hw equal to hh: a CellDesigner square turned with its line)
+    function sixPlaces(f, hw, hh) {
+      return [[0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]].map(function (s) { return [hw * (s[0] * f[0] - s[1] * f[1]), hh * (s[0] * f[1] + s[1] * f[0])]; });
     }
     // a process or logic gate as one object with its two ports (as in yEd, as if yEd's SBGN palette
     // had a process with antennas, turned to any of four directions): its consumptions (a gate's inputs) end on port one,
     // its products leave from port two, both drawn by the yEd renderer at the ends of its antennas; a modifier ends on one
     // of the two sides off the antennas. The ports move with the process; Turn process (the right-click menu over it)
     // turns it a quarter clockwise, every end at it with it. GraphML and SBGN-ML maps alike (CellDesigner has its own glyph)
-    function hubEnd(k, end) {   // 'in', 'out' or null: how arc k meets a process or gate at that end (yrender's ends)
-      var e = edges2[k], n = end ? e.t : e.s;
+    function hubEnd(k, end, at) {   // 'in', 'out' or null: how arc k meets a process or gate at that end (yrender's ends); at: that end put on node at
+      var e = edges2[k], n = at != null ? at : end ? e.t : e.s;
       if (n == null || !nodes2[n].hub) return null;
       if (end) return e.arr[1] === 'none' ? 'in' : null;
       return !(e.t != null && nodes2[e.t].hub) && e.arr[0] === 'none' && e.arr[1] === 'none' && !nodes2[n].eq ? 'in' : 'out';
@@ -2200,12 +2205,15 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (!shared.hpMemo || shared.hpMemo[0] !== shared.text) shared.hpMemo = [shared.text, window.yrender.render(docText === shared.text ? doc : shared.text, {}).ports];   // the editor's own drawing sets it (drawGraphml): this only before it
       return shared.hpMemo[1];
     }
-    function hubSides(pp) {   // a modifier's places at a process or gate: the middles of the two sides off its antennas
+    function hubSides(pp) {   // a modifier's places at a process or gate: six, as on a CellDesigner reaction square (sixPlaces), the axis from its antennas
       var n = nodes2[pp.n];
       if (!n.hub || hubEnd(pp.k, pp.end) || !window.yrender) return null;
       var P = hubPorts()[n.id], b = bx(pp.n);
       if (!P) return null;
-      return Math.abs(P[1][0] - P[0][0]) >= Math.abs(P[1][1] - P[0][1]) ? [[0, -b[3] / 2], [0, b[3] / 2]] : [[-b[2] / 2, 0], [b[2] / 2, 0]];
+      // the antennas' direction to the nearer quarter (they run level or upright), port one to port two; the corners those
+      // of the box, where lines end at every process (an association's or dissociation's circle is drawn over its square)
+      var hz = Math.abs(P[1][0] - P[0][0]) >= Math.abs(P[1][1] - P[0][1]);
+      return sixPlaces(hz ? [Math.sign(P[1][0] - P[0][0]) || 1, 0] : [0, Math.sign(P[1][1] - P[0][1]) || 1], b[2] / 2, b[3] / 2);
     }
     function turn(i) {   // a quarter clockwise: every end at the process turned round its centre, an end at a port first put there
       var P = hubPorts()[nodes2[i].id], b = boxOf(i), c = [b[0] + b[2] / 2, b[1] + b[3] / 2];
@@ -2230,7 +2238,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (list.length) setPorts(list);
     }
     function placesOf(pp) {   // the places an end may take at node pp.n (portOn's choice), as offsets from its centre; null on the ports' grid (any point of it)
-      if (nodes2[pp.n].hub && !(MODS.test(edges2[pp.k].arr[1]) && pp.end) && window.yrender && hubPorts()[nodes2[pp.n].id]) return null;   // a process's or gate's own port: the one place
+      if (hubEnd(pp.k, pp.end, pp.n) && window.yrender && hubPorts()[nodes2[pp.n].id]) return null;   // a process's or gate's own port: the one place
       var N = places(pp.n);
       return procSpots(pp) || hubSides(pp) || (N && [[0, 0]].concat(N)) || (shared.F.fixedEnds ? fivePlaces(pp.n) : null);
     }
@@ -2434,7 +2442,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
     function portOn(pp, i, P, free) {   // the end's place at node i from its centre: at a process or gate the port its line takes, else spot's (a modifier: one of the two sides)
       var b = bx(i), e = edges2[pp.k], H = nodes2[i].hub && window.yrender && hubPorts()[nodes2[i].id];
-      if (!H || (MODS.test(e.arr[1]) && pp.end)) return spot({ k: pp.k, end: pp.end, n: i }, P, free);
+      if (!H || !hubEnd(pp.k, pp.end, i)) return spot({ k: pp.k, end: pp.end, n: i }, P, free);
       var q = pp.end || (e.arr[1] === 'none' && !nodes2[e.t].hub) ? H[0] : H[1];   // into port one, or out of port two
       return [q[0] - b[0] - b[2] / 2, q[1] - b[1] - b[3] / 2];
     }
@@ -3303,4 +3311,4 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); }   // the part's statements, in their order
-    export { asSpace, G, GE, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, placed, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, takes, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };
+    export { asSpace, G, GE, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubEnd, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, placed, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, takes, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };

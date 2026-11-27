@@ -29,5 +29,6 @@ t node tests/rules-agree.js https://viewer-source.github.io/styles/#glycolysis-s
 t node tests/cd-rules.js
 t env LIVE=1 node tests/holding-live.js
 t node tests/tool-map.js https://viewer-source.github.io/styles/ "$1"
+t node tests/modifier-ends.js --data="$1"
 if [ -n "$failed" ]; then echo "Failed:$failed"; exit 1; fi
 echo "All $ran browser tests passed."
