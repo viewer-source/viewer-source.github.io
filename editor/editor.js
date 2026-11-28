@@ -8070,6 +8070,7 @@
       file: r.file,
       width: r.width,
       height: r.height,
+      scale: 1,
       v: String(r.at),
       image: u.svg,
       colours: true,

@@ -560,8 +560,10 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         u = mineURLs[r.id] = { at: r.at, svg: URL.createObjectURL(new Blob([r.svg], { type: 'image/svg+xml' })), text: URL.createObjectURL(new Blob([r.text], { type: 'application/xml' })) };
       }
       var cdm = isCd(r.text), sbm = !cdm && isSb(r.text);
-      var e = { id: r.id, title: r.title, group: r.group && (groupsHere.indexOf(r.group) >= 0 || V.siteGroupOf(r.group)) ? r.group : '', topic: r.id, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
+      var e = { id: r.id, title: r.title, group: r.group && (groupsHere.indexOf(r.group) >= 0 || V.siteGroupOf(r.group)) ? r.group : '', topic: r.id, mine: true, file: r.file, width: r.width, height: r.height, scale: 1, v: String(r.at),
         image: u.svg, colours: true, legend: cdm ? 'celldesigner' : 'sbgn', downloads: [{ label: cdm ? 'CellDesigner' : sbm ? 'SBGN-ML' : 'GraphML', url: u.text }] };
+      // scale 1: its picture is the editor's drawing, one unit a pixel (the viewer's default 1.5 is the build's pictures), so it
+      // opens at the size the editor draws it and is fitted on the size it keeps
       // colours: its picture drawn with the role classes (drawText, core.js), so Settings' Map colours (File, Default) apply
       if (sbm) { e.editBase = emptyBase(); e.ownText = function () { return r.text; }; e.editPath = r.file; }   // edited as a site's SBGN-ML map, from the GraphML sbOwn makes of its text (sbgn.js)
       return e;
