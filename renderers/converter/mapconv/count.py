@@ -84,7 +84,7 @@ def _graphml(root):
 
 
 CD_CLASS = {'PROTEIN': 'macromolecule', 'RECEPTOR': 'macromolecule', 'ION_CHANNEL': 'macromolecule', 'TRUNCATED': 'macromolecule',
-            'SIMPLE_MOLECULE': 'simple chemical', 'ION': 'simple chemical', 'DRUG': 'simple chemical',
+            'SIMPLE_MOLECULE': 'simple chemical', 'ION': 'simple chemical',
             'GENE': 'nucleic acid feature', 'RNA': 'nucleic acid feature', 'ANTISENSE_RNA': 'nucleic acid feature',
             'UNKNOWN': 'unspecified entity', 'COMPLEX': 'complex', 'PHENOTYPE': 'phenotype', 'DEGRADED': 'source and sink'}
 CD_MOD = {'CATALYSIS': 'catalysis', 'UNKNOWN_CATALYSIS': 'catalysis', 'INHIBITION': 'inhibition',
@@ -114,7 +114,11 @@ def _celldesigner(root):
         if not isinstance(s.tag, str) or etree.QName(s).localname != 'species' or s.get('id') is None:
             continue
         cls = s.find('.//' + C + 'class')
-        species[s.get('id')] = (CD_CLASS.get(cls.text.strip() if cls is not None and cls.text else '', 'other'),
+        c = cls.text.strip() if cls is not None and cls.text else ''
+        if c == 'DRUG':   # as the reader takes it (celldesigner.drug_kind)
+            from .celldesigner import drug_kind
+            c = 'SIMPLE_MOLECULE' if drug_kind(s) == 'SimpleChemical' else 'UNKNOWN'
+        species[s.get('id')] = (CD_CLASS.get(c, 'other'),
                                 cd_words(s.get('name') or (s.findtext(C + 'name') or '')))
     for a in list(m.iter(C + 'speciesAlias')) + list(m.iter(C + 'complexSpeciesAlias')):
         k, name = species.get(a.get('species'), ('other', ''))

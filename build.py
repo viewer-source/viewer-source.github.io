@@ -217,6 +217,9 @@ CLASS = {'PROTEIN': 'Macromolecule', 'RECEPTOR': 'Macromolecule', 'ION_CHANNEL':
          'UNKNOWN': 'UnspecifiedEntity', 'DEGRADED': 'SourceAndSink'}
 
 
+COMPOUND = re.compile(r'(?:urn:miriam:|identifiers\.org/)(?:obo\.chebi|chebi|pubchem\.compound|kegg\.compound|drugbank)[:/]', re.I)
+
+
 def miriam(e):
     out = []
     for li in e.iter(RDF + 'li'):
@@ -269,6 +272,8 @@ def celldesigner(src, out_svg):
             if ns == 'hgnc' and not i.upper().startswith('HGNC:'):
                 i = 'HGNC:' + i
             props[FIELD.get(ns, ns)].append(i)
+        if cls == 'DRUG' and not any(COMPOUND.search(li.get(RDF + 'resource') or '') for li in s.iter(RDF + 'li')):
+            cls = 'UNKNOWN'   # a drug with no compound identifier, as cdrender draws it (drawnAs, the master)
         species[s.get('id')] = {'label': name(s.get('name')), 'class': CLASS.get(cls, cls),
                                 'props': record({f: ', '.join(props[f]) for f in FIELDS if f in props}) if props else []}
     nodes = [{'label': species[a['species']]['label'], 'class': species[a['species']]['class'], 'box': a['box'],

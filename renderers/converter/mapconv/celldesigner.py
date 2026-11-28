@@ -695,6 +695,15 @@ KIND = {'PROTEIN': 'Macromolecule', 'GENE': 'NucleicAcidFeature', 'RNA': 'Nuclei
         'DRUG': 'SimpleChemical', 'UNKNOWN': 'UnspecifiedEntity', 'COMPLEX': 'Complex', 'PHENOTYPE': 'Phenotype',
         'DEGRADED': 'EmptySet'}
 UNIT = {'GENE': 'ct:gene', 'RNA': 'ct:mRNA', 'ANTISENSE_RNA': 'ct:asRNA'}  # when the file has no ct: unit
+# a drug (no SBGN glyph of its own) is a simple chemical when the file gives it an identifier of a compound database,
+# else an unspecified entity (a mixture, a class of drugs, a peptide): from the file alone, its notes left out
+COMPOUND = re.compile(r'(?:urn:miriam:|identifiers\.org/)(?:obo\.chebi|chebi|pubchem\.compound|kegg\.compound|drugbank)[:/]', re.I)
+
+
+def drug_kind(species):
+    noted = {x for n in species.iter() if isinstance(n.tag, str) and etree.QName(n).localname == 'notes' for x in n.iter()}
+    hit = any(COMPOUND.search(v) for e in species.iter() if isinstance(e.tag, str) and e not in noted for v in e.attrib.values())
+    return 'SimpleChemical' if hit else 'UnspecifiedEntity'
 PROCESS = {'KNOWN_TRANSITION_OMITTED': 'OmittedProcess', 'UNKNOWN_TRANSITION': 'UncertainProcess'}  # others: Process
 PROCESSES = ('Process',) + tuple(PROCESS.values())
 BINDING = {'HETERODIMER_ASSOCIATION': 'association', 'DISSOCIATION': 'dissociation'}  # TRUNCATION stays a process (a covalent bond broken)
@@ -825,7 +834,7 @@ def read(path):
         cls = f(si, 'cd:class').text
         if cls not in KIND:
             report.say('left out', 'species %s: class %s, not converted' % (s.get('name'), cls)); continue
-        kind = KIND[cls]
+        kind = drug_kind(s) if cls == 'DRUG' else KIND[cls]
         b = f(a, 'cd:bounds'); box = tuple(float(b.get(k)) for k in ('x', 'y', 'w', 'h'))
         n = int(f(si, 'cd:state/cd:homodimer').text) if f(si, 'cd:state/cd:homodimer') is not None else 1
         if n > 2:  # CellDesigner grew the box 6 per unit beyond 2, top left kept
