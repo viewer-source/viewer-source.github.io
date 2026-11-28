@@ -1,4 +1,4 @@
-// Repack complex on the live page (by default the styles page), on Glycolysis (GraphML, CellDesigner and SBGN-ML): a right click inside a
+// Repack complex on the live page (by default the root page), on Glycolysis (GraphML, CellDesigner and SBGN-ML): a right click inside a
 // complex on empty space offers Repack complex and none of the whole map's tools (grid, Repack all complexes); on a member, Repack complex in its own menu;
 // on empty map space outside every complex, no Repack complex. Chosen after a member is moved out of place, only that
 // complex's members move back, nothing outside it moves, and one undo takes the repack back. On an SBGN-ML map, a state variable added to a member has its own menu, without Repack complex.
@@ -6,7 +6,7 @@
 //   node tests/repack-one.js [base address]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] || 'https://viewer-source.github.io/';
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });

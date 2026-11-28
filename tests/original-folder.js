@@ -1,10 +1,10 @@
 // Without a token: the Edit window's reminder, and Colours' Original kept in the chosen folder (core.js origToFolder,
 // .viewer/colours/<file>.json), so it is found when this browser's own record is gone. The folder is played by the
-// browser's private file system (navigator.storage), handed out by showDirectoryPicker. On the styles page, the
+// browser's private file system (navigator.storage), handed out by showDirectoryPicker. On the root page, the
 // triacylglycerol map (CellDesigner). Nothing is saved to the site.
 //   node tests/original-folder.js [base address] [viewer folder: its editor served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3], bad = 0;
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3], bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 (async function () {
   var b = await chromium.launch(), ctx = await b.newContext({ viewport: { width: 1400, height: 900 } }), page = await ctx.newPage(), errs = [];

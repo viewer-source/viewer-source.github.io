@@ -6,7 +6,7 @@
 // fill over the terminal selected, at rest or dragged (the handles alone). No script error.
 //   node tests/terminal-keys.js [address] [viewer folder: its editor served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn', local = process.argv[3];
+var url = process.argv[2] || 'https://viewer-source.github.io/#glycolysis-sbgn', local = process.argv[3];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   if (local) {

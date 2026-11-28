@@ -8,7 +8,7 @@
 //   node tests/antenna.js --data=<clone of the data repository> [address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright');
 var OM = require('./lib/open-map.js'), argv = process.argv.slice(2).filter(function (a) { return !/^--/.test(a); });   // --data=... is no address or folder
-var url = argv[0] || 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn', local = argv[1], base = url.split('#')[0], ref = url.split('#')[1] || '', fs = require('fs'), path = require('path');
+var url = argv[0] || 'https://viewer-source.github.io/#testing-glycolysis-sbgn', local = argv[1], base = url.split('#')[0], ref = url.split('#')[1] || '', fs = require('fs'), path = require('path');
 var X = require('@xmldom/xmldom');
 function hubs(s) {   // { id: { cls, w, h, ant, font } } of the processes and gates of SBGN-ML text s
   var d = new X.DOMParser().parseFromString(s, 'application/xml'), out = {}, font = {};

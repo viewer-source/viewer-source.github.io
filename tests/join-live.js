@@ -1,5 +1,5 @@
 // A glyph placed from the palette on a complex becomes its member (create.js joinPlan, joinDo; the format's F.join),
-// on the styles page, Full editing, one SBGN-ML map and one CellDesigner map:
+// on the root page, Full editing, one SBGN-ML map and one CellDesigner map:
 //   1. a complex placed from the palette on empty space, then a protein (macromolecule) placed on it: in the map's file
 //      the protein is the complex's member (SBGN-ML: a glyph inside the complex's glyph; CellDesigner: a species alias
 //      whose complexSpeciesAlias is the complex);
@@ -10,7 +10,7 @@
 var path = require('path'), fs = require('fs'), { chromium } = require('playwright'), editorNow = require('./editor-now.js'), here = path.join(__dirname, '..');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a.slice(0, 2) !== '--'; });
 var OM = require('./lib/open-map.js');   // a map by its address, checked; a test-set map added from its file
-var base = args[0] || 'https://viewer-source.github.io/styles/';
+var base = args[0] || 'https://viewer-source.github.io/';
 var MAPS = [
   { name: 'SBGN-ML', hash: 'testing-glycolysis-sbgn', complex: 'complex', protein: 'macromolecule' },
   { name: 'CellDesigner', hash: 'acly-celldesigner', complex: 'cd:COMPLEX', protein: 'cd:PROTEIN' }

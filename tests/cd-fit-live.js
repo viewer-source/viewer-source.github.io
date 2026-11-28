@@ -1,4 +1,4 @@
-// The canvas fitted by itself on Glycolysis (CellDesigner), on the live page (by default the styles page): no Resize canvas
+// The canvas fitted by itself on Glycolysis (CellDesigner), on the live page (by default the root page): no Resize canvas
 // in the right-click menu; after a node is nudged, the file's canvas fits the content (its top left 40 to 56 from the
 // corner on the default Grid size 8, block 16, the test browser storing none; the canvas 40 past its right and bottom), a node kept where it was on screen; a compartment dropped far right
 // grows the canvas, deleting it shrinks the canvas back; undo and redo keep the map still. Nothing is saved (no token).
@@ -6,7 +6,7 @@
 //   node tests/cd-fit-live.js [base address] [viewer folder: its editor served in place of the page's]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3];
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   if (local) {

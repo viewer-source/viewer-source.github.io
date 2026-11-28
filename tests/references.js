@@ -1,12 +1,12 @@
 // References in Properties (create.js refsShow, refsAdd, refsParse; cd_make refs, setRefs; sbgn_edit refsOf, setRefs,
-// write's refsOut): on the styles page, an SBGN-ML process on Testing Glycolysis and a CellDesigner reaction on Glycolysis
+// write's refsOut): on the root page, an SBGN-ML process on Testing Glycolysis and a CellDesigner reaction on Glycolysis
 // each take a paste of PubMed IDs, a DOI link and a word that is none (two added, one said not read and left in the box),
 // written as bqbiol:isDescribedBy links (identifiers.org on SBGN-ML, urn:miriam on CellDesigner), shown one row each; a
 // paste of one already there adds nothing; a cross takes one out; a modulation's line shows its process's or reaction's
 // references; undo puts each file back byte for byte. Nothing is saved (no token). No script error.
 //   node tests/references.js [base address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });

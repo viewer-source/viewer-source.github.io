@@ -1,4 +1,4 @@
-// The CellDesigner palette (editor/src/cdcreate.js) on a page with the editor, by default the styles page on a
+// The CellDesigner palette (editor/src/cdcreate.js) on a page with the editor, by default the root page on a
 // CellDesigner demo map: its signs shown in place of PD and AF; species, a compartment and a complex placed by a click
 // and by a drag from the palette; a protein placed on a complex its member; a state transition drawn between two species, undone
 // and redone with the species made before it; an AND gate by three clicks onto the reaction's square; an inhibition onto
@@ -9,7 +9,7 @@
 var { chromium } = require('playwright');
 var path = require('path'), fs = require('fs'), editorNow = require('./editor-now.js'), here = path.join(__dirname, '..');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
-var url = args[0] || 'https://viewer-source.github.io/styles/#acly-celldesigner';
+var url = args[0] || 'https://viewer-source.github.io/#acly-celldesigner';
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });

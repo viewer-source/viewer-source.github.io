@@ -10,7 +10,7 @@
 // node tests/stack-live.js [base address] [--local]   (--local: the working tree's editor and renderers routed in)
 var path = require('path'), fs = require('fs'), os = require('os'), { chromium } = require('playwright');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
-var base = args[0] || 'https://viewer-source.github.io/styles/', here = path.join(__dirname, '..');
+var base = args[0] || 'https://viewer-source.github.io/', here = path.join(__dirname, '..');
 function sbgn(glyphs) {
   return '<?xml version="1.0" encoding="UTF-8"?>\n<sbgn xmlns="http://sbgn.org/libsbgn/0.3">\n  <map id="m" language="process description">\n' +
     glyphs.map(function (g) { return '    <glyph id="' + g[0] + '" class="compartment">\n      <label text="' + g[0] + '"/>\n      <bbox x="' + g[1] + '" y="' + g[2] + '" w="' + g[3] + '" h="' + g[4] + '"/>\n    </glyph>\n'; }).join('') +

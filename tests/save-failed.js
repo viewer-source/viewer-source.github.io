@@ -1,11 +1,11 @@
 // A save that fails, then leaving the editor and going back: the moves are not lost. GitHub is played by this script
 // (page.route on api.github.com, files from a clone of the site's data repository): the first save is refused
-// with 500, the next ones go through. On the styles page, Glycolysis (GraphML) moved by the arrow keys:
+// with 500, the next ones go through. On the root page, Glycolysis (GraphML) moved by the arrow keys:
 // the save refused and said; leaving the editor keeps the warning; going back starts from the moved file and saves it.
 // Then the same with GitHub changed meanwhile: the moves are not taken up and that is said.
 //   node tests/save-failed.js <base address> <clone of the site's data repository>
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] || 'https://viewer-source.github.io/';
 var data = process.argv[3];   // a clone of the site's data repository
 if (!data) { console.log('usage: node tests/save-failed.js <base address> <clone of the data repository>'); process.exit(2); }
 (async function () {

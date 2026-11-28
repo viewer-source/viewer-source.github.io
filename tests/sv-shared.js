@@ -8,7 +8,7 @@
 //   node tests/sv-shared.js [base address] [viewer folder: its editor and renderers served in place of the page's] --data=<clone of the data repository>
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), OM = require('./lib/open-map.js');
 var pos = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; });
-var base = pos[0] || 'https://viewer-source.github.io/styles/', local = pos[1];
+var base = pos[0] || 'https://viewer-source.github.io/', local = pos[1];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   if (local) {

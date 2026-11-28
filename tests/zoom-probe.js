@@ -1,11 +1,11 @@
 // The page's zoom as each engine reports it, and whether a click on a node where it is drawn selects that node: the
 // pointer's place is turned into the map's by the map window's box and the zoom (core.js at, the page's pz), so an
-// engine that reports the box or the zoom in other units than the pointer selects the wrong place. On the styles page,
+// engine that reports the box or the zoom in other units than the pointer selects the wrong place. On the root page,
 // Glycolysis (GraphML), edit mode. Prints the numbers; fails when a click on a node's drawn centre selects another or
 // none, or when the zoom an element reports differs from the one its boxes show.
 //   node tests/zoom-probe.js [base address]      BROWSER=webkit or firefox: the same in another engine
 var engine = require('playwright')[process.env.BROWSER || 'chromium'];
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', bad = 0;
+var base = process.argv[2] || 'https://viewer-source.github.io/', bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } });

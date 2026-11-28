@@ -3,7 +3,7 @@
 // where they are (an end let go there goes back onto its own node, a port move of its own). On Testing Glycolysis SBGN-ML, a tag and two macromolecules made. Nothing is saved (no token).
 //   node tests/tag-line-move.js [address] [viewer folder: its editor served in place of the page's]
 var { chromium } = require('playwright');
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn', local = process.argv[3];
+var url = process.argv[2] || 'https://viewer-source.github.io/#glycolysis-sbgn', local = process.argv[3];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };

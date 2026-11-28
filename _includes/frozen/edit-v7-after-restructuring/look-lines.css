@@ -1,0 +1,57 @@
+/* The viewer's look, part 1 of 2: the Lines rules.
+   With look-view.css after it, this is the default look, Default View (Default Edit is the same look with the
+   editor on). The master: atlas-app.html includes it, and the styles' default-icon-row-base.css includes their copy,
+   so it is written once. look="version1" on the include
+   leaves both out (the base rules alone, as the styles page uses). Each value is set once.
+   Lines: MINERVA's separators. The map has no frame and no gaps around it: it runs from the list to
+   the panel (or to the window's right edge while no panel is open), and one thin line joins each pair of neighbours,
+   under the top bar, between the list and the map, between the map and the panel. No dots on the separators (the
+   base's own, transparent): the lines are grabbed as they are, nothing shows under the pointer. */
+:root {
+  --m2-separator-below: 1;   /* the separator under the map on: dragged up the map gets smaller */
+  --m2-split: 8px;
+  --m2-split-h: 8px;
+}
+/* the header: as wide as the viewer, the name where the list's text starts, its line met by the lines down the
+   page (a site's own margin under the header would leave a gap) */
+html .wrapper-masthead .container { width: calc(100vw / var(--zoom, 1) - 16px); }
+html .masthead { padding: 6px 4px 7px; }   /* the menu as far from the right edge as the name from the left */
+html .wrapper-masthead { border-bottom: 1px solid var(--m2-frame); margin-bottom: 0; }
+html #main { padding-top: 0; }
+/* the same at the bottom: the lines down the page meet the footer's line; the room
+   under the page's text kept inside the columns */
+html .wrapper-footer { margin-top: 0; border-top: 1px solid var(--m2-frame); }
+html #m2-text { padding-bottom: 40px; }
+/* the columns: the list, the map, the panel's column (empty until a molecule is chosen; dragged shut, it goes) */
+html .m2 { width: calc(100vw / var(--zoom, 1)); column-gap: 0; grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) auto; }
+html .m2.m2-info-shut { grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) 0; }
+/* the list's content 12 px from the window's edge, as in MINERVA, its line on its right */
+html .m2-nav { padding: 12px 12px 0; border-right: 1px solid var(--m2-frame); box-sizing: border-box; }
+html #m2-search { margin-bottom: 8px; }   /* above the list */
+html .m2-main { margin-left: 0; }
+html #m2-view { border: 0; border-radius: 0; }
+html #m2-downloads { margin-top: 4px; }
+html #m2-downloads, html #m2-title, html #m2-text { padding-left: 12px; padding-right: 12px; }
+html #m2-split { left: -4px; }   /* the list's separator on its line */
+html .m2-list-shut #m2-split { left: 0; }   /* with the list out of sight, its separator inside the window, all 8 px to grab */
+/* the panel as wide as the list by default, 240 px, joined to the map by a line the whole height of
+   the map column (the line belongs to the map column) */
+html .m2-info:not(.m2-over) { margin-left: 0; width: var(--m2-info-w, 240px); box-sizing: border-box; padding: 12px 16px; }
+html .m2:has(.m2-info:not(.m2-over):not(:empty)):not(.m2-info-shut) .m2-main { border-right: 1px solid var(--m2-frame); }
+/* the Edit panel on the right: the list's padding, its line on its left, down the map column; its separator on that line */
+html #m2-epanel { padding: 12px 12px 0; border-left: 1px solid var(--m2-frame); align-self: stretch; }
+html #m2-split-e { left: -4px; }
+html .m2.m2-edit-right.m2-win-edit:not(.m2-edit-off):not(.m2-info-shut) .m2-main { border-right: 0; }   /* the panel's own line only */
+/* the zoom buttons over the map filled in the accent under the pointer, white sign */
+html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent, #fff); }
+/* wide windows: the page moves as one, the list and the panel still scrolling inside; the list's line
+   down to the end of the map column */
+@media (min-width: 941px) {
+  html .m2-nav { align-self: stretch; }
+}
+/* narrow windows (940 px and under): the columns stacked, the search and the list in line with the map */
+@media (max-width: 940px) {
+  html .m2 { width: auto; }
+  html .m2-nav { border-right: 0; padding-bottom: 12px; }
+  html .m2-info:not(.m2-over) { width: auto; }
+}

@@ -1,0 +1,11 @@
+:root { --m2-icons: 1; --m2-icon-row: 1; --m2-bar-choice: 1; --m2-dl-ext: 1; --m2-context: 1; --m2-below-view: 8px; }    
+html #m2-view { border-bottom: 1px solid var(--m2-frame); }
+html #m2-infowin, html #m2-infowin .m2-pi-name { color: #5f6368; }
+html .m2-icons-on .m2-ri[data-win="info"], html .m2-icons-on .m2-ri[data-win="leg"] { display: none; }
+html .m2-icons-on .m2-ri, html .m2-icons-on .m2-ri.m2-open, html .m2-icons-on .m2-ri:hover { background: none; color: #80868b; }
+html .m2-item:not(.m2-on), html .m2-group { color: #1e2022; }
+html .m2-icons-on .m2-ri { width: 24px; height: 24px; border-radius: 0; }
+html .m2-icons-on .m2-ri svg { width: 21px; height: 21px; }
+html .m2-icon-row #m2-rail { height: 31px; column-gap: 12px; }
+html .m2-icons-on:not(.m2-icon-row) { padding-left: 52px; }
+html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-top: 12px; }

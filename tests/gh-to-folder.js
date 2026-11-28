@@ -8,7 +8,7 @@
 // GraphML, SBGN-ML.
 //   node tests/gh-to-folder.js [base address] [viewer folder: its editor served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), crypto = require('crypto');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3], bad = 0;
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3], bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 var gitSha = function (t) { var b = Buffer.from(t, 'utf8'); return crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob ' + b.length + '\0'), b])).digest('hex'); };
 var KEEP = ['colour-test', 'glycolysis-graphml', 'colour-glycolysis-sbgn', 'tag-celldesigner'];

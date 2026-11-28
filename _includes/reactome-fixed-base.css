@@ -1,0 +1,122 @@
+/* Reactome Fixed, the master of Reactome Fixed and Reactome Fixed Blue: both include this file
+   and Reactome Fixed Blue adds only its colours, so a change to the layout or the behaviour is made here once, for both.
+Reactome Fixed (the page fits the window and never scrolls, unlike Reactome Scroll): after the Reactome pathway browser. White ground; the sky blue (#58c3e5) only as the
+   top bar and the thin lines between the windows; the chosen map in the stronger blue of Reactome's active tab
+   (#1e94d0, as in its newer version); a round search field in the bar's sky blue with a white edge; Arial. Little room between the windows, so the map window is wider. The maps
+   stay on white. */
+:root {
+  --m2-grip: var(--m2-accent);   /* the three dots on the separators (none in Default) */
+  --m2-grip-h: var(--m2-accent); /* and under the map window */
+  --m2-separator-below: 1;       /* the separator under the map window on: dragged up it makes the map smaller */
+  --m2-accent: #1e94d0;
+  --m2-on-accent: #fff;
+  --m2-link: #1572b6;
+  --m2-text: #333;
+  --m2-text-soft: #333;
+  --m2-muted: #4f6f80;
+  --m2-faint: #7c97a5;
+  --m2-button: #3a7fc1;
+  --m2-line: #58c3e5;
+  --m2-frame: #58c3e5;
+  --m2-bg: #fff;
+  --m2-control-bg: #fffffff0;
+  --m2-radius: 4px;
+  --m2-radius-button: 4px;
+  --m2-split: 8px;         /* the separator between the list and the map: the 8 px gap */
+  --m2-split-h: 8px;       /* and the one under the map window, down to the download buttons */
+  --m2-below-view: 46px;   /* the download buttons 8 px under the map window and 8 px above the window's bottom */
+}
+html body { background: #fff; font-family: Arial, Helvetica, sans-serif; color: #333; }
+html body button, html body input { font-family: Arial, Helvetica, sans-serif; }
+
+/* the top bar: the blue across the whole width, white name and subtitle, 8 px down to the windows */
+html .wrapper-masthead { background: #58c3e5; }
+html .wrapper-masthead .container { width: calc(100vw / var(--zoom, 1) - 16px); }
+html .masthead { padding: 6px 0 7px 9px; }   /* the name where the list's text starts */
+html .site-name a, html .site-name a:hover { color: #fff; }
+html .site-name a { -webkit-text-stroke-color: #58c3e5; }   /* the thinning stroke in this header's background */
+html .site-description { color: #f0f9fd; }
+html #main { padding-top: 8px; }
+
+/* the windows 8 px from the page's edges and 8 px apart; no empty column on the right: the panel's column is
+   there only while it shows something, so the map window takes the rest */
+html .m2 { width: calc(100vw / var(--zoom, 1) - 16px); column-gap: 0; grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) auto; }
+/* the 8 px between windows as margins, so no gap stays on the right while the panel's column is empty */
+html .m2-main { margin-left: 8px; }
+html .m2-info:not(.m2-over) { margin-left: 8px; width: var(--m2-info-w, 260px); box-sizing: border-box; padding: 8px 10px; border: 1px solid #58c3e5; border-radius: 4px; }
+/* the map list in a window of its own, framed by the blue line as the map */
+html .m2-nav { border: 1px solid #58c3e5; border-radius: 4px; padding: 8px 8px 0; box-sizing: border-box; }
+/* the list window ends where the download buttons end: the viewer ends the list there, so the
+   frame adds no padding under it and its lower edge takes the list's last pixel */
+html #m2-list { margin-bottom: -1px; }
+html #m2-title { margin-top: 12px; }
+/* the download buttons 8 px under the map window, as the other gaps (the buttons bring 4 px of their own) */
+html #m2-downloads { margin-top: 4px; }
+
+/* the search: the top bar's sky blue with a white edge and white text, round (not a white hole in the bar; blue as around it) */
+html #m2-search { background: #58c3e5; color: #fff; border: 1px solid #fff; border-radius: 999px; padding: 4px 12px; margin-bottom: 10px; }
+html #m2-search:focus { background: #1e94d0; border-color: #fff; outline: none; box-shadow: none; }   /* with the cursor in it the stronger blue of the other places, the edge stays white */
+html #m2-search::placeholder { color: rgba(255,255,255,.85); }
+html #m2-search::-webkit-search-cancel-button { filter: brightness(3); }
+
+/* the search in the top bar, its left edge where the map window starts; it follows the list's
+   separator, and stays when the list is out of sight. On narrow windows back above the list. */
+html #m2-search { position: absolute; z-index: 3; top: -41.4px; left: max(calc(var(--m2-list-w, 240px) + 8px), 110px); width: 320px; margin: 0; }   /* never over the name */
+html .m2-list-shut .m2-nav { display: block; visibility: hidden; }
+html .m2-list-shut #m2-search { visibility: visible; }
+@media (max-width: 940px) { html #m2-search { position: static; width: 100%; margin-bottom: 8px; } }
+
+/* the chosen map: the stronger blue with bold white text; group names as in the viewer */
+html .m2-item.m2-on { font-weight: 700; }
+
+/* zoom buttons and the panel's chips */
+html .m2-ctrl button { border-color: #58c3e5; color: #3a7fc1; }
+html .m2-ctrl button:hover { background: #1e94d0; border-color: #1e94d0; color: #fff; }
+html .m2-chip:hover { border-color: #1e94d0; color: #1e94d0; }
+html .m2-card:hover { border-color: #1e94d0; }
+
+/* downloads as Reactome's tabs: the sky blue with white text, the stronger blue on hover and while a menu is open */
+html #m2-downloads > a, html #m2-downloads summary { background: #58c3e5; border-color: #58c3e5; color: #fff; }
+html #m2-downloads > a:hover, html #m2-downloads summary:hover, html #m2-downloads details[open] summary { background: #1e94d0; border-color: #1e94d0; color: #fff; }
+
+/* the style picker on the top bar as Reactome's top-bar buttons: white edge and text on the blue */
+html #sp-chip { background: #58c3e5; border-color: #fff; color: #fff; }
+html #sp-chip:hover, html #sp.sp-open #sp-chip { background: #1e94d0; border-color: #fff; color: #fff; }
+
+/* the separators' dots smaller, 8 px apart as the viewer's */
+html #m2-split::after, html #m2-split-r::after { background: radial-gradient(circle, var(--m2-grip) 1px, transparent 1.3px) center / 4px 8px repeat-y; }
+html #m2-split-h > div::after { background: radial-gradient(circle, var(--m2-grip-h) 1px, transparent 1.3px) center / 8px 4px repeat-x; }
+
+/* the list and the panel open to the window's edges, as in the Reactome pathway browser: the list
+   window runs to the left edge with no line there and round corners only on the right, the panel runs to the right
+   edge with round corners only on the left; the text inside stays where it was, the map window keeps its width */
+@media (min-width: 941px) {
+  html .m2-nav { margin-left: -8px; padding-left: 16px; border-left: 0; border-radius: 0 4px 4px 0; }
+  html .m2-info:not(.m2-over) { width: calc(var(--m2-info-w, 260px) + 8px); margin-right: -8px; padding-right: 18px; border-right: 0; border-radius: 4px 0 0 4px; }
+}
+
+/* the page as the Reactome pathway browser: it fits the screen and never scrolls. The list runs to
+   the screen's bottom edge, open there too (no line, no round corners at the bottom), and scrolls inside. The map
+   takes the screen down to the download buttons; the separator under it, dragged up, makes it smaller, and the map's
+   name and text come into the room it leaves, scrolling inside only when they are longer than that room */
+@media (min-width: 941px) {
+  html body { height: calc(100vh / var(--zoom, 1)); overflow: hidden; display: flex; flex-direction: column; }
+  html .wrapper-masthead { flex: none; }
+  html #main { flex: 1; min-height: 0; padding-bottom: 0; margin-bottom: 0; }
+  html .m2 { height: 100%; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+  html .m2-nav { display: flex; flex-direction: column; min-height: 0; border-bottom: 0; border-radius: 0 4px 0 0; }
+  html #m2-list { flex: 1; min-height: 0; max-height: none !important; margin-bottom: 0; }
+  html .m2-main { display: flex; flex-direction: column; min-height: 0; }   /* no clipping (it left traces of the map's edge in Chrome); nothing hangs below the screen */
+  html #m2-view, html #m2-downloads { flex: none; }
+  html #m2-split { height: 100% !important; }   /* the list's separator the whole height, its dots in the middle */
+  html #m2-downloads { margin-bottom: 6px; }   /* the room under the buttons belongs to them, so the closed name and text take none */
+  html #m2-title { flex: 0 1 auto; min-height: 0; overflow: hidden; margin-top: 0; }
+  html #m2-text { flex: 1 1 0; min-height: 0; overflow-y: auto; }
+  html .m2-info:not(.m2-over) { align-self: start; }
+}
+
+/* the panel on the right open to the bottom edge too, as the list: white down to the screen's
+   bottom, no line and no round corners there, scrolling inside */
+@media (min-width: 941px) {
+  html .m2-info:not(.m2-over) { align-self: stretch; max-height: none; border-bottom: 0; border-radius: 4px 0 0 0; }
+}

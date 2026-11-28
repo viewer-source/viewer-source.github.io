@@ -1,6 +1,6 @@
 ---
-layout: default
-title: Atlas
+layout: picker
 permalink: /
 ---
-{% include atlas-app.html index="/index.json" search="/atlas-data/search.json" name="Viewer source" mode="development" %}
+{% include atlas-app.html index="/index.json" search="/atlas-data/search.json" name="Viewer" drag=true look="version1" editor="/editor/" renderers="/renderers/" %}
+{% include style-picker.html %}

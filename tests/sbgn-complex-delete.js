@@ -2,7 +2,7 @@
 // Delete, one undo step each; Cmd+A then Delete leaves no complex, compartments with contents stay. Nothing is saved.
 //   node tests/sbgn-complex-delete.js [address] [--local: the working tree's editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var here = path.join(__dirname, '..'), local = process.argv.indexOf('--local') > 0, base = process.argv[2] && process.argv[2] !== '--local' ? process.argv[2] : 'https://viewer-source.github.io/styles/';
+var here = path.join(__dirname, '..'), local = process.argv.indexOf('--local') > 0, base = process.argv[2] && process.argv[2] !== '--local' ? process.argv[2] : 'https://viewer-source.github.io/';
 var ed = local ? require('./editor-now.js')(here) : null;
 (async () => {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;

@@ -1,11 +1,11 @@
-// Confetti, a choice of the palettes' Colours (create.js confettiFill): on the styles page, on the Testing Glycolysis
+// Confetti, a choice of the palettes' Colours (create.js confettiFill): on the root page, on the Testing Glycolysis
 // SBGN-ML map and the CellDesigner glycolysis map, each in a fresh page, Confetti chosen, three nodes placed: each new
 // node a pastel of its own (HSL lightness 82%), the three apart, each, with a working tree given, the colour its confettiFill
 // gives for the map as it was. Nothing is saved (no token). No script error.
 //   node tests/confetti.js [base address] [viewer folder: its editor served in place of the page's] --data=<clone of the data repository>
 var chromium = require('playwright').chromium, fs = require('fs'), path = require('path'), OM = require('./lib/open-map.js');
 var pos = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; });
-var base = pos[0] || 'https://viewer-source.github.io/styles/', local = pos[1], bad = 0;
+var base = pos[0] || 'https://viewer-source.github.io/', local = pos[1], bad = 0;
 var confettiFill = null;
 if (local) { var cs = fs.readFileSync(path.join(local, 'editor/src/create.js'), 'utf8'); eval(cs.slice(cs.indexOf('    function confettiHex'), cs.indexOf('    function confettiSquares'))); }
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };

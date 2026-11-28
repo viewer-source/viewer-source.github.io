@@ -1,0 +1,29 @@
+---
+# Jekyll front matter, kept so the file is built as the other styles
+---
+/* Default Icon Column: Default Wide (Default Lines: MINERVA's thin lines, the panel only while a
+   molecule is open, on the right) with the viewer's icon column (--m2-icons: 1), from MINERVA's but narrower: Maps,
+   Search and Downloads each open their window in the list's place, a second click or the cross closes it and the map
+   takes the room. The download row under the map goes (its files in the Downloads window), so the map window reaches
+   8 px above the window's bottom, a line under it. */
+{% include default-lines-base.css %}
+
+:root { --m2-icons: 1; --m2-below-view: 8px; }   /* the panel a column on the right, not a floating card */
+html #m2-view { border-bottom: 1px solid var(--m2-frame); }
+/* the highlight blue as in Default; the windows' text (title,
+   Info) soft grey as the icons at rest; the buttons in Downloads and Open in are the page's download buttons */
+html .m2-icons-on .m2-winhead h3, html #m2-infowin, html #m2-infowin .m2-pi-name { color: #5f6368; }
+html .site-name { visibility: hidden; }   /* no site name in this style; the bar keeps its height for the style chip */
+
+/* both side windows over the map as temporary panels, as the annotation column on the right: opening one does not
+   change the room the map has. The map window keeps
+   the whole width from the icon column to the page's right edge, a small map stays centred in it, nothing moves when a
+   window opens or closes. The annotations a column over the map's right side, as tall as the map window, a line on its
+   left (no card, no shadow); the drawing shifts only if the chosen item would be under it */
+:root { --m2-nav-float: 1; --m2-info-float: 1; }
+html .m2-info-float .m2-info.m2-over { top: 0; right: 0; bottom: 0; max-height: none; max-width: 70%; border: 0; border-left: 1px solid var(--m2-frame);
+  border-radius: 0; box-shadow: none; padding: 12px 16px; }
+
+/* Overlays signs on trial in this legacy style: the viewer's seven candidates
+   (O1 to O9 without O4 and O5; names on hover) shown before Settings; not handled: a click does nothing */
+html .m2-ri[data-win="ovl"] { display: flex !important; }

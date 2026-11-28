@@ -8,7 +8,7 @@
 //   node tests/sites-as-seen.js <SBGN-ML file with sites> [base address] [--local]
 var path = require('path'), fs = require('fs'), os = require('os'), { chromium } = require('playwright');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
-var file = args[0], base = args[1] || 'https://viewer-source.github.io/styles/', here = path.join(__dirname, '..'), bad = 0;
+var file = args[0], base = args[1] || 'https://viewer-source.github.io/', here = path.join(__dirname, '..'), bad = 0;
 if (!file) { console.log('usage: node tests/sites-as-seen.js <SBGN-ML file with sites> [base] [--local]'); process.exit(2); }
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 var vars = function (t) { return (t.match(/<([\w.-]+:)?state [^>]*variable="/g) || []).length; };

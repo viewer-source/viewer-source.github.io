@@ -1,4 +1,4 @@
-// Paddings in Settings, Editing (atlas-app.html PAD_KEY, the two lists; core.js pads, cxRoom, grown), on the styles page:
+// Paddings in Settings, Editing (atlas-app.html PAD_KEY, the two lists; core.js pads, cxRoom, grown), on the root page:
 // the lists Compartments (0 to 64 in steps of 4, 12 shown by default) and Complexes (repack, then 0 to 32, repack shown by
 // default); the circled i after Complexes gives what Repack leaves, read from layout.js room, once editing runs. On
 // Testing Glycolysis (SBGN-ML) and Glycolysis (CellDesigner): a complex dropped from the palette and a protein dropped
@@ -10,7 +10,7 @@
 // No script error.
 //   node tests/pad-settings.js [base address]
 var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] || 'https://viewer-source.github.io/';
 var MAPS = [['glycolysis-sbgn', 'complex', 'macromolecule', 'compartment', 0], ['glycolysis-celldesigner', 'cd:COMPLEX', 'cd:PROTEIN', 'cd:COMPARTMENT', 12]];
 (async function () {
   var b = await chromium.launch(), bad = 0, errs = [];

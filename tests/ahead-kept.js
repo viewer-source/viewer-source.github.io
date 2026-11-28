@@ -8,7 +8,7 @@
 // --local: the working tree's editor and renderers routed in
 var path = require('path'), fs = require('fs'), { chromium } = require('playwright'), editorNow = require('./editor-now.js'), OM = require('./lib/open-map.js');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a.slice(0, 2) !== '--'; });
-var data = args[0], base = args[1] || 'https://viewer-source.github.io/styles/', here = path.join(__dirname, '..');
+var data = args[0], base = args[1] || 'https://viewer-source.github.io/', here = path.join(__dirname, '..');
 var MAPS = { graphml: 'glycolysis-graphml', celldesigner: 'glycolysis-celldesigner', sbgn: 'glycolysis-sbgn' }, OTHER = 'glycolysis-graphml';   // sbgn: an example's SBGN-ML copy, the kind whose edited copy may be missing on GitHub
 if (!data) { console.log('usage: node tests/ahead-kept.js <clone of the data repository> [base address] [--local] --data=<clone of the data repository>'); process.exit(2); }
 (async function () {

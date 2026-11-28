@@ -10,7 +10,7 @@
 var engine = require('playwright')[process.env.BROWSER || 'chromium'];
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var args = process.argv.slice(2), check = args.indexOf('--check') >= 0; args = args.filter(function (a) { return a !== '--check'; });
-var url = args[0] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn', local = args[1], out = args[2], fs = require('fs'), path = require('path');
+var url = args[0] || 'https://viewer-source.github.io/#glycolysis-sbgn', local = args[1], out = args[2], fs = require('fs'), path = require('path');
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
   if (local) {

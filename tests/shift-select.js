@@ -8,7 +8,7 @@
 // protein selected, the compartment not, nothing moved. Nothing is saved (no token). No script error.
 //   node tests/shift-select.js [base address]
 var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] || 'https://viewer-source.github.io/';
 var MAPS = [['glycolysis-sbgn', 'compartment', 'macromolecule'], ['glycolysis-celldesigner', 'cd:COMPARTMENT', 'cd:PROTEIN'], ['glycolysis-graphml', null, null]];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;

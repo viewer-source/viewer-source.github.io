@@ -9,7 +9,7 @@
 //   node tests/member-arcs-live.js <the converter's repository> [base address] [--local] [--data <the site's data folder>]
 var path = require('path'), fs = require('fs'), os = require('os'), cp = require('child_process'), { chromium } = require('playwright');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0, di = args.indexOf('--data'), data = di >= 0 ? args.splice(di, 2)[1] : null; args = args.filter(function (a) { return a !== '--local'; });
-var conv = args[0], base = args[1] || 'https://viewer-source.github.io/styles/', here = path.join(__dirname, '..'), bad = 0;
+var conv = args[0], base = args[1] || 'https://viewer-source.github.io/', here = path.join(__dirname, '..'), bad = 0;
 if (!conv) { console.log('usage: node tests/member-arcs-live.js <the converter\'s repository> [base] [--local]'); process.exit(2); }
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 var dir = fs.mkdtempSync(path.join(os.tmpdir(), 'member-arcs-'));

@@ -1,5 +1,6 @@
 # The viewer source: the atlas viewer every map site starts from, with a demo of its maps.
 name: Viewer source
+header: Viewer   # the name in the site header of the picker layout (_layouts/picker.html)
 description: "One viewer, maps from yEd and CellDesigner"
 footer-links:
   github: viewer-source

@@ -1,5 +1,5 @@
 // The bottom of a named complex after Repack all complexes (layout.js, the packer that began as the layout skill's
-// complex_pack-rules.md): on the styles page, every named complex of Testing Glycolysis (SBGN-ML) ends 24 under what its
+// complex_pack-rules.md): on the root page, every named complex of Testing Glycolysis (SBGN-ML) ends 24 under what its
 // members draw (the name, 18.1 high there, 6 under them; a multimer's copy and a unit of information count as drawn) and
 // every complex of Glycolysis CellDesigner 20 under; on the SBGN-ML map a complex inside another is followed by the next
 // member 8 under it in the file, to that member's unit of information (its name not counted 10 below its new bottom); a named complex's label box lies inside it. Which complexes and members:
@@ -8,7 +8,7 @@
 //   node tests/repack-bottom.js [base address] --data=<clone of the data repository>   (Testing Glycolysis from its test set, added as a person adds a file)
 var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var base = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; })[0] || 'https://viewer-source.github.io/styles/';
+var base = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; })[0] || 'https://viewer-source.github.io/';
 var OM = require('./lib/open-map.js');   // a map by its address, checked; a test-set map added from its file
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;

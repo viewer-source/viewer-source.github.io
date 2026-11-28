@@ -1,11 +1,11 @@
-// Add reactant and Add product on a CellDesigner map (editor/src/cdcreate.js), by default the styles page on the ACLY demo
+// Add reactant and Add product on a CellDesigner map (editor/src/cdcreate.js), by default the root page on the ACLY demo
 // map: the two signs in the palette; while an added reactant is drawn onto a reaction, the blue place at its join on the
 // main line where the file's added reactants already join, and the reaction's main line lit, no box or handles on its square; the reactant added, ending
 // there; an added product drawn from a point of the main line (not the square) to a new species, leaving at the
 // products' join; a reaction sign onto a square and Add reactant between two species refused. Nothing is saved.
 //   node tests/cd-add.js [address] [viewer folder: its editor served in place of the page's] [screenshot folder]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celldesigner', local = process.argv[3], shots = process.argv[4];
+var url = process.argv[2] || 'https://viewer-source.github.io/#acly-celldesigner', local = process.argv[3], shots = process.argv[4];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   if (local) {

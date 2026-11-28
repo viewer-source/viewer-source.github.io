@@ -9,7 +9,7 @@
 // for one line, nothing. Nothing is saved.
 //   node tests/sign-in-hand.js [viewer folder: its editor served in place of the page's] [base address]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var local = process.argv[2], base = process.argv[3] || 'https://viewer-source.github.io/styles/';
+var local = process.argv[2], base = process.argv[3] || 'https://viewer-source.github.io/';
 (async function () {
   var b = await chromium.launch(), page, errs = [], bad = 0;
   var ed = local && require('./editor-now.js')(local);

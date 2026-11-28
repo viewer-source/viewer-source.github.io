@@ -4,7 +4,7 @@
 //   node tests/gestures.js [page address]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn';
+var URL0 = process.argv[2] || 'https://viewer-source.github.io/#glycolysis-sbgn';
 (async function () {
   var b = await engine.launch(), bad = 0, errs = [];
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };

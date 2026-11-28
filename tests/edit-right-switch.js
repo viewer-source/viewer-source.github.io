@@ -7,15 +7,15 @@
 // centred in the map window between the two panels. GitHub played by the script.
 //   node tests/edit-right-centre.js <base address> <clone of the site's data repository> [--local]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] || 'https://viewer-source.github.io/';
 var data = process.argv[3], local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..');
 if (!data) { console.log('usage: node tests/edit-right-switch.js <base address> <clone of the data repository> [--local]'); process.exit(2); }
 function editorNow() {   // editor.js joined as Jekyll joins it
   return require('./editor-now.js')(here);
 }
 function viewerHunks() {   // [old, new] pieces of the viewer's file changed since HEAD, to apply to the live page's text
-  // the styles page's copy (what /styles/ serves) at REV (default HEAD; the commit live now) against the working tree
-  var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '../styles/_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString();
+  // the page's include (what the root serves) at REV (default HEAD; the commit live now) against the working tree
+  var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString();
   var out = [];
   d.split(/\n(?=@@ )/).slice(1).forEach(function (h) {
     var o = [], n = [];
@@ -34,7 +34,7 @@ function viewerHunks() {   // [old, new] pieces of the viewer's file changed sin
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
   if (local) {
     var ed = editorNow(), hunks = viewerHunks();
-    await page.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await page.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
     await page.route(function (u) { return u.href.split('#')[0] === base.split('#')[0]; }, async function (r) {
       var res = await r.fetch(), t = await res.text(), miss = 0;
       hunks.forEach(function (h) { if (t.indexOf(h[0]) < 0) miss++; else t = t.replace(h[0], function () { return h[1]; }); });

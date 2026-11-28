@@ -13,9 +13,9 @@
 //      overview.png, another picture of the same name, numbered (overview-2.png) and drawn, not HIDmap's.
 //   [FROM3=1] node tests/minerva-draw-live.js <folder of the zips> [base address] [--local]   (FROM3: cases 3 to 5 only)
 // The zips: pathwayforge sources/minerva/ (open projects). --local: the editor and the renderers of the working tree
-// routed into the live page (run styles/update.sh first).
+// routed into the live page (build the editor first).
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var zips = process.argv[2], base = process.argv[3] && process.argv[3][0] !== '-' ? process.argv[3] : 'https://viewer-source.github.io/styles/';
+var zips = process.argv[2], base = process.argv[3] && process.argv[3][0] !== '-' ? process.argv[3] : 'https://viewer-source.github.io/';
 var local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..'), bad = 0;
 var t0 = Date.now(), ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '') + '  (' + Math.round((Date.now() - t0) / 1000) + ' s)'); };
 (async function () {
@@ -25,7 +25,7 @@ var t0 = Date.now(), ok = function (what, v, more) { if (!v) bad++; console.log(
   page.on('dialog', function (d) { if (d.type() !== 'beforeunload') said.push(d.type() + ': ' + d.message()); d.accept().catch(function () {}); });   // beforeunload: a move in 4 not saved to the GitHub played here (no file saving played), rightly held on leaving
   if (local) {
     var ed = require('./editor-now.js')(here);
-    await page.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await page.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
     await page.route(/\/renderers\/converter\/(cdrender|cd_edit)\.js/, function (r) {
       var f = /\/(cdrender|cd_edit)\.js/.exec(r.request().url())[1];
       r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(here, 'renderers', 'converter', f + '.js'), 'utf8') });

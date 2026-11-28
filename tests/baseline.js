@@ -7,7 +7,7 @@
 // printed, not checked.
 //   node tests/baseline.js [base address] [map ids ...] [--add <file> ...] [--runs N] --data=<clone of the data repository>
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path'), zlib = require('zlib'), OM = require('./lib/open-map.js');
-var args = process.argv.slice(2), base = 'https://viewer-source.github.io/styles/', ids = [], adds = [], runs = 1;
+var args = process.argv.slice(2), base = 'https://viewer-source.github.io/', ids = [], adds = [], runs = 1;
 for (var i = 0; i < args.length; i++) {
   if (args[i] === '--add') adds.push(args[++i]); else if (args[i] === '--runs') runs = +args[++i];
   else if (/^https?:/.test(args[i])) base = args[i]; else if (args[i].slice(0, 2) !== '--') ids.push(args[i]);

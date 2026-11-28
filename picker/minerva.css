@@ -1,0 +1,90 @@
+/* MINERVA: after the MINERVA platform's interface (its colours from MINERVA's own frontend source,
+   tailwind.config.ts). No room wasted: the map has no frame and runs to the page's right edge, the list is a light
+   grey sidebar joined to it by one line, the panel opens joined on the right; white bar on top with a line under it;
+   blue #106ad7 filled buttons, the chosen map in the buttons' blue; zoom buttons float over the map, square;
+   a grey round search field in the top bar; Manrope. The maps stay on white. */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600&display=swap');
+:root {
+  --m2-accent: #106ad7;
+  --m2-on-accent: #fff;
+  --m2-link: #0048ff;
+  --m2-text: #070130;
+  --m2-text-soft: #070130;
+  --m2-muted: #6a6977;
+  --m2-faint: #a5a5a5;
+  --m2-button: #106ad7;
+  --m2-line: #e1e0e6;
+  --m2-frame: #e1e0e6;
+  --m2-bg: #fff;
+  --m2-control-bg: #fff;
+  --m2-radius: 6px;
+  --m2-radius-button: 6px;
+  --m2-split: 8px;         /* the separators sit on the joins: 8 px to grab */
+  --m2-split-h: 8px;
+  --m2-below-view: 46px;   /* the download buttons 8 px under the map and 8 px above the window's bottom */
+}
+html body { background: #fff; font-family: Manrope, Arial, sans-serif; color: #070130; }
+html body button, html body input { font-family: Manrope, Arial, sans-serif; }
+
+/* the top bar: white, a line under it, the name at the left */
+html .wrapper-masthead { border-bottom: 1px solid #e1e0e6; }
+html .wrapper-masthead .container { width: calc(100vw / var(--zoom, 1) - 24px); }   /* the name where the list's text starts, 12 px in */
+html .masthead { padding: 6px 0 7px; }
+html .site-name a, html .site-name a:hover { color: #6a6977; }   /* lighter on white: MINERVA's grey text */
+html #main { padding-top: 0; }
+
+/* the whole width, no gaps: the list as a sidebar, the map, the panel, each joined by one line */
+html .m2 { width: calc(100vw / var(--zoom, 1)); column-gap: 0; grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) auto; }
+html .m2-nav { background: #f7f7f8; border-right: 1px solid #e1e0e6; padding: 12px 12px 0; box-sizing: border-box; align-self: stretch; }   /* the grey sidebar the whole height of the page, whatever the list's length (not ending under the last item) */
+html #m2-view { border: 0; border-radius: 0; }
+html .m2-info:not(.m2-over) { width: var(--m2-info-w, 300px); box-sizing: border-box; padding: 12px 16px; border-left: 1px solid #e1e0e6; align-self: stretch; max-height: none; }   /* its line on the left the whole height of the page, as a separator (max-height: none, else it ends at the viewer's height cap) */
+html .m2-info.m2-over { border-radius: 6px; box-shadow: 4px 8px 32px 0 rgba(0, 0, 0, .12); border: 0; }
+html #m2-downloads, html #m2-title, html #m2-text { padding: 0 12px; }
+html #m2-downloads { margin-top: 4px; }
+/* the separator between list and map sits on the sidebar's line */
+html #m2-split { left: -4px; }
+
+/* the search: MINERVA's grey round field in the white top bar, white
+   with the blue edge while typing */
+html #m2-search { background: #f7f7f8; border: 1px solid #f7f7f8; border-radius: 999px; padding: 4px 12px; margin-bottom: 12px; }   /* the light grey of MINERVA 22's search field (#f7f7f7 measured on a screenshot) */
+html #m2-search:focus { border-color: #106ad7; background: #fff; }
+
+/* the search in the top bar, its left edge where the map window starts; it follows the list's
+   separator, and stays when the list is out of sight. On narrow windows back above the list. */
+html #m2-search { position: absolute; z-index: 3; top: -35.7px; left: calc(max(var(--m2-list-w, 240px), 100px) + 10px); width: 256px; margin: 0; }   /* never over the name; 10 px right of the list's line, not on it; 256 px wide */
+html .m2-list-shut .m2-nav { display: block; visibility: hidden; }
+html .m2-list-shut #m2-search { visibility: visible; }
+@media (max-width: 940px) { html #m2-search { position: static; width: 100%; margin-bottom: 8px; } }
+html #m2-search::placeholder { color: #6a6977; }
+
+/* the chosen map as MINERVA's open tab: light blue, blue text */
+html .m2-item.m2-on { background: #106ad7; color: #fff; }   /* the chosen map in the download buttons' strong blue, white text (MINERVA's light #ebf4ff too faint) */
+html .m2-item.m2-on .m2-n { color: #fff; }
+
+/* zoom buttons float over the map, white with a soft shadow, square as in the other styles */
+html .m2-ctrl button { border: 0; border-radius: var(--m2-radius); background: #fff; color: #070130; box-shadow: 0 1px 4px rgba(0, 0, 0, .18); }
+html .m2-ctrl button:hover { color: #106ad7; background: #ebf4ff; }
+
+/* downloads as MINERVA's filled buttons */
+html #m2-downloads > a, html #m2-downloads summary { background: #106ad7; border-color: #106ad7; color: #fff; }
+html #m2-downloads > a:hover, html #m2-downloads summary:hover, html #m2-downloads details[open] summary { background: #0055bb; border-color: #0055bb; color: #fff; }
+
+/* the panel's chips and cards in MINERVA's light blues */
+html .m2-chip { background: #ebf4ff; border-color: #d4e5fa; color: #106ad7; }
+html .m2-chip:hover { border-color: #106ad7; }
+html .m2-card:hover { border-color: #106ad7; }
+
+/* the style picker quiet at rest, grey as the search field beside it, almost unseen; filled blue as the download
+   buttons, white text, under the pointer and while open */
+html #sp-chip { background: #f7f7f8; border-color: #f7f7f8; color: #6a6977; }
+html #sp-chip:hover, html #sp.sp-open #sp-chip { background: #106ad7; border-color: #106ad7; color: #fff; }
+
+/* narrow windows: the list above the map, no sidebar line */
+@media (max-width: 940px) {
+  html .m2 { width: auto; }
+  html .m2-nav { border-right: 0; padding-bottom: 12px; }
+  html .m2-info:not(.m2-over) { width: auto; }
+}
+
+/* the zoom buttons over the map filled in the accent under the pointer, white sign, as in the Reactome styles */
+html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent, #fff); }

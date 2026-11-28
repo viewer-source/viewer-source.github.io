@@ -21,7 +21,7 @@
 //   node tests/minerva-pic-live.js [base address] [--local] --data=<clone of the data repository>   (--local: the editor and renderers
 //   of the working tree routed into the page; --data: the files GitHub gives in case 8)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), zlib = require('zlib');
-var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/';
 var local = process.argv.indexOf('--local') > 0, data = (process.argv.filter(function (a) { return /^--data=/.test(a); })[0] || '').slice(7), here = path.join(__dirname, '..'), bad = 0;
 var t0 = Date.now(), ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '') + '  (' + Math.round((Date.now() - t0) / 1000) + ' s)'); };
 function png(w, h, rgb) {   // a plain PNG of one colour

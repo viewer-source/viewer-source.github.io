@@ -10,12 +10,12 @@
 //    map's file keeps the first tab's text, the second tab's is written beside it.
 // 3. This browser, no token and no folder: the draft keeps the first tab's text, the second tab's is kept as a map of
 //    the reader's.
-// On the styles page, Glycolysis (GraphML) moved by the arrow keys.
+// On the root page, Glycolysis (GraphML) moved by the arrow keys.
 //   node tests/save-clash.js <base address> <clone of the site's data repository> [--local]
 // --local: the editor of the working tree routed into the live page, to check before a release.
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] || 'https://viewer-source.github.io/';
 var data = process.argv[3], local = process.argv.indexOf('--local') > 0;
 if (!data) { console.log('usage: node tests/save-clash.js <base address> <clone of the data repository> [--local]'); process.exit(2); }
 var MAP = 'glycolysis-graphml', bad = 0, ED = local ? require('./editor-now.js')(path.join(__dirname, '..')) : null;
@@ -52,7 +52,7 @@ async function pages(ctx, n) {
   }
   return out;
 }
-async function routeLocal(ctx) { if (ED) await ctx.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); }); }
+async function routeLocal(ctx) { if (ED) await ctx.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); }); }
 
 async function github(b) {
   console.log('-- GitHub');

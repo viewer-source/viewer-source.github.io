@@ -2,9 +2,9 @@
 // headings and tick boxes' labels in the palette, the map's choices, Properties and Grid size #5f6368; a value in a
 // field or a dropdown #202124; every tick box there 12 px with the same grey tick. SBGN-ML, CellDesigner and GraphML,
 // a node selected so Properties shows (GraphML has no palette here). No script error.
-//   node tests/edit-text-colours.js [site address, ending in /styles/]
+//   node tests/edit-text-colours.js [site address]
 var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] || 'https://viewer-source.github.io/';
 (async function () {
   var b = await chromium.launch(), bad = 0, errs = [];
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };

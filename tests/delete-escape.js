@@ -1,5 +1,5 @@
 // Delete and Escape alike on every format, and an influence's arrow end moved to another activity, on a page with the
-// editor, by default the styles page. Nothing is saved (no token). No script error.
+// editor, by default the root page. Nothing is saved (no token). No script error.
 // 1. SBGN-ML (Testing Glycolysis): a macromolecule placed, selected with a line elsewhere (Shift), Delete: both gone in
 //    one step, undo brings both back.
 // 2. Escape does one thing: with a node selected and a sign in hand, the first Escape drops the sign and keeps the
@@ -8,7 +8,7 @@
 // 4. Activity Flow (CaMKII): an influence's arrow end dragged onto another activity lands there.
 //   node tests/delete-escape.js [base address] --data=<clone of the data repository>   (Testing Glycolysis and the Activity Flow CaMKII from its test set, added as a person adds a file)
 var { chromium } = require('playwright'), path = require('path'), OM = require('./lib/open-map.js');
-var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/';
 var data = (process.argv.filter(function (a) { return /^--data=/.test(a); })[0] || '').slice(7) ;
 if (!data) { console.log('give --data=<clone of the site\'s data repository> (its test set)'); process.exit(2); }
 var TESTING_GLY = path.join(data, 'test-maps/test-set/maps/testing-glycolysis-sbgn.sbgn');

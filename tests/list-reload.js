@@ -1,13 +1,13 @@
 // The map list kept where it was over a reload of the tab (view mode): the list scrolled so the shown map sits near the
 // top, the page reloaded, the list's scroll the same and the shown map at the same height. Runs on the live page by default.
 //   node tests/list-reload.js [address] [--local]
-// --local: the viewer of the working tree routed into the live page (the styles copy's changes since REV, default HEAD;
-// run styles/update.sh first)
+// --local: the viewer of the working tree routed into the live page (the page's changes since REV, default HEAD;
+// build the editor first)
 var { chromium } = require('playwright'), path = require('path'), cp = require('child_process');
-var url = process.argv.slice(2).filter(function (a) { return a[0] !== '-'; })[0] || 'https://viewer-source.github.io/styles/#glycogen-muscle-graphml';
+var url = process.argv.slice(2).filter(function (a) { return a[0] !== '-'; })[0] || 'https://viewer-source.github.io/#glycogen-muscle-graphml';
 var local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..');
 function viewerHunks() {
-  var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '../styles/_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString(), out = [];
+  var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString(), out = [];
   d.split(/\n(?=@@ )/).slice(1).forEach(function (h) {
     var o = [], n = [];
     h.split('\n').slice(1).forEach(function (l) { if (l[0] === ' ') { o.push(l.slice(1)); n.push(l.slice(1)); } else if (l[0] === '-') o.push(l.slice(1)); else if (l[0] === '+') n.push(l.slice(1)); });

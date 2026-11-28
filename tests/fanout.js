@@ -4,7 +4,7 @@
 // map holds stay. The tick box is undone by Cmd+Z as every setting. Nothing is saved (no token).
 //   node tests/fanout.js [address]
 var { chromium } = require('playwright');
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn';
+var url = process.argv[2] || 'https://viewer-source.github.io/#glycolysis-sbgn';
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };

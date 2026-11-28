@@ -1,10 +1,10 @@
-// The palette's Colours recolours the whole map (create.js sbRecolour, cdcreate.js cdRecolour): on the styles page, on
+// The palette's Colours recolours the whole map (create.js sbRecolour, cdcreate.js cdRecolour): on the root page, on
 // SREBP signalling as CellDesigner and as SBGN-ML, each in a fresh page: Default gives every protein and metabolite the
 // Default colours, No colours every species white, Confetti every protein a colour of its own, Original puts the map's own colours back,
 // one undo takes a choice back. Read from the editor's drawing (the role classes c-<role>). Nothing is saved (no token).
 //   node tests/colours-whole-map.js [base address] [viewer folder: its editor served in place of the page's]
 var chromium = require('playwright').chromium, fs = require('fs'), path = require('path');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3], bad = 0;
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3], bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 async function run(b, map, kind, protein, link) {
   var page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];

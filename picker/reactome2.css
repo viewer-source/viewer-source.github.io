@@ -1,0 +1,5 @@
+---
+# Jekyll front matter: the include below is filled in when the site is built
+---
+/* Reactome Scroll: its rules live in _includes/reactome-scroll-base.css, shared with Reactome Scroll Panel, so a change to Reactome Scroll reaches both. */
+{% include reactome-scroll-base.css %}

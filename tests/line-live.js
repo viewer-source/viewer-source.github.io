@@ -9,7 +9,7 @@
 var { chromium } = require('playwright');
 var path = require('path'), fs = require('fs'), editorNow = require('./editor-now.js'), here = path.join(__dirname, '..');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
-var base = args[0] || 'https://viewer-source.github.io/styles/';
+var base = args[0] || 'https://viewer-source.github.io/';
 var MAPS = [['glycolysis-sbgn', 'macromolecule', 'production'], ['glycolysis-celldesigner', 'cd:PROTEIN', 'cd:STATE_TRANSITION']];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;

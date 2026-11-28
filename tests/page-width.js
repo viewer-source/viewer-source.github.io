@@ -1,10 +1,10 @@
-// The page fits its window: on the styles page and the demo, at a laptop's window sizes, no horizontal scroll
+// The page fits its window: on the root page, at a laptop's window sizes, no horizontal scroll
 // (the page no wider than the window, scrolled to its left edge), every row of the list and the map window's buttons
 // inside it, after the page opens on a map and after a click on a map of the list. Prints what sticks out.
 //   node tests/page-width.js [base address ...]   (BROWSER=webkit: Safari's engine)
 var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var bases = process.argv.slice(2); if (!bases.length) bases = ['https://viewer-source.github.io/styles/', 'https://viewer-source.github.io/'];
+var bases = process.argv.slice(2); if (!bases.length) bases = ['https://viewer-source.github.io/'];
 var bad = 0, ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 (async function () {
   var b = await engine.launch();

@@ -7,7 +7,7 @@
 // selected alone, both ways, undone. No script error.
 //   node tests/sbgn-reversible.js [address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), { DOMParser } = require('@xmldom/xmldom');
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn', local = process.argv[3];
+var url = process.argv[2] || 'https://viewer-source.github.io/#glycolysis-sbgn', local = process.argv[3];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   if (local) {

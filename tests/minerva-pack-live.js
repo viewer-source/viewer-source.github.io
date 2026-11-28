@@ -13,13 +13,13 @@
 //      the compartment's Z-Index written in the zip and said; the map in the list unchanged.
 //   7. A GraphML map selected with it: refused, nothing downloaded, the reason naming the map.
 //   node tests/minerva-pack-live.js <folder of the zips> <folder of reference packs, ref-<zip>.zip> <pathwayforge clone> [base address] [--local]
-// --local: the editor and the viewer of the working tree routed into the live page (run styles/update.sh first).
+// --local: the editor and the viewer of the working tree routed into the live page (build the editor first).
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process'), os = require('os');
-var zips = process.argv[2], refs = process.argv[3], forge = process.argv[4], base = process.argv[5] && process.argv[5][0] !== '-' ? process.argv[5] : 'https://viewer-source.github.io/styles/';
+var zips = process.argv[2], refs = process.argv[3], forge = process.argv[4], base = process.argv[5] && process.argv[5][0] !== '-' ? process.argv[5] : 'https://viewer-source.github.io/';
 var local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..'), bad = 0, tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'mzlive-'));
 var t0 = Date.now(), ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '') + '  (' + Math.round((Date.now() - t0) / 1000) + ' s)'); };
 function viewerHunks() {
-  var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '../styles/_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString();
+  var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString();
   return d.split(/\n(?=@@ )/).slice(1).map(function (h) {
     var o = [], n = [];
     h.split('\n').slice(1).forEach(function (l) { if (l[0] === ' ') { o.push(l.slice(1)); n.push(l.slice(1)); } else if (l[0] === '-') o.push(l.slice(1)); else if (l[0] === '+') n.push(l.slice(1)); });
@@ -44,7 +44,7 @@ var GRAPHML = fs.readFileSync(path.join(__dirname, 'rules-cases', 'base.graphml'
   page.on('dialog', function (d) { said.push(d.message()); d.accept().catch(function () {}); });
   if (local) {
     var ed = require('./editor-now.js')(here), hunks = viewerHunks();
-    await page.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await page.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
     await page.route(function (u) { return u.href.split('#')[0] === base.split('#')[0]; }, async function (r) {
       var res = await r.fetch(), t = await res.text();
       hunks.forEach(function (h) { if (t.indexOf(h[0]) >= 0) t = t.replace(h[0], function () { return h[1]; }); });

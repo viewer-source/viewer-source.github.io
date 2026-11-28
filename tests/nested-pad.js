@@ -5,7 +5,7 @@
 //   node tests/nested-pad.js [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
 var local = process.argv[2];
-var MAPS = [['https://viewer-source.github.io/styles/#acly-celldesigner', 'cd:COMPARTMENT', 'cd:PROTEIN', 12], ['https://viewer-source.github.io/styles/#glycolysis-sbgn', 'compartment', 'macromolecule', 0]];
+var MAPS = [['https://viewer-source.github.io/#acly-celldesigner', 'cd:COMPARTMENT', 'cd:PROTEIN', 12], ['https://viewer-source.github.io/#glycolysis-sbgn', 'compartment', 'macromolecule', 0]];
 (async function () {
   var b = await chromium.launch(), bad = 0, errs = [];
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };

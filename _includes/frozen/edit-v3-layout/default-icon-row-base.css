@@ -1,0 +1,3 @@
+{% include frozen/edit-v3-layout/look-lines.css %}
+{% include frozen/edit-v3-layout/look-view.css %}
+html #sp-chip:hover, html #sp.sp-open #sp-chip { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent, #fff); }

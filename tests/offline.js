@@ -13,13 +13,13 @@
 // waits; H no token: nothing sent when the connection comes back.
 var { chromium } = require('playwright'), crypto = require('crypto'), path = require('path'), cp = require('child_process');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0;
-var base = args.filter(function (a) { return a[0] !== '-'; })[0] || 'https://viewer-source.github.io/styles/';
+var base = args.filter(function (a) { return a[0] !== '-'; })[0] || 'https://viewer-source.github.io/';
 var here = path.join(__dirname, '..');
 var gitSha = function (t) { var b = Buffer.from(t, 'utf8'); return crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob ' + b.length + '\0'), b])).digest('hex'); };
 var ID = 'glycolysis-graphml', FILE = 'maps/glycolysis-graphml.graphml';
-function viewerHunks() {   // per piece of the styles page's viewer changed since HEAD, [old, new] with its context, then trimmed by
+function viewerHunks() {   // per piece of the root page's viewer changed since HEAD, [old, new] with its context, then trimmed by
   // one line a side at a time (context Jekyll rewrote, a liquid tag, does not match the page)
-  var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '../styles/_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString(), out = [];
+  var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString(), out = [];
   d.split(/\n(?=@@ )/).slice(1).forEach(function (h) {
     var o = [], n = [], tries = [];
     h.split('\n').slice(1).forEach(function (l) { if (l[0] === ' ') { o.push(l.slice(1)); n.push(l.slice(1)); } else if (l[0] === '-') o.push(l.slice(1)); else if (l[0] === '+') n.push(l.slice(1)); });
@@ -38,7 +38,7 @@ function ok(what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG '
   page.on('dialog', function (d) { S.dialogs.push(d.type() + ': ' + d.message()); d.accept().catch(function () {}); });
   if (local) {
     var ed = require('./editor-now.js')(here), hunks = viewerHunks();
-    await page.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await page.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
     await page.route(function (u) { return u.href.split('#')[0] === base.split('#')[0]; }, async function (r) {
       var res = await r.fetch(), t = await res.text(), miss = 0;
       hunks.forEach(function (tries) {
@@ -215,7 +215,7 @@ function ok(what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG '
   await toList();
   var ctx2 = await b.newContext({ viewport: { width: 1400, height: 900 } }), p2 = await ctx2.newPage();
   p2.on('pageerror', function (e) { S.errs.push('machine 2: ' + e.message); });
-  if (local) { await p2.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); }); }
+  if (local) { await p2.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); }); }
   await serve(p2);
   await p2.goto(base, { waitUntil: 'load' });
   await p2.evaluate(function () { localStorage.clear(); localStorage.setItem('atlas-edit-token', 'test-token'); localStorage.setItem('atlas-edit-level', 'full'); });

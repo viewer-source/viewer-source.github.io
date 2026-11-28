@@ -1,4 +1,4 @@
-// The functional consistency review's small gaps, on the live page (by default the styles page), no token:
+// The functional consistency review's small gaps, on the live page (by default the root page), no token:
 // 1. View mode: + and - zoom the map shown right after it is picked in the list, with no click on the map.
 // 2. View mode: Cmd+Delete keeps the map shown while an area is selected on it; after Esc, Delete alone keeps it (as in
 //    Finder) and Cmd+Delete puts it in Deleted.
@@ -7,7 +7,7 @@
 // 5. Gestures and keys: + and - zoom in and out; S, Esc and Delete listed.
 //   node tests/keys-consistency.js [base address] --data=<clone of the data repository>
 var { chromium } = require('playwright'), OM = require('./lib/open-map.js');
-var base = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; })[0] || 'https://viewer-source.github.io/styles/';
+var base = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; })[0] || 'https://viewer-source.github.io/';
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });

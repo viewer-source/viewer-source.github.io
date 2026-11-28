@@ -2,11 +2,11 @@
 // Disconnect asks first (Cancel focused, Esc, Enter and a click beside it leave everything as it was), says it in red once
 // done; moves made while disconnected are kept in the browser and saved when the token is pasted again, with no false
 // "changed elsewhere" after saves made before the Disconnect; a map really changed
-// elsewhere meanwhile keeps the reader's moves beside it. GitHub is played by this script. On the styles page, the
+// elsewhere meanwhile keeps the reader's moves beside it. GitHub is played by this script. On the root page, the
 // tag map (CellDesigner).
 //   node tests/gh-disconnect.js [base address] [viewer folder: its editor served in place of the page's] [clone of the data repository]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), crypto = require('crypto');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3], data = process.argv[4], bad = 0;
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3], data = process.argv[4], bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 if (!data) { console.log('usage: node tests/gh-disconnect.js <base address> <viewer folder or ""> <clone of the data repository>'); process.exit(2); }
 var gitSha = function (t) { var b = Buffer.from(t, 'utf8'); return crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob ' + b.length + '\0'), b])).digest('hex'); };

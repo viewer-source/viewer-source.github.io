@@ -1,4 +1,4 @@
-# The browser tests (tests/run-browser.sh) in another engine than Chromium, on the live styles page: WebKit, Safari's
+# The browser tests (tests/run-browser.sh) in another engine than Chromium, on the live page: WebKit, Safari's
 # engine, on macOS by default, or Firefox. Runs by hand only.
 name: Other browsers
 on:

@@ -1,9 +1,9 @@
 // The Edit window's sign buttons (tools, "?", palette signs, the notation PD or AF; AF's two views are round choices, not sign buttons) under the pointer: each one not on must show the one hover of
 // the sign buttons: the light grey square, no frame, the sign unchanged. Runs on a page with the
-// editor, by default the styles page on an SBGN-ML map (Editing on Full, so the palette shows); on a CellDesigner map its own palette.
+// editor, by default the root page on an SBGN-ML map (Editing on Full, so the palette shows); on a CellDesigner map its own palette.
 //   node tests/hover.js [address]
 var { chromium } = require('playwright');
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn';
+var url = process.argv[2] || 'https://viewer-source.github.io/#glycolysis-sbgn';
 var WANT = { bg: 'rgb(241, 243, 244)', border: 'rgba(0, 0, 0, 0)', color: 'rgb(128, 134, 139)' };
 (async function () {
   var browser = await chromium.launch(), page = await browser.newPage({ viewport: { width: 1400, height: 900 } });

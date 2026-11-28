@@ -6,7 +6,7 @@
 // Parts: A first visit kept; B a reload offline; C a map not kept; D the editor offline; E online again; F a new page
 // taken at the next load.
 var { chromium } = require('playwright');
-var base = process.argv.slice(2).filter(function (a) { return a[0] !== '-'; })[0] || 'https://viewer-source.github.io/styles/';
+var base = process.argv.slice(2).filter(function (a) { return a[0] !== '-'; })[0] || 'https://viewer-source.github.io/';
 var scope = new URL(base).pathname;
 var bad = 0;
 function ok(what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); }

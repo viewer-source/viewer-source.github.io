@@ -7,7 +7,7 @@
 // CellDesigner colour. Nothing is saved (no token). No script error.
 //   node tests/cd-colours-default.js [base address] [viewer folder: its editor and converter scripts served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   if (local) {   // the editor as Jekyll builds it, and the converter's scripts, from a working tree

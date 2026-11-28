@@ -5,7 +5,7 @@
 //   node tests/insets-kept.js [map id] [--local]   (default enos-graphml; --local: the working tree's editor routed in)
 var path = require('path'), fs = require('fs'), { chromium } = require('playwright'), here = path.join(__dirname, '..'), editorNow = require('./editor-now.js');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
-var id = args[0] || 'enos-graphml', base = 'https://viewer-source.github.io/styles/';
+var id = args[0] || 'enos-graphml', base = 'https://viewer-source.github.io/';
 (async function () {
   var b = await chromium.launch(), page = await (await b.newContext({ viewport: { width: 1400, height: 900 } })).newPage(), errs = [], bad = 0;
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };

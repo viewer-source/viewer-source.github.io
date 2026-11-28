@@ -1,5 +1,5 @@
 // Complex and compartment names in place, and Name by members (create.js membersName, m2EditNameHere, the double click
-// and nameAt; cdcreate.js's double click; the page's right-click menu), on the styles page, Full and Layout editing:
+// and nameAt; cdcreate.js's double click; the page's right-click menu), on the root page, Full and Layout editing:
 //   - a double click on a complex's empty space (SBGN-ML, CellDesigner, GraphML) or on a compartment off its contents
 //     (Estrogen GraphML) opens the name field in a band at the drawn name (a CellDesigner complex's at its bottom, an
 //     unnamed SBGN-ML complex's bottom band), not over the whole group; a name typed there is written, undo takes it back;
@@ -13,7 +13,7 @@
 var { chromium } = require('playwright');
 var path = require('path'), fs = require('fs'), editorNow = require('./editor-now.js'), here = path.join(__dirname, '..');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
-var base = args[0] || 'https://viewer-source.github.io/styles/';
+var base = args[0] || 'https://viewer-source.github.io/';
 (async function () {
   var b = await chromium.launch(), page, errs = [], bad = 0;
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };

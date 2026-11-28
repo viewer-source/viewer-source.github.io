@@ -1,4 +1,4 @@
-// Style and Colours belong to the map (create.js mapChoice, mapCols): on the styles page, in Edit, each map opened shows
+// Style and Colours belong to the map (create.js mapChoice, mapCols): on the root page, in Edit, each map opened shows
 // its own. A map with no choice shows what its colours are (the colour tests every species a confetti pastel: Confetti;
 // a map recoloured to Default: Default); a choice made on one map is not shown on another and comes back with its map;
 // a recolour undone shows the map as it is again. CellDesigner and SBGN-ML. Nothing is saved (no token).
@@ -6,7 +6,7 @@
 //   node tests/map-choices.js [base address] [viewer folder: its editor served in place of the page's] --data=<clone of the data repository>
 var chromium = require('playwright').chromium, fs = require('fs'), path = require('path'), OM = require('./lib/open-map.js');
 var pos = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; });
-var base = pos[0] || 'https://viewer-source.github.io/styles/', local = pos[1], bad = 0;
+var base = pos[0] || 'https://viewer-source.github.io/', local = pos[1], bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];

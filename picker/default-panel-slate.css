@@ -1,0 +1,16 @@
+---
+# Jekyll front matter, kept so the file is built as the other styles
+---
+/* Default Slate: Default (Default Panel) in Compact Slate's colours, a little lighter on white: accent #475569 to #536177, links #334155 to #3f4d62, buttons #64748b to
+   #6b7b90, lines as in Compact Slate. Default Panel is its master: a change to the layout is made in
+   _includes/default-panel-base.css. */
+{% include default-panel-base.css %}
+
+:root {
+  --m2-accent: #536177;
+  --m2-on-accent: #fff;
+  --m2-link: #3f4d62;
+  --m2-line: #d3d8de;
+  --m2-frame: #dde1e6;
+  --m2-button: #6b7b90;
+}

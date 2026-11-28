@@ -1,0 +1,7 @@
+---
+# Jekyll front matter, kept so the file is built as the other styles
+---
+/* Default View: Default Edit without the editor, the viewer alone on the same main line (icon row:
+   Maps, Search, Downloads, Settings; right-click menu). It includes Default Edit's base and leaves out --m2-edit only,
+   so every change to that base reaches both. */
+{% include default-icon-row-base.css %}

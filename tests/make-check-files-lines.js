@@ -6,7 +6,7 @@
 //   node tests/make-check-files-lines.js <out folder> [base address] --data=<clone of the data repository>   (Testing Glycolysis from its test set, added as a person adds a file)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
 var args = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; });
-var out = args[0], base = args[1] || 'https://viewer-source.github.io/styles/';
+var out = args[0], base = args[1] || 'https://viewer-source.github.io/';
 var OM = require('./lib/open-map.js');   // a map by its address, checked; a test-set map added from its file
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];

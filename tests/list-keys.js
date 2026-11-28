@@ -2,7 +2,7 @@
 // with room to spare (about one item above and below), also under the page's CSS zoom. Runs on the live page by default.
 //   node tests/list-keys.js [address]
 var { chromium } = require('playwright');
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-celldesigner';
+var url = process.argv[2] || 'https://viewer-source.github.io/#glycolysis-celldesigner';
 (async function () {
   var browser = await chromium.launch(), page = await browser.newPage({ viewport: { width: 1000, height: 530 } });
   await page.goto(url, { waitUntil: 'load' }); await page.waitForSelector('#m2-list .m2-on', { timeout: 30000 });

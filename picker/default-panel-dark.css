@@ -1,0 +1,34 @@
+---
+# Jekyll front matter, kept so the file is built as the other styles
+---
+/* Default Panel Dark: Default Panel in the colours of Default V2 Frame Compact Dark: a mid grey page, the map window white, as the maps are drawn for a
+   white ground. Default Panel is its master: a change to the layout is made in _includes/default-panel-base.css. */
+{% include default-panel-base.css %}
+
+:root {
+  --m2-accent: #7aa9d8;
+  --m2-on-accent: #fff;
+  --m2-link: #a8cbee;
+  --m2-text: #eceded;
+  --m2-text-soft: #e2e3e4;
+  --m2-muted: #c0c2c5;
+  --m2-faint: #a7aaae;
+  --m2-button: #cfd1d4;
+  --m2-line: #64676c;
+  --m2-frame: #64676c;
+  --m2-bg: #50535a;
+  --m2-control-bg: #50535af0;
+}
+html body { background: #46494f; color: #e2e3e4; }
+html h1, html h2, html h3, html h4 { color: #eceded; }
+html #m2-view { background: #fff; }
+html #m2-search { background: #50535a; color: #eceded; }
+html .m2-draft { background: transparent; color: #d0d2d5; border-color: #d0d2d5; }
+html #m2-zoom { color: #666; }   /* the zoom value sits on the white map window */
+html .site-name a { color: #eceded; }
+html .site-name a { -webkit-text-stroke-color: #46494f; }   /* the thinning stroke in this header's background */
+html .site-description { color: #c0c2c5; }
+/* the zoom buttons sit on the white map window: light as in Compact Dark (white, grey edge, dark sign); the accent fill
+   under the pointer stays */
+html .m2-ctrl button { background: #fffffff0; border-color: #bbb; color: #222; }
+html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m2-accent); color: #fff; }

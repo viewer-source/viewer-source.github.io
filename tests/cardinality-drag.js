@@ -1,5 +1,5 @@
 // A cardinality dragged along its line (create.js cardDown, cardMarks, cardUp, keys; sbgn_edit countsAt, countMove,
-// countsPlace; the converter's count_place): on the styles page, Testing Glycolysis (SBGN-ML), a consumption given 2:
+// countsPlace; the converter's count_place): on the root page, Testing Glycolysis (SBGN-ML), a consumption given 2:
 // a click on its box selects it (four squares, the line's Properties with Cardinality); a drag moves it along the line
 // (the box drawn by the drop, its glyph's bbox written); dragged far past an end it stops short of it; across the line it
 // goes to the other side; Esc during a drag changes nothing; the arrow keys move it; the process moved, it stays on its
@@ -8,7 +8,7 @@
 // nothing, Delete then takes out the number (not the line). Nothing is saved (no token). No script error.
 //   node tests/cardinality-drag.js [base address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });

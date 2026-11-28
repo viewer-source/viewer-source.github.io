@@ -1,0 +1,8 @@
+---
+# Jekyll front matter, kept so the file is built as the other styles
+---
+/* Default Panel: its rules in _includes/default-panel-base.css, shared with Default Panel Dark. */
+{% include default-panel-base.css %}
+/* a line under the map window, before the download buttons, in the frame colour as the other lines:
+   it marks where the map ends and where its separator is dragged */
+html #m2-view { border-bottom: 1px solid var(--m2-frame); }

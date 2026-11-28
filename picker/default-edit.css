@@ -1,0 +1,9 @@
+---
+# Jekyll front matter, kept so the file is built as the other styles
+---
+/* Default Edit: Default Icon Row with the viewer's Edit tab
+   (--m2-edit: 1): a yEd GraphML opened from the computer, or the map shown, its nodes and bend points moved in the map
+   window, drawn again by the yEd renderer in the browser, saved back into the file opened. */
+{% include default-icon-row-base.css %}
+
+:root { --m2-edit: 1; }

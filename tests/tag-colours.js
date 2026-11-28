@@ -8,7 +8,7 @@
 var OM = require('./lib/open-map.js'), pos = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; });
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var base = pos[0] || 'https://viewer-source.github.io/styles/', local = pos[1], bad = 0, ID = process.env.ID || 'glyph41';
+var base = pos[0] || 'https://viewer-source.github.io/', local = pos[1], bad = 0, ID = process.env.ID || 'glyph41';
 var MAP = process.env.MAP || 'external-sbgn-website-downloads-examples-insulin-like-growth-factor-signaling-withsubmap-mapk-cascade-sbgn';
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 (async function () {

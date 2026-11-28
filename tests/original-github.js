@@ -1,10 +1,10 @@
 // Colours' Original across computers (create.js origPut, origGh): with a token, the map's own colours kept when another
 // choice is made go to GitHub too (maps/colours/<id>.json, no site build started); a second browser with nothing kept
 // (another computer), opening the map as saved, gets them back with Original. GitHub is played by this script (a
-// repository in memory, shared by the two browsers). On the styles page, the triacylglycerol map (CellDesigner).
+// repository in memory, shared by the two browsers). On the root page, the triacylglycerol map (CellDesigner).
 //   node tests/original-github.js [base address] [viewer folder: its editor served in place of the page's] [clone of the data repository]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), crypto = require('crypto');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3], bad = 0;
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3], bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 var gitSha = function (t) { var b = Buffer.from(t, 'utf8'); return crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob ' + b.length + '\0'), b])).digest('hex'); };
 var files = {}, builds = 0, errs = [], recPuts = 0;

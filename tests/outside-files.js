@@ -11,7 +11,7 @@
 var path = require('path'), fs = require('fs'), os = require('os'), { chromium } = require('playwright');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
 var data = args.shift();
-var base = args[0] && /^https?:/.test(args[0]) ? args.shift() : 'https://viewer-source.github.io/styles/';
+var base = args[0] && /^https?:/.test(args[0]) ? args.shift() : 'https://viewer-source.github.io/';
 var here = path.join(__dirname, '..');
 var T = 'test-maps/test-set/', S = 'test-maps/sbgn-ml/';
 var LIST = [   // [file in the data repository, the tool that wrote it]

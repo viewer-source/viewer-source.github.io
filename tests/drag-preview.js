@@ -4,20 +4,20 @@
 // editor's drawing, in screen pixels) is compared with what a release at that very step draws (the same drag replayed
 // to that step, released, measured, undone). Any shape or line drawn during the drag that the drop does not draw, or the
 // other way round, is a difference. Testing Glycolysis SBGN-ML, the full editor, no token, the working tree's editor
-// and renderers routed into the live /styles/ page.
+// and renderers routed into the live page.
 //   node tests/drag-preview.js --data=<clone of the data repository> [viewer folder]   (LIVE=1: the page's own code; ONLY=<case name part>; SHOT=<prefix>)
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var OM = require('./lib/open-map.js'), argv = process.argv.slice(2).filter(function (a) { return !/^--/.test(a); });   // --data=... is no address or folder
-var here = argv[0] || path.join(__dirname, '..'), BASE = 'https://viewer-source.github.io/styles/', bad = 0;
+var here = argv[0] || path.join(__dirname, '..'), BASE = 'https://viewer-source.github.io/', bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
 async function open(b) {
   var p = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
   await p.addInitScript(require('./lib/screen.js'));   // window.__ctm, the screen matrix in every engine
   if (!process.env.LIVE) {
     var ed = require('./editor-now.js')(here);
-    await p.route(/\/styles\/editor\/editor\.js(\?|$)/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
-    await p.route(/\/styles\/renderers\/.*\.js/, function (r) { var f = /renderers\/(.*\.js)/.exec(r.request().url())[1]; r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(here, 'renderers', f), 'utf8') }); });
+    await p.route(/\.io\/editor\/editor\.js(\?|$)/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await p.route(/\.io\/renderers\/.*\.js/, function (r) { var f = /renderers\/(.*\.js)/.exec(r.request().url())[1]; r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(here, 'renderers', f), 'utf8') }); });
   }
   p.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   await p.addInitScript(function () { try { localStorage.removeItem('atlas-cd-compatible'); localStorage.setItem('atlas-edit-level', 'full'); localStorage.setItem('atlas-drag-moves', 'off'); } catch (e) {} });

@@ -2,7 +2,7 @@
 // pop-up it gave before; back to itself once the zip is downloaded. No token, a demo map.
 //   node tests/minerva-busy.js [base address] [viewer folder: its editor served in place of the page's]
 var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3], bad = 0;
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3], bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 (async function () {
   var b = await chromium.launch(), page = await (await b.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true })).newPage(), errs = [], said = [];

@@ -9,7 +9,7 @@
 // when sent later (its page gone meanwhile): let go, the list back as GitHub has it; H with nothing waiting, no line.
 var { chromium } = require('playwright'), crypto = require('crypto'), path = require('path');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0;
-var base = args.filter(function (a) { return a[0] !== '-'; })[0] || 'https://viewer-source.github.io/styles/';
+var base = args.filter(function (a) { return a[0] !== '-'; })[0] || 'https://viewer-source.github.io/';
 var here = path.join(__dirname, '..');
 var gitSha = function (t) { var b = Buffer.from(t, 'utf8'); return crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob ' + b.length + '\0'), b])).digest('hex'); };
 var bad = 0;
@@ -22,7 +22,7 @@ var GLY = 'glycolysis-graphml', MUS = 'glycogen-muscle-graphml', LIV = 'glycogen
   page.on('dialog', function (d) { S.dialogs.push(d.message().replace(/\s+/g, ' ')); d.accept().catch(function () {}); });
   if (local) {
     var ed = require('./editor-now.js')(here);
-    await page.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await page.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
   }
   var pages = function () {
     f['maps/' + GLY + '.md'] = '---\ntitle: "Glycolysis"\ntopic: "Glycolysis"\ngroup: "GraphML"\norder: 1\n---\n';

@@ -1,0 +1,7 @@
+/* Default View's and Default Edit's base: the viewer's own look, look-lines.css and look-view.css, copied here by
+   update.sh from the viewer, its master; nothing in them is edited here. Default View includes this alone, Default
+   Edit adds --m2-edit. Only the picker's rule is this page's. */
+{% include frozen/edit-v6-full-celldesigner/look-lines.css %}
+{% include frozen/edit-v6-full-celldesigner/look-view.css %}
+/* the picker's chip filled in the accent under the pointer and while open, as the page's buttons */
+html #sp-chip:hover, html #sp.sp-open #sp-chip { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent, #fff); }

@@ -9,7 +9,7 @@
 // in the file). CellDesigner maps have no line grid (F.fixedEnds, celldesigner.js), not tested here. Nothing is saved (no token). No script error.
 //   node tests/line-grid.js [base address]
 var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] || 'https://viewer-source.github.io/';
 var STEPS = [[8, 4], [16, 8], [10, 5]];
 (async function () {
   var b = await chromium.launch(), bad = 0, errs = [];

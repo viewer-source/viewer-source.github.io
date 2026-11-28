@@ -5,7 +5,7 @@
 //   node tests/cd-line-own.js [base address] [viewer folder: its editor and renderers served in place of the page's]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3];
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   await page.addInitScript(require('./lib/screen.js'));   // window.__ctm, the screen matrix in every engine

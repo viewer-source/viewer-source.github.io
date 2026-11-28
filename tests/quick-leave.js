@@ -6,7 +6,7 @@
 // played by the browser's private file system.
 //   node tests/quick-leave.js [base address] [map id] [viewer folder: its editor served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', id = process.argv[3] || 'glycolysis-graphml', local = process.argv[4], bad = 0;
+var base = process.argv[2] || 'https://viewer-source.github.io/', id = process.argv[3] || 'glycolysis-graphml', local = process.argv[4], bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 (async function () {
   var b = await chromium.launch();

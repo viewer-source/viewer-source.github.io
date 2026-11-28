@@ -1,4 +1,4 @@
-// Resizing a complex and a complex's member by their handles on the live page (by default the styles page), on Glycolysis
+// Resizing a complex and a complex's member by their handles on the live page (by default the root page), on Glycolysis
 // SBGN-ML and CellDesigner: a complex with members selected, its bottom right handle dragged in, never grows; dragged out it grows, its members
 // staying where they are; dragged far in, it stops where its members still fit; a member's handle dragged out grows the
 // member and its complex round it; Repack complex then keeps the member's new size and packs the complex round it
@@ -7,7 +7,7 @@
 // script error.
 //   node tests/complex-resize.js [base address] [viewer folder: its editor and edit renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   if (local) {   // the editor as Jekyll builds it (editor.js with its sources put in), from a working tree

@@ -2,7 +2,7 @@
 // map it was made on, the next map's text untouched (core.js stop, keyFlush). GraphML, whose opening is at once.
 //   node tests/key-switch.js [--local]   (--local: the working tree's editor and renderers routed in)
 var path = require('path'), fs = require('fs'), { chromium } = require('playwright'), here = path.join(__dirname, '..'), editorNow = require('./editor-now.js');
-var local = process.argv.indexOf('--local') > 0, base = 'https://viewer-source.github.io/styles/';
+var local = process.argv.indexOf('--local') > 0, base = 'https://viewer-source.github.io/';
 (async function () {
   var b = await chromium.launch(), page = await (await b.newContext({ viewport: { width: 1400, height: 900 } })).newPage(), errs = [];
   page.on('pageerror', function (e) { errs.push(e.message); });

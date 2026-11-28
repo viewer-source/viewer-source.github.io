@@ -1,4 +1,4 @@
-// An edge member (a glyph crossing its compartment's border) dragged on the live /styles/ page, CellDesigner and SBGN-ML:
+// An edge member (a glyph crossing its compartment's border) dragged on the live page, CellDesigner and SBGN-ML:
 // a plain drag inward takes it fully inside, the compartment unchanged; dragged back past the border after that release it
 // is an inside member and the compartment grows round it; in one drag through the whole compartment and out past its far
 // side it stays crossing, the compartment growing to keep it. Dragged outward, the border follows its centre where another
@@ -8,13 +8,13 @@
 // The maps are files of the test set, added by Add map from file in each page's own browser context.
 //   node tests/transmembrane.js [--local] --data=<clone of the data repository>   (needs Playwright; run from viewer/)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), OM = require('./lib/open-map.js');
-var here = path.join(__dirname, '..'), local = process.argv.indexOf('--local') >= 0, BASE = 'https://viewer-source.github.io/styles/';
+var here = path.join(__dirname, '..'), local = process.argv.indexOf('--local') >= 0, BASE = 'https://viewer-source.github.io/';
 function editor() {   // editor.js joined as Jekyll joins it
   return require('./editor-now.js')(here);
 }
 async function open(b, map, id, zoom) {
   var p = await b.newPage({ viewport: { width: 1400, height: 900 } });
-  if (local) await p.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: editor() }); });
+  if (local) await p.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: editor() }); });
   await p.addInitScript(function () { try { localStorage.setItem('atlas-edit-level', 'full'); } catch (e) {} });
   await OM.open(p, BASE, map);   // the test-set file added in this page's context, then opened by its own address
   await p.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 }); await p.click('.m2-ri[data-win="edit"]');

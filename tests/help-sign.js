@@ -4,7 +4,7 @@
 // source of the editing rows, its mark drawn as the Settings one.
 //   node tests/help-sign.js [page address]
 var { chromium } = require('playwright');
-var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn';
+var URL0 = process.argv[2] || 'https://viewer-source.github.io/#glycolysis-sbgn';
 (async function () {
   var b = await chromium.launch(), bad = 0, errs = [];
   var ok = function (what, v) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what); };

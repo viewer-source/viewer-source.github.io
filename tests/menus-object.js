@@ -8,7 +8,7 @@
 // saved (no token). No script error.
 //   node tests/menus-object.js [base address]
 var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] || 'https://viewer-source.github.io/';
 var PAGE = /^(Switch to|New SBGN-ML map|New CellDesigner map|Full screen|Download|Copy image|Open in)/, GRID = /^(Show grid|Snap to grid|Snap map to grid|Repack all complexes|Remove all bend points)/;
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;

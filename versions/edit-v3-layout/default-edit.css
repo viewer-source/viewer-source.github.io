@@ -1,0 +1,6 @@
+---
+# Jekyll front matter, kept so the file is built as the other styles
+---
+{% include frozen/edit-v3-layout/default-icon-row-base.css %}
+
+:root { --m2-edit: 1; }

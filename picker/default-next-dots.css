@@ -1,0 +1,12 @@
+---
+# Jekyll front matter: the include below is filled in when the site is built
+---
+/* Default V2 Frame Compact Dots: Default V2 Frame Compact with the three dots on every
+   separator, in Compact's soft grey (#b4b4b4): beside the list and the panel, above the map and under the map window.
+   Version 2 is its master: its rules in _includes/default-base.css, this file adds only the dots. */
+{% include default-base.css %}
+
+:root {
+  --m2-grip: #b4b4b4;
+  --m2-grip-h: #b4b4b4;
+}

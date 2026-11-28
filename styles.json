@@ -1,0 +1,5 @@
+---
+layout: null
+permalink: /styles.json
+---
+{{ site.data.styles | jsonify }}

@@ -8,7 +8,7 @@
 //   node tests/map-switch.js [base address] [--local] --data=<clone of the data repository>   (--local: the working tree's editor and renderers routed in)
 var path = require('path'), fs = require('fs'), { chromium } = require('playwright'), editorNow = require('./editor-now.js'), OM = require('./lib/open-map.js');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a.slice(0, 2) !== '--'; });
-var base = args[0] || 'https://viewer-source.github.io/styles/', here = path.join(__dirname, '..');
+var base = args[0] || 'https://viewer-source.github.io/', here = path.join(__dirname, '..');
 var MAPS = { graphml: 'glycolysis-graphml', celldesigner: 'glycolysis-celldesigner', sbgn: 'testing-glycolysis-sbgn' };
 // what the opening of a map sets, by format: checked apart
 var OPENED = ['text', 'F', 'cd', 'sb', 'sbLast', 'procs', 'cdBase'];   // F: the map's format object (state.js formats)

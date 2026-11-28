@@ -7,13 +7,13 @@
 //    there as its file.
 // 3. This browser, no token and no folder: kept as a map of the reader's; Cmd+Z in the list puts it in Deleted.
 // In each: a tool's text of the map's own format (GraphML), a text of another format (an SBGN-ML made here) kept as
-// that format, and another editor's SBGN-ML added as an SBGN-ML map too (read by sbgnml_read). On the styles page,
+// that format, and another editor's SBGN-ML added as an SBGN-ML map too (read by sbgnml_read). On the root page,
 // Glycolysis (GraphML).
 //   node tests/tool-map.js <base address> <clone of the site's data repository> [--local]
 // --local: the editor of the working tree routed into the live page, to check before a release.
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] || 'https://viewer-source.github.io/';
 var data = process.argv[3], local = process.argv.indexOf('--local') > 0;
 if (!data) { console.log('usage: node tests/tool-map.js <base address> <clone of the data repository> [--local]'); process.exit(2); }
 var MAP = 'glycolysis-graphml', MARK = '<!-- made by the test tool -->', bad = 0, ED = local ? require('./editor-now.js')(path.join(__dirname, '..')) : null;
@@ -22,7 +22,7 @@ var SB_HERE = '<?xml version="1.0" encoding="UTF-8"?>\n<sbgn xmlns="http://sbgn.
 var SB_OTHER = SB_HERE.replace('viewer-new-map', 'from-another-editor');
 
 async function open(ctx, setup) {
-  if (ED) await ctx.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); });
+  if (ED) await ctx.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); });
   if (ED) await ctx.route(/\/renderers\/(converter|yrender|layout)\/[a-z_]+\.js/, function (r) { var f = path.join(__dirname, '..', 'renderers', /\/renderers\/(.+\.js)/.exec(new URL(r.request().url()).pathname)[1]); if (fs.existsSync(f)) r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(f, 'utf8') }); else r.continue(); });
   var page = await ctx.newPage(), errs = [];
   page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });

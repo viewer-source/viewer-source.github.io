@@ -1,12 +1,12 @@
 // Compartment names at the top middle on a CellDesigner map (cdrender nameLeft, cd_make namePoint): on f001-glycolysis
-// (the styles page) a compartment dropped from the palette has its name drawn centred at its top; it stays centred at
+// (the root page) a compartment dropped from the palette has its name drawn centred at its top; it stays centred at
 // the top after a rename (Label in Properties), a move by a drag, a move by the arrow keys, a resize by its right handle
 // dragged, and a Width typed. Centred: the name's middle within 2 px of the compartment's middle on screen, its top
 // within 20 px of the compartment's top; the moves and resizes checked in the file's bounds. Nothing is saved (no
 // token). No script error.
 //   node tests/cd-comp-name.js [address]
 var { chromium } = require('playwright');
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#f001-glycolysis';
+var url = process.argv[2] || 'https://viewer-source.github.io/#f001-glycolysis';
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });

@@ -1,4 +1,4 @@
-// The list's right-click menu on a map (own.js listItems) and maps moved between groups, on the styles page.
+// The list's right-click menu on a map (own.js listItems) and maps moved between groups, on the root page.
 //   No token (GitHub answers 404; the reader's maps in this browser):
 //   1. On a reader's own map: Rename map, Make a copy, Move to... first, in that order; Delete map the menu's last line,
 //      under a line of its own.
@@ -15,7 +15,7 @@
 //   No script error, no dialog.
 //   node tests/list-map-menu.js [base address]
 var { chromium } = require('playwright'), crypto = require('crypto');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] || 'https://viewer-source.github.io/';
 var gitSha = function (t) { var b = Buffer.from(t, 'utf8'); return crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob ' + b.length + '\0'), b])).digest('hex'); };
 (async function () {
   var b = await chromium.launch(), errs = [], dialogs = [], bad = 0;

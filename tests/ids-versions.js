@@ -1,10 +1,10 @@
 // A family's members under bqbiol:hasVersion in Identifiers (create.js idOwn; cd_make setIds; sbgn_edit idsOf, setIds,
-// idsOut with the property Identity versions): on the styles page, PDP of the PDH map (CellDesigner and SBGN-ML) shows
+// idsOut with the property Identity versions): on the root page, PDP of the PDH map (CellDesigner and SBGN-ML) shows
 // its members' identifiers each with a cross; a cross takes one out of the hasVersion bag; + adds a new one into that
 // bag, not under bqbiol:is; undo puts the file back byte for byte. Nothing is saved (no token). No script error.
 //   node tests/ids-versions.js [base address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });

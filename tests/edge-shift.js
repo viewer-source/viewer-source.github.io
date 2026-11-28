@@ -6,7 +6,7 @@
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
 var local = process.argv[2];
 async function sbgn(page, ok) {   // a node moved past the edge on an SBGN-ML map, undone and redone
-  await page.goto('https://viewer-source.github.io/styles/#glycolysis-sbgn', { waitUntil: 'load' });
+  await page.goto('https://viewer-source.github.io/#glycolysis-sbgn', { waitUntil: 'load' });
   await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
   await page.waitForTimeout(1500);
   if (!(await page.$('#m2-editwin button[data-make]:visible'))) await page.click('.m2-ri[data-win="edit"]');
@@ -34,7 +34,7 @@ async function sbgn(page, ok) {   // a node moved past the edge on an SBGN-ML ma
     await page.route('**/editor/editor.js*', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }));
   }
   page.on('pageerror', e => console.log('ERR', e.message));
-  await page.goto('https://viewer-source.github.io/styles/#glycolysis-celldesigner', { waitUntil: 'load' });
+  await page.goto('https://viewer-source.github.io/#glycolysis-celldesigner', { waitUntil: 'load' });
   await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
   if (!(await page.$('#m2-editwin button[data-make="cd:COMPARTMENT"]:visible'))) await page.click('.m2-ri[data-win="edit"]');
   await page.waitForSelector('#m2-editwin button[data-make="cd:COMPARTMENT"]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(2000);

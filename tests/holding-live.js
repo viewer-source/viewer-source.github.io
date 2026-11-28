@@ -1,5 +1,5 @@
 // What holds what, the same under Node and in the browser (plan 3 step 7): on Testing Glycolysis SBGN-ML in the full
-// editor (no token, the working tree's editor and renderers routed into the live /styles/ page), a compartment is made
+// editor (no token, the working tree's editor and renderers routed into the live page), a compartment is made
 // with a glyph inside it and one outside, and the editor's gestures are made on them: the member dragged past the
 // compartment's border (its holder grows), the member taken out with Shift (it leaves), the free glyph dragged into the
 // compartment (it joins), the compartment resized so the member is no longer in it (it is let go). After each, the
@@ -9,7 +9,7 @@
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var OM = require('./lib/open-map.js'), argv = process.argv.slice(2).filter(function (a) { return !/^--/.test(a); });   // --data=... is no address or folder
-var here = argv[0] || path.join(__dirname, '..'), BASE = 'https://viewer-source.github.io/styles/', bad = 0;
+var here = argv[0] || path.join(__dirname, '..'), BASE = 'https://viewer-source.github.io/', bad = 0;
 var HM = require('./lib/holding-model.js');
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
 function nodesOf(g) {   // id -> { up: holder id, box }
@@ -43,8 +43,8 @@ function compare(what, want, got) {
   var b = await engine.launch(), p = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
   if (!process.env.LIVE) {
     var ed = require('./editor-now.js')(here);
-    await p.route(/\/styles\/editor\/editor\.js(\?|$)/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
-    await p.route(/\/styles\/renderers\/.*\.js/, function (r) { var f = /renderers\/(.*\.js)/.exec(r.request().url())[1]; r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(here, 'renderers', f), 'utf8') }); });
+    await p.route(/\.io\/editor\/editor\.js(\?|$)/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await p.route(/\.io\/renderers\/.*\.js/, function (r) { var f = /renderers\/(.*\.js)/.exec(r.request().url())[1]; r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(here, 'renderers', f), 'utf8') }); });
   }
   p.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   await p.addInitScript(function () { try { localStorage.removeItem('atlas-cd-compatible'); localStorage.removeItem('atlas-edit-padding'); localStorage.setItem('atlas-edit-level', 'full'); localStorage.setItem('atlas-drag-moves', 'off'); } catch (e) {} });

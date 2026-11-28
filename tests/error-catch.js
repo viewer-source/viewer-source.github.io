@@ -1,5 +1,5 @@
 // The error catcher: an error nobody caught while a map is edited is said in one line with its place in the editor's
-// sources, and the map is put back as it was after the last change that ended. On the styles page, Glycolysis
+// sources, and the map is put back as it was after the last change that ended. On the root page, Glycolysis
 // (GraphML; MAP=<id> for another map), no token. A node dragged; on the third step of the drag the page's setAttribute
 // throws once (as a fault in the editor's drawing of the drag would): the status line names the source file and line,
 // that line of the sources calls setAttribute, the map's text is as before the drag, the drag let go, and the next
@@ -8,7 +8,7 @@
 //   node tests/error-catch.js [base address] [--local]
 // --local: the editor of the working tree routed into the live page, to check before a release.
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');
-var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/';
 var local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..'), bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 (async function () {
@@ -16,8 +16,8 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
   page.on('pageerror', function (e) { errs.push(e.message); });
   if (local) {   // the editor and its source map, built from the working tree
     var built = require(path.join(here, 'editor', 'build.js')).files(require(require.resolve('esbuild', { paths: [here] })));
-    await ctx.route(/\/styles\/editor\/editor\.js(\?|$)/, function (r) { r.fulfill({ contentType: 'application/javascript', body: built.js }); });
-    await ctx.route(/\/styles\/editor\/editor\.js\.map(\?|$)/, function (r) { r.fulfill({ contentType: 'application/json', body: built.map }); });
+    await ctx.route(/\.io\/editor\/editor\.js(\?|$)/, function (r) { r.fulfill({ contentType: 'application/javascript', body: built.js }); });
+    await ctx.route(/\.io\/editor\/editor\.js\.map(\?|$)/, function (r) { r.fulfill({ contentType: 'application/json', body: built.map }); });
   }
   await page.addInitScript(function () { try { localStorage.setItem('atlas-edit-level', 'full'); } catch (e) {} });
   // setAttribute throws once on the map's drawing while window.__boom is set, from a script served on the page's own

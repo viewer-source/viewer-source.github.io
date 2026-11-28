@@ -5,9 +5,9 @@
 // text, a move keeping every variable and residue name byte for byte, the SVG download as on screen.
 // Both maps are files of the test set, added by Add map from file; the SVG download alone is checked on the site's copy
 // of the Newt map, as a map added in the browser offers only its own file and a PNG (the site's SVG is made by its build).
-//   node tests/show-sites.js [base address] --data=<clone of the data repository>   (default: the styles page, where the Edit tab is)
+//   node tests/show-sites.js [base address] --data=<clone of the data repository>   (default: the root page, where the Edit tab is)
 var { chromium } = require('playwright'), OM = require('./lib/open-map.js');
-var base = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; })[0] || 'https://viewer-source.github.io/styles/';
+var base = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; })[0] || 'https://viewer-source.github.io/';
 var SBSITE = 'external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins-nwt', SB = SBSITE, CD = 'sites-aspirin-2023-celldesigner';
 (async function () {
   var b = await chromium.launch(), ctx = await b.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true }), page = await ctx.newPage();

@@ -1,10 +1,10 @@
 // Panel widths: at the panel's usual 240 px every visible control lies inside the panel's visible area; with the panel
 // dragged wider, nothing in the Edit and Settings windows may stretch or move, and Settings' blocks span the same width as the Edit window's (the icon row's). Opens each window at the panel's usual width and at a wide one, with a macromolecule selected so
 // Properties shows, and compares every visible control's place and size. Runs on a page with the editor, by default
-// the styles page on an SBGN-ML map; [css] adds a style sheet first (to try a change before it is pushed).
+// the root page on an SBGN-ML map; [css] adds a style sheet first (to try a change before it is pushed).
 //   node tests/panel-width.js [address] [css]
 var { chromium } = require('playwright'), fs = require('fs');
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn', css = process.argv[3];
+var url = process.argv[2] || 'https://viewer-source.github.io/#glycolysis-sbgn', css = process.argv[3];
 var WIDE = 520, NODE = 'ADCY';
 async function shot(browser, wide, win) {
   var page = await browser.newPage({ viewport: { width: 1400, height: 900 } });

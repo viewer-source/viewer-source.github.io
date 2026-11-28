@@ -1,11 +1,11 @@
-// Line width in a line's Properties (create.js edgeSet; sbgn_edit rewidth, cd_make rewidthLine): on the styles page, an
+// Line width in a line's Properties (create.js edgeSet; sbgn_edit rewidth, cd_make rewidthLine): on the root page, an
 // SBGN-ML arc on Testing Glycolysis, an arc at a process with its stick (antenna) drawn as wide, and a CellDesigner modifier and main line on Glycolysis each typed 3: written into
 // the file (SBGN-ML: the stroke-width of a style naming the arc; CellDesigner: its celldesigner:line width), drawn 3
 // wide, shown in the field; 50 typed sets 20 (the limit, silently); undo puts the file back as it was. Nothing is saved
 // (no token). No script error.
 //   node tests/line-width.js [base address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });

@@ -6,7 +6,7 @@
 // from the SBGN-ML text the editor would save. Nothing is saved (no token). No script error.
 //   node tests/phenotype-lines.js [address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright');
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn', local = process.argv[3], fs = require('fs'), path = require('path');
+var url = process.argv[2] || 'https://viewer-source.github.io/#glycolysis-sbgn', local = process.argv[3], fs = require('fs'), path = require('path');
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0, want = null;
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };

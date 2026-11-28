@@ -1,0 +1,93 @@
+---
+# Jekyll front matter, kept so the file is built as the other styles
+---
+/* Default List: a copy of Default Next (below) for experiments with the map list. The list
+   without its indent: group names in bold, their maps flush under them, so long names get the room the indent took.
+   Rules at the end of the file.
+
+   Default Next: a copy of Compact, kept apart from compact-base.css so Compact experiments do not change it. No dots
+   on any separator (the separator above the map still works: drag up to hide the header, click to bring it back): the
+   pointer turning into resize arrows over them shows where they are. */
+:root {
+  --m2-grip: transparent;   /* no dots on the separators beside the list and the panel */
+  --m2-grip-h: transparent; /* nor under the map window */
+  --m2-separator-below: 1; /* that separator on: dragged up the map gets smaller, dragged down past the buttons the map goes to the bottom edge */
+  --m2-split: 8px;
+  --m2-split-h: 8px;
+  --m2-below-view: 46px;   /* the download buttons 8 px under the map and 8 px above the window's bottom */
+}
+html .wrapper-masthead .container { width: calc(100vw / var(--zoom, 1) - 16px); }
+html .masthead { padding: 6px 0 7px 4px; }   /* the name where the list's text starts */
+html #main { padding-top: 8px; }
+html .m2 { width: calc(100vw / var(--zoom, 1) - 16px); column-gap: 0; grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) calc(var(--m2-info-w, 240px) + 10px); }
+/* the right column kept for the panel as in Default, empty until a molecule is chosen; dragged shut, it goes */
+html .m2.m2-info-shut { grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) 0; }
+html .m2-main { margin-left: 8px; }
+/* the list out of sight: the map 8 px from the window's edge, as on the other sides, the separator in that strip */
+html .m2-list-shut .m2-main { margin-left: 0; }
+/* the panel 10 px from the map window, as the search field and the list on the left; the separator in the middle of that room */
+html .m2-info:not(.m2-over) { margin-left: 10px; width: var(--m2-info-w, 240px); }
+html #m2-search { margin-bottom: 8px; }   /* above the list */
+/* the list's content 12 px from the window's edge, as in MINERVA */
+html .m2-nav { padding: 0 4px; box-sizing: border-box; }
+@media (max-width: 940px) { html .m2-nav { padding: 0; } }   /* narrow windows: the search and the list in line with the map */
+html #m2-downloads { margin-top: 4px; }
+@media (max-width: 940px) {
+  html .m2 { width: auto; }
+  html .m2-main { margin-left: 0; }
+  html .m2-info:not(.m2-over) { margin-left: 0; width: auto; }
+}
+
+/* the separators' dots between the viewer's (1.5 px) and Reactome's (1 px), 8 px apart as both */
+html #m2-split::after, html #m2-split-r::after { background: radial-gradient(circle, var(--m2-grip) 1.25px, transparent 1.6px) center / 4px 8px repeat-y; }
+html #m2-split-h > div::after { background: radial-gradient(circle, var(--m2-grip-h) 1.25px, transparent 1.6px) center / 8px 4px repeat-x; }
+
+/* the zoom buttons over the map filled in the accent under the pointer, white sign, as in the Reactome styles */
+html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent, #fff); }
+
+/* the style button filled in the accent under the pointer and while its menu is open, white text, as the other
+   buttons: the button marked as selected, not its text */
+html #sp-chip:hover, html #sp.sp-open #sp-chip { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent, #fff); }
+
+/* the page's length is set by the map column alone: the map, its name, description and references.
+   The list on the left and the panel on the right never make the page longer (a list of thousands of maps, a long
+   annotation): they scroll inside and stay in sight while the page scrolls, as in Reactome Scroll, the search above
+   the list with them; at the page's end they stop 8 px before it, the room left under them */
+@media (min-width: 941px) {
+  html .m2-nav { align-self: stretch; contain: size; }
+  html #m2-search { position: sticky; top: 8px; z-index: 2; }
+  html #m2-list { position: sticky; top: 38px; margin-bottom: 8px; }   /* its height the viewer's: down to the download buttons */
+  html .m2-info:not(.m2-over) { align-self: start; position: sticky; top: 8px; contain: size; height: calc(100vh / var(--zoom, 1) - 52px); max-height: none; margin-bottom: 8px; overflow-y: auto; }
+}
+
+/* the list's top edge under the search: items scrolled up fade out over 10 px, so the edge reads as the window's edge,
+   not as an item cut off; 6 px of room above the first item, so nothing fades before scrolling */
+@media (min-width: 941px) {
+  html #m2-list { padding-top: 6px; box-sizing: border-box;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10px); mask-image: linear-gradient(to bottom, transparent 0, #000 10px); }
+}
+
+/* Default List: the list flat, groups in bold as headings, maps flush under them (no indent);
+   the group's text starts where the maps' text does (a map box's 1 px border and 4 px padding) */
+html .m2-group { font-weight: 700; padding-left: 5px; }
+html .m2-item.m2-sub { margin-left: 0; width: 100%; }
+html .m2-empty { margin-left: 0; }
+
+/* each group's name under a thin light grey line across the list, at 15 px (maps 14), half bold, with more room above,
+   so the groups read as blocks (a flat list runs together; bold at 14 px looks smaller than the maps and too heavy).
+   Half bold is Semibold (600) in the system font (San Francisco on a Mac, Segoe UI on Windows): Helvetica Neue, the
+   page's font, has Medium (500), almost no bolder than regular on a Mac, and no Semibold (600 shows Bold).
+   The name's text still where the maps' text starts (5 px), the arrow on the name's line.
+   Spacing: under the name the same as between two maps (3 px as a map's 1 px edge and 2 px
+   padding, then the list's 2 px gap); above the line 6 px, under it 6 px, in place of 14 and 10 */
+html .m2-group { font-family: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif; font-size: 15px; font-weight: 600; border-top: 1px solid #e2e2e2; padding: 6px 6px 3px 5px; margin: 6px 0 0; }
+html .m2-group:first-child { margin-top: 0; border-top: 0; padding-top: 3px; }
+html .m2-group::before { margin-top: 4px; }
+
+/* the list's bottom edge fades too, over 10 px as under the search, with 6 px of room under the last item so it shows
+   whole once the list is scrolled to its end */
+@media (min-width: 941px) {
+  html #m2-list { padding-bottom: 6px;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10px, #000 calc(100% - 10px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 10px, #000 calc(100% - 10px), transparent 100%); }
+}

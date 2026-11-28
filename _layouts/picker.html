@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{ site.name }} – {{ site.description }}</title>
+    {% include meta.html %}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300&display=swap" />
+    <link rel="stylesheet" href="/style.css?v={{ site.time | date: '%s' }}" />
+    <!-- the chosen style, written here before the first paint so the page never shows the base look first (else the
+         page jumps on a reload); the picker (style-picker.html) changes it later. The list is built in
+         (_data/styles.json), the same rule as the picker's: ?style= on this page, else the page's own style -->
+    <script>
+    // Once, at the root: what this browser kept for the old styles page (/styles/, the same viewer before one site) is
+    // carried to the root, as the viewer keys it by the page's path (atlas-named:, atlas-order:, the panels' widths, ...).
+    // The styles page's value wins over the root's (the work was done there); a map's names are joined, map by map.
+    // Maps on GitHub or in a folder are not touched; the offline copies are the root's own (sw.js, one per scope).
+    (function () {
+      if (location.pathname !== '/') return;
+      try {
+        if (localStorage.getItem('atlas-carried:/styles/')) return;
+        var OLD = ':/styles/', ks = [];
+        for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.slice(-OLD.length) === OLD) ks.push(k); }
+        ks.forEach(function (k) {
+          var to = k.slice(0, -OLD.length) + ':/', v = localStorage.getItem(k), was = localStorage.getItem(to);
+          if (k.indexOf('atlas-named:') === 0 && was) {
+            try { v = JSON.stringify(Object.assign(JSON.parse(was), JSON.parse(v))); } catch (e) {}
+          }
+          localStorage.setItem(to, v);
+        });
+        localStorage.setItem('atlas-carried:/styles/', String(ks.length));
+      } catch (e) {}
+    })();
+    (function () {
+      var list = {{ site.data.styles | jsonify }}, want = new URLSearchParams(location.search).get('style');
+      var page = function (s) { return s.page || '/'; };
+      var i = list.findIndex(function (s) { return s.id === want && page(s) === location.pathname; });
+      if (i < 0) i = list.findIndex(function (s) { return page(s) === location.pathname; });
+      window.spAt = Math.max(0, i);
+      var f = list[window.spAt].file;
+      document.write(f ? '<link rel="stylesheet" id="style-file" href="/picker/' + f + '?v={{ site.time | date: '%s' }}" />'
+                       : '<link rel="stylesheet" id="style-file" disabled />');
+    })();
+    </script>
+  </head>
+  <body>
+    <!-- the site header as on a published site (presentation mode): the website's name (Viewer, no subtitle) -->
+    <style>
+      /* the header as the smaller top bar of the next Metabolism Regulation version (name 21 px, subtitle 13 px, 12 px
+         under it), its left edge on the map list's */
+      .wrapper-masthead { margin-bottom: 0; }
+      .wrapper-masthead .container { max-width: none; width: min(100vw / var(--zoom, 1) - 32px, 2000px); padding: 0; }
+      .masthead { padding: 10px 0 0; }
+      /* the name as Reactome writes its own, in every style: small letters in Comfortaa (the nearest
+         free font to Reactome's wordmark), as tall as capitals were */
+      .site-name { font-family: Comfortaa, Arial, sans-serif; font-weight: 300; font-size: 28px; line-height: 28px; letter-spacing: 0; text-transform: lowercase; }
+      .site-name a, .site-name a:hover { color: #666; }   /* lighter on white (Comfortaa has no weight under 300) */
+      /* lighter than 300, Comfortaa's lightest: a hair of stroke in the header's background
+         colour takes about half the step from 300 to 400 off each letter (measured: ink 1427 at 300, 1732 at 400, 1288
+         at 300 with this stroke); styles on another background set the stroke's colour to theirs. 0.25 px gives
+         about 200 (ink at 28 px: 217 at 300, 265 at 400, 187 with 0.12 px, 167 with 0.25 px);
+         0.35 px began to break the letters */
+      .site-name a { -webkit-text-stroke: 0.25px #fff; }
+      .site-description { font-size: 13px; }
+      @media (max-width: 940px) { .wrapper-masthead .container { width: auto; padding: 0 16px; } }
+    </style>
+    <div class="wrapper-masthead">
+      <div class="container">
+        <header class="masthead clearfix">
+          <div class="site-info">
+            <h1 class="site-name"><a href="/">{{ site.header }}</a></h1>
+          </div>
+        </header>
+      </div>
+    </div>
+
+    <div id="main" role="main" class="container">
+      {{ content }}
+    </div>
+  </body>
+</html>

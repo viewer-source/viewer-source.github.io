@@ -6,7 +6,7 @@
 // pushed).
 //   node tests/edit-quiet.js [base address] [css]
 var { chromium } = require('playwright'), fs = require('fs');
-var base = process.argv[2] && !/\.css$/.test(process.argv[2]) ? process.argv[2] : 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] && !/\.css$/.test(process.argv[2]) ? process.argv[2] : 'https://viewer-source.github.io/';
 var css = process.argv.filter(function (a) { return /\.css$/.test(a); })[0];
 var SPREAD = 30, CASES = [['glycolysis-sbgn', 'ADCY', false], ['pdh-celldesigner', 'PDK', true]];
 var PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');

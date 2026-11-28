@@ -3,7 +3,7 @@
 //   2. A name typed and Enter: the group named so, still first. 3. Add group then Esc: no group left behind.
 //   node tests/add-group.js [base address] [--local]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/';
 var local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..');
 function editorNow() {
   return require('./editor-now.js')(here);
@@ -12,7 +12,7 @@ function editorNow() {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
-  if (local) { var ed = editorNow(); await page.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); }); }
+  if (local) { var ed = editorNow(); await page.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); }); }
   await page.goto(base + '#glycolysis-graphml', { waitUntil: 'load' });
   await page.waitForSelector('.m2-ri[data-win="edit"]', { state: 'attached', timeout: 30000 }); await page.waitForTimeout(3000);
   if (!(await page.$('#m2-list .m2-map:visible'))) await page.click('.m2-ri[data-win="list"]');

@@ -1,4 +1,4 @@
-// A modifier's end at a process (core.js hubSides, sixPlaces; create.js atHub): on the styles page, PKA-C's catalysis
+// A modifier's end at a process (core.js hubSides, sixPlaces; create.js atHub): on the root page, PKA-C's catalysis
 // on its process (Glycolysis SBGN-ML) and a catalysis at a process of a GraphML map added from the test set (acly). While
 // the end is dragged over its process: six landing squares (the middles of the two sides off the antennas and the four
 // corners), one blue; dropped on each, Properties shows that place as Target port X and Y, and on the SBGN-ML map a
@@ -8,7 +8,7 @@
 //   node tests/modifier-ends.js --data=<clone of the data repository> [base address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
 var OM = require('./lib/open-map.js'), argv = process.argv.slice(2).filter(function (a) { return !/^--/.test(a); });
-var base = argv[0] || 'https://viewer-source.github.io/styles/', local = argv[1];
+var base = argv[0] || 'https://viewer-source.github.io/', local = argv[1];
 var dataDir = (process.argv.filter(function (a) { return /^--data=/.test(a); })[0] || '').slice(7);
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;

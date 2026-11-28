@@ -1,0 +1,10 @@
+---
+# Jekyll front matter: the include below is filled in when the site is built
+---
+/* Reactome Scroll Right Panel: Reactome Scroll with the panel's window on the right always there, empty
+   until a molecule is chosen, as Default's column. Dragged shut it goes, a click brings it back. Reactome Scroll is its
+   master: a change to the layout is made in _includes/reactome-scroll-base.css. */
+{% include reactome-scroll-base.css %}
+@media (min-width: 941px) {
+  html .m2:not(.m2-info-shut) .m2-info:empty:not(.m2-over) { display: block; }
+}

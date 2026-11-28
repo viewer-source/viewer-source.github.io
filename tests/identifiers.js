@@ -1,5 +1,5 @@
 // Identifiers in Properties (create.js refsShow, refsAdd, refsParse with ID_DBS; cd_make idsOf, setIds; sbgn_edit idsOf,
-// setIds, write's idsOut): on the styles page, on Testing Glycolysis (SBGN-ML) a simple chemical takes ChEBI IDs in any
+// setIds, write's idsOut): on the root page, on Testing Glycolysis (SBGN-ML) a simple chemical takes ChEBI IDs in any
 // form and refuses a UniProt one (said not read, left in the box), a macromolecule takes a UniProt ID and an HGNC one,
 // written as bqbiol:is identifiers.org links as the converter writes them; on Glycolysis (CellDesigner) a protein takes a
 // UniProt page's link and an HGNC number, a simple molecule a ChEBI ID, written under bqbiol:is with CellDesigner's
@@ -9,7 +9,7 @@
 // Nothing is saved (no token). No script error.
 //   node tests/identifiers.js [base address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });

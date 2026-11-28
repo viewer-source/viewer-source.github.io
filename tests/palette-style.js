@@ -1,5 +1,5 @@
 // The map's Style and Colours rows under the palette (palDrop, editor/src/create.js) on a page with the editor, by default
-// the styles page: on the Testing Glycolysis SBGN-ML map (its processes 10 by 10) and the Glycolysis CellDesigner map, the
+// the root page: on the Testing Glycolysis SBGN-ML map (its processes 10 by 10) and the Glycolysis CellDesigner map, the
 // two rows under a line below the palette while nothing is selected (Properties in their place otherwise), Style From map,
 // Colours as the map reads (mapCols: a map whose filled glyphs are all confetti pastels reads Confetti); the list a small
 // window under its field (above it with no room below) and closed by a choice; a process and a macromolecule placed take
@@ -13,7 +13,7 @@
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var args = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; });
-var base = args[0] || 'https://viewer-source.github.io/styles/', local = args[1];
+var base = args[0] || 'https://viewer-source.github.io/', local = args[1];
 var OM = require('./lib/open-map.js');   // a map by its address, checked; a test-set map added from its file
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;

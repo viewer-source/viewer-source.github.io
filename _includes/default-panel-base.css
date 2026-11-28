@@ -1,0 +1,10 @@
+/* Default Panel's rules: Default (Default Lines) with the panel's column on the right always there,
+   240 px (as wide as the list), empty until a molecule is chosen, as in Default Version 2. Dragged shut it goes, a click
+   brings it back. Included by Default Panel and Default Panel Dark, which adds only colours. */
+{% include default-lines-base.css %}
+/* wide windows only; narrow ones (940 px and under) stack as in Default */
+@media (min-width: 941px) {
+  html .m2 { grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) var(--m2-info-w, 240px); }
+  /* the line between the map and the panel always, as the column is always there */
+  html .m2:not(.m2-info-shut) .m2-main { border-right: 1px solid var(--m2-frame); }
+}

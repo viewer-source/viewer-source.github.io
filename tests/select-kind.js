@@ -1,5 +1,5 @@
 // Select all of this kind and Properties for several nodes (editor/src/create.js m2EditNodeItems, selectKind, propsMany):
-// on the styles page, the right-click menu over a node in edit mode ends with Select all of this kind before Delete; chosen,
+// on the root page, the right-click menu over a node in edit mode ends with Select all of this kind before Delete; chosen,
 // every node of that kind is selected (SBGN-ML: its class, a macromolecule multimer counted with the macromolecules;
 // CellDesigner: the species class; GraphML: the node's kind), and no other. Properties then shows only the rows every one
 // has (never Label, never Set as default; no Width or Height on complexes); a row whose values differ is an empty field
@@ -10,7 +10,7 @@
 var { chromium } = require('playwright');
 var path = require('path'), fs = require('fs'), editorNow = require('./editor-now.js'), here = path.join(__dirname, '..');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
-var base = args[0] || 'https://viewer-source.github.io/styles/';
+var base = args[0] || 'https://viewer-source.github.io/';
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });

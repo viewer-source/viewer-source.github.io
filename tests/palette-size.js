@@ -6,7 +6,7 @@
 //   node tests/palette-size.js --data=<clone of the data repository> [address]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
 var OM = require('./lib/open-map.js'), argv = process.argv.slice(2).filter(function (a) { return !/^--/.test(a); });   // --data=... is no address or folder
-var url = argv[0] || 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn', base = url.split('#')[0], ref = url.split('#')[1] || '';
+var url = argv[0] || 'https://viewer-source.github.io/#testing-glycolysis-sbgn', base = url.split('#')[0], ref = url.split('#')[1] || '';
 (async function () {
   var b = await engine.launch(), bad = 0, errs = [];
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };

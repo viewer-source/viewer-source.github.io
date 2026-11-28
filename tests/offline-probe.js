@@ -4,7 +4,7 @@
 // Part F: no token, a folder (the browser's private file system), the whole browser offline (context.setOffline).
 //   node tests/offline-probe.js [base address] [T|F]
 var { chromium } = require('playwright'), crypto = require('crypto');
-var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/';
 var part = process.argv[3] || 'TF';
 var gitSha = function (t) { var b = Buffer.from(t, 'utf8'); return crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob ' + b.length + '\0'), b])).digest('hex'); };
 (async function () {

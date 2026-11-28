@@ -1,5 +1,5 @@
 // The live drawing of a move in the browser, compared between two versions of the editor: each case run on the live
-// /styles/ page twice, once with the editor and renderers of a commit (default HEAD) and once with the working tree,
+// root page twice, once with the editor and renderers of a commit (default HEAD) and once with the working tree,
 // both routed into the page, and the picture and the overlay read mid-move and after the release. Any difference is
 // listed. Cases: a CellDesigner map shifted out of negative places, then a modifier's species dragged (its reaction
 // drawn live); a complex member dragged out on CellDesigner and SBGN-ML (the complex growing); a member pushed out of a
@@ -13,7 +13,7 @@
 // other, so a map changed on the site between them shows as a difference (run again).
 //   node tests/live-drag.js [commit]        (needs Playwright; run from viewer/; ONLY=<part of a case's name> runs those)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
-var here = path.join(__dirname, '..'), rev = process.argv[2] || 'HEAD', URL = 'https://viewer-source.github.io/styles/#';
+var here = path.join(__dirname, '..'), rev = process.argv[2] || 'HEAD', URL = 'https://viewer-source.github.io/#';
 function src(which, rel) {   // a file of the working tree or of the commit
   if (which === 'now') return fs.readFileSync(path.join(here, rel), 'utf8');
   var top = cp.execFileSync('git', ['rev-parse', '--show-prefix'], { cwd: here }).toString().trim();
@@ -26,8 +26,8 @@ function editor(which) {   // editor.js joined as Jekyll joins it
 }
 async function open(browser, which, map, wait) {
   var p = await browser.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
-  await p.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: editor(which) }); });
-  await p.route(/\/styles\/renderers\/(converter\/(cdrender|cd_edit|cd_make|sbgn_edit)|yrender\/yrender|layout\/layout)\.js/, function (r) {
+  await p.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: editor(which) }); });
+  await p.route(/\.io\/renderers\/(converter\/(cdrender|cd_edit|cd_make|sbgn_edit)|yrender\/yrender|layout\/layout)\.js/, function (r) {
     var f = /renderers\/(.*\.js)/.exec(r.request().url())[1]; r.fulfill({ contentType: 'application/javascript', body: src(which, 'renderers/' + f) });
   });
   p.on('pageerror', function (e) { errs.push(e.message); });

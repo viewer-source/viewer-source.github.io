@@ -1,0 +1,22 @@
+---
+# Jekyll front matter: the include below is filled in when the site is built
+---
+{% include reactome-fixed-base.css %}
+
+/* Reactome Fixed Blue: Reactome Fixed in other colours. The ground between the windows in
+   Reactome's sky blue #58c3e5, the one of the top bar, as measured on the Reactome pathway browser; every window white on it (the list, the map, the panel, the
+   map's name and text) */
+html body { background: #58c3e5; }
+html .m2-nav, html .m2-info:not(.m2-over) { background: #fff; }
+/* the map's name and text in a white window of their own under the download buttons, framed by the sky-blue line as
+   the list and the map, open at the bottom edge as the list */
+html #m2-title { background: #fff; padding: 8px 10px 0; border: 1px solid #58c3e5; border-bottom: 0; border-radius: 4px 4px 0 0; }
+html #m2-text { background: #fff; padding: 0 10px 8px; border: 1px solid #58c3e5; border-top: 0; border-bottom: 0; border-radius: 0; }
+html #m2-title:empty { padding-bottom: 0; }
+/* 2 px lower: at 7.1 px under the buttons, 0.7 px above the window's bottom edge, its top line showed there as a
+   thin white line; 9.1 px under them, out of sight until the map is made smaller */
+@media (min-width: 941px) { html #m2-title { margin-top: 2px; } }
+/* the download buttons white with blue text on the blue ground; the stronger blue under the pointer as in Reactome Fixed */
+html #m2-downloads > a, html #m2-downloads summary { background: #fff; border-color: #fff; color: #1e94d0; }
+/* the separators' dots white on the blue */
+:root { --m2-grip: #fff; --m2-grip-h: #fff; }

@@ -9,7 +9,7 @@
 //   node tests/hostile-files.js <clone of the site's data repository> [base address] [viewer folder: its editor and renderers served in place of the page's]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var data = process.argv[2], base = process.argv[3] || 'https://viewer-source.github.io/styles/', local = process.argv[4], bad = 0;
+var data = process.argv[2], base = process.argv[3] || 'https://viewer-source.github.io/', local = process.argv[4], bad = 0;
 if (!data) { console.log('usage: node tests/hostile-files.js <clone of the data repository> [base address] [viewer folder]'); process.exit(2); }
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 var esc = function (s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };

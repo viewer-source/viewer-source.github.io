@@ -6,7 +6,7 @@
 // on the shifted map. Before the fix the outline stayed where the map was before the shift and handles missed the image.
 //   node tests/bg-drift-live.js [base address] [--local]   (--local: the editor and renderers of the working tree routed in)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/styles/', local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..'), bad = 0;
+var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/', local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..'), bad = 0;
 var ok = (w, v, m) => { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + w + (v ? '' : '  ' + (m || ''))); };
 var SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><ellipse cx="200" cy="150" rx="195" ry="145" fill="#9cf" stroke="#369" stroke-width="8"/></svg>');
 (async function () {

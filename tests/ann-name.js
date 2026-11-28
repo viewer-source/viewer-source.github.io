@@ -1,10 +1,10 @@
-// One HGNC symbol added to a protein with no name names it (create.js refsAdd): on the styles page, on Testing
+// One HGNC symbol added to a protein with no name names it (create.js refsAdd): on the root page, on Testing
 // Glycolysis (SBGN-ML) and Glycolysis (CellDesigner) a protein placed from the palette and left unnamed takes the
 // symbol PDPK1 as its name too; a second symbol leaves the name; two symbols pasted at once on another unnamed protein
 // name nothing; a molecule is never named by an identifier. Nothing is saved (no token). No script error.
 //   node tests/ann-name.js [base address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
+var base = process.argv[2] || 'https://viewer-source.github.io/', local = process.argv[3];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });

@@ -1,5 +1,5 @@
 // Today's save paths, pinned before the restructuring changes them: GitHub, a folder on the computer, this browser's
-// store. On the styles page, Glycolysis (GraphML) moved by the arrow keys.
+// store. On the root page, Glycolysis (GraphML) moved by the arrow keys.
 // 1. GitHub (played by this script, files from a clone of the site's data repository): a save refused as changed while
 //    the file there is still the one last saved (another tab moved the branch) goes again on the new sha; a save refused
 //    as changed by someone else leaves their file, says so and saves nothing more; the browser's storage full for the
@@ -14,11 +14,11 @@
 // --local: the editor of the working tree routed into the live page, to check before a release.
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var base = process.argv[2] || 'https://viewer-source.github.io/';
 var data = process.argv[3];
 if (!data) { console.log('usage: node tests/save-paths.js <base address> <clone of the data repository>'); process.exit(2); }
 var MAP = 'glycolysis-graphml', bad = 0, ED = process.argv.indexOf('--local') > 0 ? require('./editor-now.js')(path.join(__dirname, '..')) : null;
-async function routeLocal(c) { if (ED) await c.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); }); }
+async function routeLocal(c) { if (ED) await c.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); }); }
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 

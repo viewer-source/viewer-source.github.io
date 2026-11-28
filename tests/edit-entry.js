@@ -8,11 +8,11 @@
 // step 4; three parses before), and at most twice for the move (cd_edit.place's own, written into, and one for the
 // new drawing, its GraphML and the live session after it). The file is added as a copy with a comment at its end, so
 // the site's own map of the same file, read ahead by the page, is not counted with it.
-//   node tests/edit-entry.js [base address] [map files ...] [--local]   (default: the styles page, two demo maps)
+//   node tests/edit-entry.js [base address] [map files ...] [--local]   (default: the root page, two demo maps)
 // --local: the working tree's editor routed into the live page.
 var path = require('path'), fs = require('fs'), { chromium } = require('playwright'), editorNow = require('./editor-now.js');
 var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
-var base = args[0] && /^https?:/.test(args[0]) ? args.shift() : 'https://viewer-source.github.io/styles/';
+var base = args[0] && /^https?:/.test(args[0]) ? args.shift() : 'https://viewer-source.github.io/';
 var here = path.join(__dirname, '..');
 var files = args.length ? args : [path.join(here, 'maps', 'srebp-celldesigner.xml'), path.join(here, 'maps', 'srebp-graphml.graphml')];
 (async function () {

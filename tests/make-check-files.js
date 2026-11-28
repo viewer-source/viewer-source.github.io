@@ -1,11 +1,11 @@
 // Files for checking by hand in the editors that made the formats: what the editor saves, made with the editor itself
-// on the styles page (no token: nothing is saved anywhere; the file text read from the editor).
+// on the root page (no token: nothing is saved anywhere; the file text read from the editor).
 // 1. CellDesigner (Glycolysis): a complex placed with two proteins dropped onto it (members), a protein resized to
 //    120 by 60 in Properties, one species moved.
 // 2. GraphML (Glycolysis): two nodes moved by the arrow keys (the GraphML editor moves, it makes nothing).
 //   node tests/make-check-files.js <out folder> [base address]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var out = process.argv[2], base = process.argv[3] || 'https://viewer-source.github.io/styles/';
+var out = process.argv[2], base = process.argv[3] || 'https://viewer-source.github.io/';
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
   page.on('pageerror', function (e) { errs.push(e.message); });

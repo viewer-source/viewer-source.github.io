@@ -3,15 +3,15 @@
 // stay white. Tests from the design: the choice offered, the colours in both themes, no accent blue left in Linen, the
 // light square of a palette sign seen against the panel, the choice kept over a reload and set before the page is
 // painted, undo and redo of it, the right-click menu white, the SVG download the same in both themes.
-//   node tests/themes.js [base address] [--local] --data=<clone of the data repository>   (default: the styles page; --local routes the working tree's viewer in)
+//   node tests/themes.js [base address] [--local] --data=<clone of the data repository>   (default: the root page; --local routes the working tree's viewer in)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process'), OM = require('./lib/open-map.js');
-var base = process.argv.slice(2).filter(function (a) { return a[0] !== '-'; })[0] || 'https://viewer-source.github.io/styles/';
+var base = process.argv.slice(2).filter(function (a) { return a[0] !== '-'; })[0] || 'https://viewer-source.github.io/';
 var local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..');
 var MAP = 'testing-glycolysis-sbgn',   // from the test set: its address in this browser given by OM.resolve
     SVGMAP = 'colour-glycolysis-sbgn',   // a site SBGN-ML map, for the SVG download
     BLUE = 'rgb(65, 131, 196)', GREY = 'rgb(113, 119, 124)', LINEN = 'rgb(245, 244, 241)', WHITE = 'rgb(255, 255, 255)';
-function viewerHunks() {   // [old, new] pieces of the styles copy of the viewer changed since HEAD
-  var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '../styles/_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString(), out = [];
+function viewerHunks() {   // [old, new] pieces of the page's copy of the viewer changed since HEAD
+  var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString(), out = [];
   d.split(/\n(?=@@ )/).slice(1).forEach(function (h) {
     var o = [], n = [];
     h.split('\n').slice(1).forEach(function (l) { if (l[0] === ' ') { o.push(l.slice(1)); n.push(l.slice(1)); } else if (l[0] === '-') o.push(l.slice(1)); else if (l[0] === '+') n.push(l.slice(1)); });

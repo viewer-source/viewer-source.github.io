@@ -13,13 +13,13 @@
 //      in it, read from the record on GitHub (the map matched to its record by its id on the site).
 //   node tests/minerva-zip-live.js <folder of the zips> [base address] [--local]
 // The zips: pathwayforge sources/minerva/ (AD_UC_comparison.zip, asthma_map_bg.zip, HIDmap_v14.zip; open projects). --local: the editor
-// and the viewer of the working tree routed into the live page (run styles/update.sh first).
+// and the viewer of the working tree routed into the live page (build the editor first).
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process'), zlib = require('zlib');
-var zips = process.argv[2], base = process.argv[3] && process.argv[3][0] !== '-' ? process.argv[3] : 'https://viewer-source.github.io/styles/';
+var zips = process.argv[2], base = process.argv[3] && process.argv[3][0] !== '-' ? process.argv[3] : 'https://viewer-source.github.io/';
 var local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..'), bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 function viewerHunks() {
-  var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '../styles/_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString();
+  var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString();
   return d.split(/\n(?=@@ )/).slice(1).map(function (h) {
     var o = [], n = [];
     h.split('\n').slice(1).forEach(function (l) { if (l[0] === ' ') { o.push(l.slice(1)); n.push(l.slice(1)); } else if (l[0] === '-') o.push(l.slice(1)); else if (l[0] === '+') n.push(l.slice(1)); });
@@ -48,7 +48,7 @@ function zipOf(entries) {   // a stored zip made here: [[name, text]]
   page.on('dialog', function (d) { said.push(d.message()); d.accept().catch(function () {}); });
   if (local) {
     var ed = require('./editor-now.js')(here), hunks = viewerHunks();
-    await page.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await page.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
     await page.route(function (u) { return u.href.split('#')[0] === base.split('#')[0]; }, async function (r) {
       var res = await r.fetch(), t = await res.text();
       hunks.forEach(function (h) { if (t.indexOf(h[0]) >= 0) t = t.replace(h[0], function () { return h[1]; }); });

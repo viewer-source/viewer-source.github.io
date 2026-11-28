@@ -1,0 +1,97 @@
+{% comment %}
+The style picker: a chip at the right end of the site header ('Style: Default', with a menu), the list of the styles in styles.json opening under it. A style is one CSS file in styles/ that redefines the viewer's settings (:root) and,
+where needed, a few rules. [ and ] step through the styles; the address keeps the chosen one (?style=slate).
+{% endcomment %}
+<style>
+  /* the chip at the size of the download buttons, the rows as the map list */
+  .masthead { position: relative; }
+  #sp { position: absolute; right: 0; top: 50%; transform: translateY(-50%); z-index: 10; cursor: auto; }
+  /* phones (the header centred, 640 px as the site's own break): the chip under the subtitle, centred, its menu under it */
+  @media screen and (max-width: 640px) {
+    #sp { position: relative; right: auto; top: auto; transform: none; display: flex; justify-content: center; margin: 8px 0 2px; }
+    #sp-menu { right: auto; left: 50%; transform: translateX(-50%); }
+  }
+  /* one width in every style: as wide as the longest name in the menu, measured by the script once the menu is
+     built (240 px until then); a name that does not fit after 'Style:' ends in an ellipsis;
+     its text to the left in every style and on phones */
+  #sp-chip { width: 240px; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; font-size: 14px; line-height: 20px; padding: 4px 10px; color: var(--m2-muted); background: var(--m2-control-bg);
+             border: 1px solid var(--m2-line); border-radius: var(--m2-radius-button); cursor: pointer; }
+  /* the button filled in the style's accent under the pointer and while its menu is open, white text, in every style
+     (the picker is independent of the style shown; selected means the button coloured, not its text) */
+  #sp-chip:hover, #sp.sp-open #sp-chip { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent, #fff); }
+  #sp-chip:focus { outline: none; }
+  /* the name shortened, the caret kept in sight */
+  #sp-chip { display: flex; align-items: baseline; }
+  #sp-name { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; margin: 0 4px; }
+  #sp-menu { display: none; position: absolute; right: 0; top: 34px; padding: 4px 0; background: var(--m2-bg);
+             border: 1px solid var(--m2-line); border-radius: var(--m2-radius-button); box-shadow: 0 2px 8px rgba(0, 0, 0, .12); }
+  #sp.sp-open #sp-menu { display: flex; flex-direction: column; gap: 2px; }
+  #sp-menu { padding: 4px; min-width: 100%; box-sizing: border-box; }   /* as wide as the chip */
+  #sp-menu button { display: block; width: 100%; white-space: nowrap; text-align: left; font-size: 14px; line-height: 18px; padding: 2px 8px; border: 0; border-radius: var(--m2-radius);
+                    color: var(--m2-muted); background: none; cursor: pointer; }
+  /* a line under the main styles (main: true in styles.json) and above the styles kept only for
+     comparing (kept: true in styles.json), at the end of the menu */
+  #sp-menu .sp-rule { height: 0; border-top: 1px solid var(--m2-line); margin: 3px 4px; }
+  #sp-menu button.sp-on { background: var(--m2-accent); color: var(--m2-on-accent); }
+</style>
+<script>
+(function () {
+  var link = document.getElementById('style-file'), head = document.querySelector('.masthead');
+  var styles = [], at = 0;
+  var box = document.createElement('div');
+  box.id = 'sp';
+  box.innerHTML = '<button id="sp-chip" type="button" title="[ and ] step through the styles">Style: <span id="sp-name"></span> ▾</button><div id="sp-menu"></div>';
+  head.appendChild(box);
+  var menu = box.querySelector('#sp-menu'), name = box.querySelector('#sp-name');
+
+  function relayout() { window.dispatchEvent(new Event('resize')); }
+  // a style with a page of its own (page in styles.json: the Default Edit versions, each with its own frozen viewer)
+  // is opened there; any other style from it goes back to the root
+  function pageOf(s) { return s.page || '/'; }
+  function choose(i, start) {
+    at = (i + styles.length) % styles.length;
+    var s = styles[at];
+    if (!start && pageOf(s) !== location.pathname) { location.href = pageOf(s) + (s.page || at ? '?style=' + s.id : ''); return; }
+    // ?v= the build time: a new build of a style is fetched at once, not after the browser's 10 minutes
+    var href = s.file ? '/picker/' + s.file + '?v={{ site.time | date: '%s' }}' : null;
+    if (href && link.getAttribute('href') === href) { link.disabled = false; relayout(); }   // already in (the page's head wrote it)
+    else if (href) { link.onload = relayout; link.href = href; link.disabled = false; }
+    else { link.disabled = true; link.removeAttribute('href'); relayout(); }
+    // a style can change sizes the viewer computes (the room under the map window): it measures again once the file is in
+    name.textContent = s.name;
+    [].forEach.call(menu.querySelectorAll('button'), function (b, j) { b.classList.toggle('sp-on', j === at); });
+    var u = new URL(location.href);
+    if (at) u.searchParams.set('style', s.id); else u.searchParams.delete('style');
+    history.replaceState(history.state, '', u);
+  }
+  box.querySelector('#sp-chip').addEventListener('click', function () { box.classList.toggle('sp-open'); });
+  document.addEventListener('pointerdown', function (e) { if (!box.contains(e.target)) box.classList.remove('sp-open'); });
+  document.addEventListener('keydown', function (e) {
+    if (!styles.length || /^(INPUT|TEXTAREA)$/.test(e.target.tagName) || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === ']') choose(at + 1); else if (e.key === '[') choose(at - 1);
+    else if (e.key === 'Escape') box.classList.remove('sp-open');
+  });
+
+  (function (list) {   // the list built into the page (_data/styles.json), as the head's script reads it
+    styles = list;
+    list.forEach(function (s, j) {
+      // a line under the main styles (main: true in styles.json) and
+      // above the styles kept only for comparing
+      var prev = list[j - 1] || {};
+      // and a line under the top two, Default Edit and Default View, the main development line (top: true)
+      // and a line above the styles that mimic other tools, Reactome and MINERVA (mimic: true, kept as
+      // they are)
+      if ((prev.top && !s.top) || (prev.main && !s.main) || (s.kept && !prev.kept) || (s.mimic && !prev.mimic)) { var r = document.createElement('div'); r.className = 'sp-rule'; menu.appendChild(r); }
+      var b = document.createElement('button');
+      b.type = 'button'; b.textContent = s.name;
+      b.addEventListener('click', function () { choose(j); box.classList.remove('sp-open'); });
+      menu.appendChild(b);
+    });
+    // the chip as wide as the menu with its longest name, in the page's own px (the page is zoomed)
+    menu.style.cssText = 'display: flex; flex-direction: column; visibility: hidden; min-width: 0; width: max-content;';
+    box.querySelector('#sp-chip').style.width = menu.offsetWidth + 'px';
+    menu.style.cssText = '';
+    choose(window.spAt || 0, true);   // the style the head's script chose (?style=, else the page's own)
+  })({{ site.data.styles | jsonify }});
+})();
+</script>

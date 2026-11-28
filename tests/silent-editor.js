@@ -1,6 +1,6 @@
 // The editor stays silent on gestures a rule refuses (core.js settle, cdcreate.js cdApply's refused, create.js linkMake
 // l.how.no): each is taken back or not done, and nothing appears in the Edit window (its text the same before and after,
-// #m2-ed-status empty, not red), no dialog, no script error. On the styles page, full editing (atlas-edit-level full):
+// #m2-ed-status empty, not red), no dialog, no script error. On the root page, full editing (atlas-edit-level full):
 //   CellDesigner, Glycolysis (glycolysis-celldesigner):
 //   1. a species with lines (sa_n22) dragged onto a complex (sa_n3): the move taken back, the file as before.
 //   2. Add reactant dragged from one species to another: nothing made.
@@ -15,7 +15,7 @@
 //   7. a glyph with lines dragged onto a complex: the move taken back.
 //   node tests/silent-editor.js [base address] --data=<clone of the data repository>   (Testing Glycolysis from its test set, added as a person adds a file)
 var { chromium } = require('playwright');
-var base = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; })[0] || 'https://viewer-source.github.io/styles/';
+var base = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; })[0] || 'https://viewer-source.github.io/';
 var OM = require('./lib/open-map.js');   // a map by its address, checked; a test-set map added from its file
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], dialogs = [], bad = 0;
