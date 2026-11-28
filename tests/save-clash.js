@@ -52,7 +52,7 @@ async function pages(ctx, n) {
   }
   return out;
 }
-async function routeLocal(ctx) { if (ED) await ctx.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); }); }
+async function routeLocal(ctx) { if (ED) await ctx.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); }); }
 
 async function github(b) {
   console.log('-- GitHub');

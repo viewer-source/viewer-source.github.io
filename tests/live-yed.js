@@ -13,8 +13,8 @@ function editor() {   // editor.js joined as Jekyll joins it
 }
 async function open(browser, map) {
   var p = await browser.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
-  if (!process.env.LIVE) await p.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: editor() }); });
-  if (!process.env.LIVE) await p.route(/\.io\/renderers\/.*\.js/, function (r) {
+  if (!process.env.LIVE) await p.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: editor() }); });
+  if (!process.env.LIVE) await p.route(/\/renderers\/.*\.js/, function (r) {
     var f = /renderers\/(.*\.js)/.exec(r.request().url())[1]; r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(here, 'renderers', f), 'utf8') });
   });
   p.on('pageerror', function (e) { errs.push(e.message); });

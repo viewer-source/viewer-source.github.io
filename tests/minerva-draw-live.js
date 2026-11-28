@@ -25,7 +25,7 @@ var t0 = Date.now(), ok = function (what, v, more) { if (!v) bad++; console.log(
   page.on('dialog', function (d) { if (d.type() !== 'beforeunload') said.push(d.type() + ': ' + d.message()); d.accept().catch(function () {}); });   // beforeunload: a move in 4 not saved to the GitHub played here (no file saving played), rightly held on leaving
   if (local) {
     var ed = require('./editor-now.js')(here);
-    await page.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await page.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
     await page.route(/\/renderers\/converter\/(cdrender|cd_edit)\.js/, function (r) {
       var f = /\/(cdrender|cd_edit)\.js/.exec(r.request().url())[1];
       r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(here, 'renderers', 'converter', f + '.js'), 'utf8') });

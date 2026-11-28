@@ -9,24 +9,42 @@
          page jumps on a reload); the picker (style-picker.html) changes it later. The list is built in
          (_data/styles.json), the same rule as the picker's: ?style= on this page, else the page's own style -->
     <script>
-    // Once, at the root: what this browser kept for the old styles page (/styles/, the same viewer before one site) is
-    // carried to the root, as the viewer keys it by the page's path (atlas-named:, atlas-order:, the panels' widths, ...).
-    // The styles page's value wins over the root's (the work was done there); a map's names are joined, map by map.
-    // Maps on GitHub or in a folder are not touched; the offline copies are the root's own (sw.js, one per scope).
+    // Once, at the root: what this browser kept for the old styles pages (/styles/ and its kept versions
+    // /styles/edit-.../, the same viewer before one site) is carried to their new paths (/ and /versions/edit-.../), as
+    // the viewer keys it by the page's path (atlas-named:, atlas-order:, the panels' widths, ...). The old page's value
+    // wins (the work was done there); a map's names are joined, map by map. Maps on GitHub or in a folder are not
+    // touched; the offline copies are the root's own (sw.js, one per scope).
     (function () {
       if (location.pathname !== '/') return;
       try {
-        if (localStorage.getItem('atlas-carried:/styles/')) return;
-        var OLD = ':/styles/', ks = [];
-        for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.slice(-OLD.length) === OLD) ks.push(k); }
+        var OLD = /:\/styles\/(edit-[^/]+\/)?$/, ks = [], versions = !localStorage.getItem('atlas-carried:/styles/edit-');
+        if (localStorage.getItem('atlas-carried:/styles/') && !versions) return;
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i), m = k && OLD.exec(k);
+          if (m && k.indexOf('atlas-carried:') !== 0 && (m[1] ? versions : !localStorage.getItem('atlas-carried:/styles/'))) ks.push(k);
+        }
         ks.forEach(function (k) {
-          var to = k.slice(0, -OLD.length) + ':/', v = localStorage.getItem(k), was = localStorage.getItem(to);
+          var m = OLD.exec(k), to = k.slice(0, m.index) + (m[1] ? ':/versions/' + m[1] : ':/'), v = localStorage.getItem(k), was = localStorage.getItem(to);
           if (k.indexOf('atlas-named:') === 0 && was) {
             try { v = JSON.stringify(Object.assign(JSON.parse(was), JSON.parse(v))); } catch (e) {}
           }
           localStorage.setItem(to, v);
         });
-        localStorage.setItem('atlas-carried:/styles/', String(ks.length));
+        localStorage.setItem('atlas-carried:/styles/', '1');
+        localStorage.setItem('atlas-carried:/styles/edit-', '1');
+      } catch (e) {}
+    })();
+    // the old page's worker and its offline copies: its KILL release runs only on a visit to /styles/, which no link
+    // leads to now, so the root removes them (at every visit: nothing is left to find after the first)
+    (function () {
+      if (location.pathname !== '/') return;
+      try {
+        if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(function (rs) {
+          rs.forEach(function (r) { if (/\/styles\/$/.test(new URL(r.scope).pathname)) r.unregister(); });
+        }).catch(function () {});
+        if (window.caches) caches.keys().then(function (ks) {
+          ks.forEach(function (k) { if (/^offline-\d+:\/styles\//.test(k)) caches.delete(k); });
+        }).catch(function () {});
       } catch (e) {}
     })();
     (function () {

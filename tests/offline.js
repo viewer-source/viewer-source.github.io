@@ -38,7 +38,7 @@ function ok(what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG '
   page.on('dialog', function (d) { S.dialogs.push(d.type() + ': ' + d.message()); d.accept().catch(function () {}); });
   if (local) {
     var ed = require('./editor-now.js')(here), hunks = viewerHunks();
-    await page.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await page.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
     await page.route(function (u) { return u.href.split('#')[0] === base.split('#')[0]; }, async function (r) {
       var res = await r.fetch(), t = await res.text(), miss = 0;
       hunks.forEach(function (tries) {
@@ -215,7 +215,7 @@ function ok(what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG '
   await toList();
   var ctx2 = await b.newContext({ viewport: { width: 1400, height: 900 } }), p2 = await ctx2.newPage();
   p2.on('pageerror', function (e) { S.errs.push('machine 2: ' + e.message); });
-  if (local) { await p2.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); }); }
+  if (local) { await p2.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); }); }
   await serve(p2);
   await p2.goto(base, { waitUntil: 'load' });
   await p2.evaluate(function () { localStorage.clear(); localStorage.setItem('atlas-edit-token', 'test-token'); localStorage.setItem('atlas-edit-level', 'full'); });

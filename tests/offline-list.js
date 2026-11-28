@@ -22,7 +22,7 @@ var GLY = 'glycolysis-graphml', MUS = 'glycogen-muscle-graphml', LIV = 'glycogen
   page.on('dialog', function (d) { S.dialogs.push(d.message().replace(/\s+/g, ' ')); d.accept().catch(function () {}); });
   if (local) {
     var ed = require('./editor-now.js')(here);
-    await page.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await page.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
   }
   var pages = function () {
     f['maps/' + GLY + '.md'] = '---\ntitle: "Glycolysis"\ntopic: "Glycolysis"\ngroup: "GraphML"\norder: 1\n---\n';

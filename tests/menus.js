@@ -35,7 +35,7 @@ function viewerHunks() {
     page.on('pageerror', function (e) { errs.push(e.message); });
     await page.addInitScript(function () { try { localStorage.setItem('atlas-edit-level', 'full'); } catch (e) {} });
     if (local) {
-      await page.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+      await page.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
       await page.route(function (u) { return u.href.split('#')[0] === base.split('#')[0]; }, async function (r) {
         var res = await r.fetch(), t = await res.text(), miss = 0;
         hunks.forEach(function (h) { if (t.indexOf(h[0]) < 0) miss++; else t = t.replace(h[0], function () { return h[1]; }); });

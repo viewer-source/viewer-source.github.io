@@ -16,8 +16,8 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
   page.on('pageerror', function (e) { errs.push(e.message); });
   if (local) {   // the editor and its source map, built from the working tree
     var built = require(path.join(here, 'editor', 'build.js')).files(require(require.resolve('esbuild', { paths: [here] })));
-    await ctx.route(/\.io\/editor\/editor\.js(\?|$)/, function (r) { r.fulfill({ contentType: 'application/javascript', body: built.js }); });
-    await ctx.route(/\.io\/editor\/editor\.js\.map(\?|$)/, function (r) { r.fulfill({ contentType: 'application/json', body: built.map }); });
+    await ctx.route(/\/editor\/editor\.js(\?|$)/, function (r) { r.fulfill({ contentType: 'application/javascript', body: built.js }); });
+    await ctx.route(/\/editor\/editor\.js\.map(\?|$)/, function (r) { r.fulfill({ contentType: 'application/json', body: built.map }); });
   }
   await page.addInitScript(function () { try { localStorage.setItem('atlas-edit-level', 'full'); } catch (e) {} });
   // setAttribute throws once on the map's drawing while window.__boom is set, from a script served on the page's own

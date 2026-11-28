@@ -48,7 +48,7 @@ function zipOf(entries) {   // a stored zip made here: [[name, text]]
   page.on('dialog', function (d) { said.push(d.message()); d.accept().catch(function () {}); });
   if (local) {
     var ed = require('./editor-now.js')(here), hunks = viewerHunks();
-    await page.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await page.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
     await page.route(function (u) { return u.href.split('#')[0] === base.split('#')[0]; }, async function (r) {
       var res = await r.fetch(), t = await res.text();
       hunks.forEach(function (h) { if (t.indexOf(h[0]) >= 0) t = t.replace(h[0], function () { return h[1]; }); });

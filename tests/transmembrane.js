@@ -14,7 +14,7 @@ function editor() {   // editor.js joined as Jekyll joins it
 }
 async function open(b, map, id, zoom) {
   var p = await b.newPage({ viewport: { width: 1400, height: 900 } });
-  if (local) await p.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: editor() }); });
+  if (local) await p.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: editor() }); });
   await p.addInitScript(function () { try { localStorage.setItem('atlas-edit-level', 'full'); } catch (e) {} });
   await OM.open(p, BASE, map);   // the test-set file added in this page's context, then opened by its own address
   await p.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 }); await p.click('.m2-ri[data-win="edit"]');

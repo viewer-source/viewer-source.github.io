@@ -26,8 +26,8 @@ function editor(which) {   // editor.js joined as Jekyll joins it
 }
 async function open(browser, which, map, wait) {
   var p = await browser.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
-  await p.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: editor(which) }); });
-  await p.route(/\.io\/renderers\/(converter\/(cdrender|cd_edit|cd_make|sbgn_edit)|yrender\/yrender|layout\/layout)\.js/, function (r) {
+  await p.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: editor(which) }); });
+  await p.route(/\/renderers\/(converter\/(cdrender|cd_edit|cd_make|sbgn_edit)|yrender\/yrender|layout\/layout)\.js/, function (r) {
     var f = /renderers\/(.*\.js)/.exec(r.request().url())[1]; r.fulfill({ contentType: 'application/javascript', body: src(which, 'renderers/' + f) });
   });
   p.on('pageerror', function (e) { errs.push(e.message); });

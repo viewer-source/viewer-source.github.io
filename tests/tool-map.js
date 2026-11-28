@@ -22,7 +22,7 @@ var SB_HERE = '<?xml version="1.0" encoding="UTF-8"?>\n<sbgn xmlns="http://sbgn.
 var SB_OTHER = SB_HERE.replace('viewer-new-map', 'from-another-editor');
 
 async function open(ctx, setup) {
-  if (ED) await ctx.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); });
+  if (ED) await ctx.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); });
   if (ED) await ctx.route(/\/renderers\/(converter|yrender|layout)\/[a-z_]+\.js/, function (r) { var f = path.join(__dirname, '..', 'renderers', /\/renderers\/(.+\.js)/.exec(new URL(r.request().url()).pathname)[1]); if (fs.existsSync(f)) r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(f, 'utf8') }); else r.continue(); });
   var page = await ctx.newPage(), errs = [];
   page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });

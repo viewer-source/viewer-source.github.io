@@ -18,7 +18,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/';
 var data = process.argv[3];
 if (!data) { console.log('usage: node tests/save-paths.js <base address> <clone of the data repository>'); process.exit(2); }
 var MAP = 'glycolysis-graphml', bad = 0, ED = process.argv.indexOf('--local') > 0 ? require('./editor-now.js')(path.join(__dirname, '..')) : null;
-async function routeLocal(c) { if (ED) await c.route(/\.io\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); }); }
+async function routeLocal(c) { if (ED) await c.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); }); }
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
