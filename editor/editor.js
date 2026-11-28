@@ -20084,7 +20084,7 @@
       "m2-ask-yes",
       "Work in this browser",
       "Saved in this browser only",
-      "Every change is kept in this browser, on your computer only, and lost if the browser's site data is cleared. " + keep + " The token is removed from this browser; to save to GitHub again, paste it again."
+      "Every change is kept in this browser only, and lost if the browser's site data is cleared. " + keep + " The token is removed from this browser; to save to GitHub again, paste it again."
     ) + '<p class="m2-ask-say" hidden></p><button type="button" class="m2-ask-no">Cancel</button></div><div class="m2-ask-busy" hidden><h3></h3><div class="m2-ask-bar"><i></i></div><p class="m2-ask-say"></p></div><div class="m2-ask-done" hidden><h3></h3><p>Every change is saved in this folder.<br>GitHub is left as it was.</p><button type="button" class="m2-ask-ok">OK</button></div>';
     veil.appendChild(w);
     document.body.appendChild(veil);
