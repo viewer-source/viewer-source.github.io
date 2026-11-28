@@ -2079,11 +2079,11 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       };
       var keep = 'GitHub is left as it is: connect again and what you changed goes back to it.';
       w.innerHTML = '<div class="m2-ask-pick"><h3 id="m2-ask-h">Switch where maps are saved</h3><p class="m2-ask-now">Now: GitHub' + (repo() ? ' (' + esc(repo()) + ')' : '') + '</p>' +
-        (canFolder && !n ? '' : card('m2-ask-copy', 'Work from a folder' + (canFolder ? ' (recommended)' : ''), canFolder ? 'Saved to a folder on this computer' : 'Chrome or Edge only',
+        (canFolder && !n ? '' : card('m2-ask-copy', 'Work from a folder' + (canFolder ? ' (recommended)' : ''), canFolder ? 'Saved to a folder on your computer' : 'Chrome or Edge only',
           (n ? 'Your ' + n + ' maps, with their colours and images, are copied into a folder you choose. ' : 'The maps are copied into a folder you choose. ') +
           'From then on every change is saved there automatically, and yEd or CellDesigner can open the same files. ' + keep + (canFolder ? ' Recommended, as the files stay on your computer whatever happens to the browser\'s data.' : '') + ' Chrome and Edge only: other browsers cannot save into a folder.', !canFolder)) +
         card('m2-ask-yes', 'Work in this browser', 'Saved in this browser only',
-          'Every change is kept in this browser, on this computer only, and lost if the browser\'s site data is cleared. ' + keep + ' The token is removed from this browser; to save to GitHub again, paste it again.') +
+          'Every change is kept in this browser, on your computer only, and lost if the browser\'s site data is cleared. ' + keep + ' The token is removed from this browser; to save to GitHub again, paste it again.') +
         '<p class="m2-ask-say" hidden></p><button type="button" class="m2-ask-no">Cancel</button></div>' +
         '<div class="m2-ask-busy" hidden><h3></h3><div class="m2-ask-bar"><i></i></div><p class="m2-ask-say"></p></div>' +
         '<div class="m2-ask-done" hidden><h3></h3><p>Every change is saved in this folder.<br>GitHub is left as it was.</p><button type="button" class="m2-ask-ok">OK</button></div>';
