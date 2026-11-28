@@ -20076,9 +20076,9 @@
     var keep = "GitHub is left as it is: connect again and what you changed goes back to it.";
     w.innerHTML = '<div class="m2-ask-pick"><h3 id="m2-ask-h">Switch where maps are saved</h3><p class="m2-ask-now">Now: GitHub' + (repo() ? " (" + esc(repo()) + ")" : "") + "</p>" + (canFolder && !n ? "" : card(
       "m2-ask-copy",
-      "Work from a folder",
+      "Work from a folder" + (canFolder ? " (recommended)" : ""),
       canFolder ? "Saved to a folder on this computer" : "Chrome or Edge only",
-      (n ? "Your " + n + " maps, with their colours and pictures, are copied into a folder you choose. " : "The maps are copied into a folder you choose. ") + "From then on every change is saved there automatically, and yEd or CellDesigner can open the same files. " + keep + " Chrome and Edge only: other browsers cannot save into a folder.",
+      (n ? "Your " + n + " maps, with their colours and images, are copied into a folder you choose. " : "The maps are copied into a folder you choose. ") + "From then on every change is saved there automatically, and yEd or CellDesigner can open the same files. " + keep + (canFolder ? " Recommended, as the files stay on your computer whatever happens to the browser's data." : "") + " Chrome and Edge only: other browsers cannot save into a folder.",
       !canFolder
     )) + card(
       "m2-ask-yes",
