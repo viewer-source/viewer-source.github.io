@@ -2,7 +2,8 @@
 // with a bend, selected, its bend dragged onto the line's end square: the bend is gone in the same step (one handle
 // fewer, the line still selected, no square hiding under another); Ctrl+Z brings it back; the bend dragged 30 px into
 // open space stays; a new bend pulled out of the line and dropped onto the start square is not made (a bend a fraction of
-// a unit before the end drew two squares one over the other, a 1 px edge showing).
+// a unit before the end drew two squares one over the other, a 1 px edge showing); the whole map stepped by a key keeps
+// two bends that were close already.
 // Nothing is saved (no token). No script error.
 //   node tests/bend-merge.js [base address] [--local]   (--local: the working tree's editor routed in)
 var { chromium } = require('playwright');
@@ -49,8 +50,8 @@ var base = args[0] || 'https://viewer-source.github.io/styles/';
   var over = h1.some(function (p, i) { return h1.some(function (q, j) { return j !== i && Math.abs(p[0] - q[0]) < 4 && Math.abs(p[1] - q[1]) < 4; }); });
   ok('no square over another', !over);
   // 2. undo brings it back
+  // undo keeps the line selected (a click on it now would unselect it)
   await page.keyboard.press('Control+z'); await page.waitForTimeout(1500);
-  await page.mouse.click(mid[0], mid[1]); await page.waitForTimeout(800);
   var h2 = await handles();
   ok('Ctrl+Z brings the bend back (' + h2.length + ')', h2.length === n0);
   // 3. the bend dragged into open space stays
@@ -58,8 +59,7 @@ var base = args[0] || 'https://viewer-source.github.io/styles/';
   await drag(b2, away);
   var h3 = await handles();
   ok('a bend dropped in open space stays (' + h3.length + ')', h3.length === n0);
-  await page.keyboard.press('Control+z'); await page.waitForTimeout(1500);
-  await page.mouse.click(mid[0], mid[1]); await page.waitForTimeout(800);
+  await page.keyboard.press('Control+z'); await page.waitForTimeout(1500);   // the line stays selected
   // 4. a new bend pulled from the line's first segment and dropped onto the start square: none made
   var h4 = await handles(), m4 = [(h4[0][0] + h4[1][0]) / 2, (h4[0][1] + h4[1][1]) / 2];
   await drag(m4, [h4[0][0] + 1, h4[0][1]]);
@@ -98,6 +98,12 @@ var base = args[0] || 'https://viewer-source.github.io/styles/';
   await p2.click('button[data-win="edit"]'); await p2.waitForTimeout(3000);
   var count = function () { return p2.evaluate(function (id) {   // the bend points of that line in the editor's drawing
     var q = document.querySelector('#m2-img g[data-e="' + id + '"] path'); return q ? (q.getAttribute('d').match(/[ML]/g) || []).length - 2 : -1; }, twin); };
+  // 7. the whole map stepped by an arrow key: the two bends close together move as one and both stay (a whole-map move
+  // took one of them away on the PD map's square-routed lines)
+  await p2.mouse.click(700, 450); await p2.keyboard.press('Control+a'); await p2.keyboard.press('ArrowRight'); await p2.waitForTimeout(1500);
+  var c0 = await count();
+  ok('the whole map stepped by a key keeps two bends close together (' + twin + ': ' + nIn + ' to ' + c0 + ')', twin && c0 === nIn);
+  await p2.keyboard.press('Escape');
   await p2.click('#m2-ed-tidy-grid'); await p2.waitForTimeout(3000);
   var c1 = await count();
   ok('Snap map to grid keeps one of two bends snapped onto one place (' + twin + ': ' + nIn + ' to ' + c1 + ')', twin && nIn >= 2 && c1 === nIn - 1);

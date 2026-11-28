@@ -32,7 +32,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // gesture's steps before its one undo step and the history (undo, redo, a kept history) through this alone
     function setText(t) { shared.text = t; return t; }
     function src() { return shared.F.now(); }   // the map's own file as it is now (an SBGN-ML map's with the moves written in)
-    var box, status, overlay, on, map, name, handle, unsaved, reSel, reGh, doc, geos, points, nodes2, edges2, docText, x0, y0, undo, drag, band, ticket, nudgeAt, timer, gN, gE, mv, keyGuides, keyRun, keyDue;
+    var box, status, overlay, on, map, name, handle, unsaved, reSel, reGh, doc, geos, points, nodes2, edges2, docText, x0, y0, undo, drag, band, ticket, nudgeAt, timer, gN, gE, mv, keyGuides, keyRun, keyDue, keyNear;
     function __run2() {   // run at start, in order (__start)
     box = document.getElementById('m2-editwin'), status = document.getElementById('m2-ed-status');
     overlay = document.getElementById('m2-edit-layer');
@@ -3514,15 +3514,24 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // a 1 px edge showing). Each point is weighed against the points kept before it and the one after
     // lim: a distance in the map's units in place of the squares' overlap, the selection then left as it is (Snap map to
     // grid: bend points on a grid either coincide or lie a step apart)
-    function onNeighbour(ps, lim0) {
+    function linesAt(ps) {   // the lines through these bend points, each with its points and ends as they are now (edge id -> ports)
+      var m = new Map();
+      if (ps && ps.size) edges2.forEach(function (e, k) { if (e.s != null && e.t != null && e.pts.some(function (pi) { return ps.has(pi); })) m.set(e.id, ports(k)); });
+      return m;
+    }
+    // before: linesAt() taken before the move; a bend already that close to its neighbour then (a move of both together,
+    // as a whole map stepped by the arrows, or two bends a file keeps close) stays: only a bend brought onto it goes
+    function onNeighbour(ps, lim0, before) {
       if (!ps || !ps.size) return;
       var lim = lim0 || sq() / V.z, out = [], lines = [];
       edges2.forEach(function (e, k) {
         if (e.s == null || e.t == null || !e.pts.some(function (pi) { return ps.has(pi); })) return;
-        var all = ports(k), kept = all[0];
+        var all = ports(k), kept = 0, B = before && before.get(e.id);
+        if (B && B.length !== all.length) B = null;
+        var by = function (P, Q) { return Math.max(Math.abs(Q[0] - P[0]), Math.abs(Q[1] - P[1])) < lim; };
         e.pts.forEach(function (pi, j) {
-          var P = all[j + 1], by = function (Q) { return Math.max(Math.abs(Q[0] - P[0]), Math.abs(Q[1] - P[1])) < lim; };
-          if (ps.has(pi) && (by(kept) || by(all[j + 2]))) { out.push(pi); if (lines.indexOf(k) < 0) lines.push(k); } else kept = P;
+          var hit = function (q) { return by(all[j + 1], all[q]) && !(B && by(B[j + 1], B[q])); };
+          if (ps.has(pi) && (hit(kept) || hit(j + 2))) { out.push(pi); if (lines.indexOf(k) < 0) lines.push(k); } else kept = j + 1;
         });
       });
       if (!out.length) return;
@@ -3567,7 +3576,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         paint(); return;
       }
       if (d.made != null) { move(d.dx, d.dy); onNeighbour(sets ? sets.p : new Set([d.p])); fitAfter(); }   // one step for undo: made and moved
-      else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy, sets); fixMoved(sets.n, d.alone); onNeighbour(sets.p); if (d.keepE) { shared.selE = d.keepE; shared.selP = []; } fitAfter(); }   // what the drag showed moving (with Shift, the selection by itself)
+      else if (d.dx || d.dy) { remember(false); var near0 = linesAt(sets.p); move(d.dx, d.dy, sets); fixMoved(sets.n, d.alone); onNeighbour(sets.p, 0, near0); if (d.keepE) { shared.selE = d.keepE; shared.selP = []; } fitAfter(); }   // what the drag showed moving (with Shift, the selection by itself)
       else { unshift(); if (d.keepE) { shared.selE = d.keepE; shared.selP = []; } }   // a click with a slight jitter: nothing moved, nothing stays hidden (else a smooth bend
       // turns sharp: the arcs drawn as plain lines while waiting for a redraw that a move of zero never asks for)
       paint();
@@ -3646,13 +3655,15 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         var whyK = mvs.length ? NW(mvs) : null;
         if (whyK) return;   // refused: nothing moves, nothing said
       }
+      if (!keyRun) keyNear = linesAt(ks.p);   // the lines as the run of keys found them
       remember(true); move(d[0], d[1], ks); keyShift(ks, d[0], d[1]); keyGuides = bp != null ? bendGuides(bp) : null; paint();
       var kids = movedIds(ks);
       keyRun = keyRun || [0, 0]; keyRun[0] += d[0]; keyRun[1] += d[1];   // the keys' move since the last settling
       keyDue = function () {   // what holds what settled as after a plain drag (regroup), the holders grown
         keyDue = null;
         var run = keyRun || [0, 0]; keyRun = null;
-        onNeighbour(ks.p);   // checked when the keys stop, not at each step: a bend passing close to its neighbour on its way stays
+        var near0 = keyNear; keyNear = null;
+        onNeighbour(ks.p, 0, near0);   // checked when the keys stop, not at each step: a bend passing close to its neighbour on its way stays
         var set = new Set(nodes2.map(function (n, i) { return kids.indexOf(n.id) >= 0 ? i : -1; }).filter(function (i) { return i >= 0; }));
         fixMoved(set);
         var B0 = function (k) { var b = boxOf(k); return set.has(k) ? [b[0] - run[0], b[1] - run[1], b[2], b[3]] : b; };

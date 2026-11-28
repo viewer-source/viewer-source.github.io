@@ -16931,6 +16931,7 @@
   var keyGuides;
   var keyRun;
   var keyDue;
+  var keyNear;
   function __run215() {
     box2 = document.getElementById("m2-editwin"), status = document.getElementById("m2-ed-status");
     overlay = document.getElementById("m2-edit-layer");
@@ -22069,22 +22070,35 @@
     paint();
     return true;
   }
-  function onNeighbour(ps, lim0) {
+  function linesAt2(ps) {
+    var m = /* @__PURE__ */ new Map();
+    if (ps && ps.size) edges2.forEach(function(e, k) {
+      if (e.s != null && e.t != null && e.pts.some(function(pi) {
+        return ps.has(pi);
+      })) m.set(e.id, ports(k));
+    });
+    return m;
+  }
+  function onNeighbour(ps, lim0, before) {
     if (!ps || !ps.size) return;
     var lim = lim0 || sq() / V.z, out = [], lines = [];
     edges2.forEach(function(e, k) {
       if (e.s == null || e.t == null || !e.pts.some(function(pi) {
         return ps.has(pi);
       })) return;
-      var all = ports(k), kept = all[0];
+      var all = ports(k), kept = 0, B = before && before.get(e.id);
+      if (B && B.length !== all.length) B = null;
+      var by = function(P, Q) {
+        return Math.max(Math.abs(Q[0] - P[0]), Math.abs(Q[1] - P[1])) < lim;
+      };
       e.pts.forEach(function(pi, j) {
-        var P = all[j + 1], by = function(Q) {
-          return Math.max(Math.abs(Q[0] - P[0]), Math.abs(Q[1] - P[1])) < lim;
+        var hit2 = function(q) {
+          return by(all[j + 1], all[q]) && !(B && by(B[j + 1], B[q]));
         };
-        if (ps.has(pi) && (by(kept) || by(all[j + 2]))) {
+        if (ps.has(pi) && (hit2(kept) || hit2(j + 2))) {
           out.push(pi);
           if (lines.indexOf(k) < 0) lines.push(k);
-        } else kept = P;
+        } else kept = j + 1;
       });
     });
     if (!out.length) return;
@@ -22184,9 +22198,10 @@
       fitAfter();
     } else if (d.dx || d.dy) {
       remember(false);
+      var near0 = linesAt2(sets.p);
       move(d.dx, d.dy, sets);
       fixMoved(sets.n, d.alone);
-      onNeighbour(sets.p);
+      onNeighbour(sets.p, 0, near0);
       if (d.keepE) {
         shared.selE = d.keepE;
         shared.selP = [];
@@ -22319,6 +22334,7 @@
         var whyK = mvs.length ? NW(mvs) : null;
         if (whyK) return;
       }
+      if (!keyRun) keyNear = linesAt2(ks.p);
       remember(true);
       move(d[0], d[1], ks);
       keyShift(ks, d[0], d[1]);
@@ -22332,7 +22348,9 @@
         keyDue = null;
         var run = keyRun || [0, 0];
         keyRun = null;
-        onNeighbour(ks.p);
+        var near0 = keyNear;
+        keyNear = null;
+        onNeighbour(ks.p, 0, near0);
         var set = new Set(nodes2.map(function(n, i) {
           return kids.indexOf(n.id) >= 0 ? i : -1;
         }).filter(function(i) {
