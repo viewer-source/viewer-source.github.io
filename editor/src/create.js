@@ -2004,10 +2004,12 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function linkDown(e, P, h) {   // a press on a node with an arc's sign picked: a line begun there
       if (!(palOn() || cdPal()) || e.shiftKey || downs.size > 1 || link) return false;
       if (!arcTool()) return false;   // no sign picked: a drag on a node moves the map (or what is selected)
-      var L = shared.F.line;
-      if (h.n == null && !h.glyph && !(L && L.onLine())) return false;   // a press on a line or a bend point selects it, but for CellDesigner's Add reactant, Add product and a line's sign kept in hand
+      var L = shared.F.line, off = !h || (h.n == null && !h.glyph);
+      // a press on a line or a bend point selects it, but for CellDesigner's Add reactant, Add product and a line's sign
+      // kept in hand; on nothing or a line, a process's or gate's antennas and the space beside them start a line (landBox)
+      if (off && (L ? !h || !L.onLine() : h && h.p != null)) return false;
       var i = linkEnd(P, -1);
-      if (i < 0) return false;
+      if (i < 0 || (off && !L && !nodes2[i].hub)) return false;
       if (L && !L.startOk(i)) return false;   // a CellDesigner gate's one line out is made with it: a drag moves the gate; Add reactant and Add product from their own ends only
       e.stopImmediatePropagation(); e.preventDefault();
       V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
@@ -2290,24 +2292,42 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function linkLand(a, b, cls) {
       var B = bx(b), c = [B[0] + B[2] / 2, B[1] + B[3] / 2], r = roleOf(b), H = r && /^(proc|gate)$/.test(r) && window.yrender && hubPorts()[nodes2[b].id];
       if (!r || !/^(proc|gate)$/.test(r)) return c;
-      if ((cls === 'consumption' || cls === 'logic arc') && H && H[0]) return H[0];
+      if (cls === 'consumption' || cls === 'logic arc') { var A0 = bx(a), q = barePort(b, [A0[0] + A0[2] / 2, A0[1] + A0[3] / 2]); if (q || (H && H[0])) return q || H[0]; }
       if (!cls || !MODS.test(sbJs.ARROW[cls]) || r !== 'proc') return c;
       var A = bx(a), dx = A[0] + A[2] / 2 - c[0], dy = A[1] + A[3] / 2 - c[1];
       var vert = H && H[0] ? Math.abs(H[0][0] - c[0]) >= Math.abs(H[0][1] - c[1]) : Math.abs(dy) > Math.abs(dx);   // on the top or bottom side
       return vert ? [c[0], c[1] + (dy >= 0 ? 1 : -1) * B[3] / 2] : [c[0] + (dx >= 0 ? 1 : -1) * B[2] / 2, c[1]];
     }
+    // the port a process or gate with no lines and no ports of its own will get from its first line (sbgn_edit.hubPorts):
+    // facing the line's other end along the nearer axis, at the antenna Style gives; null for any other node
+    function barePort(i, toward) {
+      var r = roleOf(i);
+      if (!r || !/^(proc|gate)$/.test(r) || sbAnts()[nodes2[i].id] != null || edges2.some(function (q) { return q.s === i || q.t === i; })) return null;
+      var B = bx(i), c = [B[0] + B[2] / 2, B[1] + B[3] / 2], dx = toward[0] - c[0], dy = toward[1] - c[1], hz = Math.abs(dx) >= Math.abs(dy);
+      var an = antNow()[r === 'gate' ? 'gate' : 'process'], d = (hz ? B[2] : B[3]) / 2 + (an >= 1 ? an : sbJs.ANT);
+      return hz ? [c[0] + (dx >= 0 ? d : -d), c[1]] : [c[0], c[1] + (dy >= 0 ? d : -d)];
+    }
     function linkPaint(out) {   // the line being drawn (paint, core.js): from its node's centre to the pointer, where it would be attached marked
       cdGateMarks(out); cdOverMarks(out);   // a CellDesigner gate's inputs clicked so far, Add product's join under the pointer (cdcreate.js)
       if (!link || !link.moved || link.at !== shared.text) return;
-      var A = bx(link.from), C = [A[0] + A[2] / 2, A[1] + A[3] / 2], no = !!(link.how && link.how.no);
+      var A = bx(link.from), C = [A[0] + A[2] / 2, A[1] + A[3] / 2], no = !!(link.how && link.how.no), L = shared.F.line;
       // drawn behind its nodes, as the line after the drop: from where it leaves its node's shape outline, none while the
-      // pointer is still inside it, and over a node that would take it up to where it meets that node's outline
-      var P = link.P, inFrom = inRim(rimOf(link.from, A), [P[0] - C[0], P[1] - C[1]]), S = inFrom ? null : cutShape(link.from, C, P, A);
-      if (S && link.to >= 0 && link.to !== link.from) P = cutShape(link.to, P, S, bx(link.to));
-      var L = shared.F.line, E = L && S ? L.liveEnds(S, P, C) : null;   // an added reactant's or product's join (cdcreate.js)
+      // pointer is still inside it, and over a node that would take it up to where it meets that node's outline; from a
+      // process or gate with ports, from its port out (the tip of its second antenna, where sbgn_edit.connect puts it)
+      var H = !L && nodes2[link.from].hub && window.yrender && hubPorts()[nodes2[link.from].id], cls = link.how && link.how.cls;
+      var To = link.to >= 0 && link.to !== link.from ? bx(link.to) : null, Q = !L && cls !== 'consumption' ? barePort(link.from, To ? [To[0] + To[2] / 2, To[1] + To[3] / 2] : link.P) || (H && H[1]) || null : null;
+      var P = link.P, inFrom = !Q && inRim(rimOf(link.from, A), [P[0] - C[0], P[1] - C[1]]), S = Q || (inFrom ? null : cutShape(link.from, C, P, A));
+      // a process's or gate's port as the landing: the line ends there, and its antenna is drawn to it from the outline
+      var T = !L && link.how && !no && To ? linkLand(link.from, link.to, cls) : null;
+      var tip = T && nodes2[link.to].hub && (cls === 'consumption' || cls === 'logic arc') && (T[0] !== To[0] + To[2] / 2 || T[1] !== To[1] + To[3] / 2) ? T : null, sticks = [];
+      if (S && link.to >= 0 && link.to !== link.from) P = tip || cutShape(link.to, P, S, bx(link.to));
+      if (Q) sticks.push([cutShape(link.from, C, Q, A), Q]);
+      if (S && tip) { var B = bx(link.to); sticks.push([cutShape(link.to, [B[0] + B[2] / 2, B[1] + B[3] / 2], tip, B), tip]); }
+      var E = L && S ? L.liveEnds(S, P, C) : null;   // an added reactant's or product's join (cdcreate.js)
       if (E) { S = E[0]; P = E[1]; }
       if (L) L.marks(out);   // CellDesigner's marks (cdcreate.js)
       else if (link.how && !no && link.to >= 0) out.push(landMarks([], linkLand(link.from, link.to, link.how.cls)));
+      sticks.forEach(function (q) { out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, V.z)) + '" d="M' + f1(sx(q[0][0])) + ' ' + f1(sy(q[0][1])) + 'L' + f1(sx(q[1][0])) + ' ' + f1(sy(q[1][1])) + '"/>'); });   // the antennas the line will have
       if (S) out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, V.z)) + '"' + (no ? ' stroke-dasharray="4 3"' : '') + ' d="M' + f1(sx(S[0])) + ' ' + f1(sy(S[1])) + 'L' + f1(sx(P[0])) + ' ' + f1(sy(P[1])) + '"/>');
     }
     function __run42() {   // run at start, in order (__start)

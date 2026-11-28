@@ -3069,8 +3069,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         }
         shared.tap = { h: h, shift: e.shiftKey, x: e.clientX, y: e.clientY }; V.view.focus({ preventScroll: true });
       };
-      if (!h) return tapped();
-      if (!alone && linkDown(e, P, h)) return;   // an arc's sign picked: a drag from an entity or a process draws it (create.js; a press off a node only where the format's part says the line stands for its process)
+      if (!alone && linkDown(e, P, h)) return;   // before nothing hit: a process's or gate's antennas start a line too
+      if (!h) return tapped();   // an arc's sign picked: a drag from an entity or a process draws it (create.js; a press off a node only where the format's part says the line stands for its process)
       if (h.glyph) return tapped();   // a glyph is not dragged: a drag on it moves the map, a click selects its reaction
       var list = h.p != null ? shared.selP : h.e != null ? shared.selE : shared.selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
       // a bend point of an arc selected is a part of that connector: dragged at once, as its ends, the arc staying

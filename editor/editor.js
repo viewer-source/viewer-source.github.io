@@ -14518,10 +14518,10 @@
   function linkDown(e, P, h) {
     if (!(palOn() || cdPal()) || e.shiftKey || downs.size > 1 || link) return false;
     if (!arcTool()) return false;
-    var L = shared.F.line;
-    if (h.n == null && !h.glyph && !(L && L.onLine())) return false;
+    var L = shared.F.line, off = !h || h.n == null && !h.glyph;
+    if (off && (L ? !h || !L.onLine() : h && h.p != null)) return false;
     var i = linkEnd(P, -1);
-    if (i < 0) return false;
+    if (i < 0 || off && !L && !nodes2[i].hub) return false;
     if (L && !L.startOk(i)) return false;
     e.stopImmediatePropagation();
     e.preventDefault();
@@ -14875,26 +14875,50 @@
   function linkLand(a, b, cls) {
     var B = bx(b), c = [B[0] + B[2] / 2, B[1] + B[3] / 2], r = roleOf(b), H2 = r && /^(proc|gate)$/.test(r) && window.yrender && hubPorts()[nodes2[b].id];
     if (!r || !/^(proc|gate)$/.test(r)) return c;
-    if ((cls === "consumption" || cls === "logic arc") && H2 && H2[0]) return H2[0];
+    if (cls === "consumption" || cls === "logic arc") {
+      var A0 = bx(a), q = barePort(b, [A0[0] + A0[2] / 2, A0[1] + A0[3] / 2]);
+      if (q || H2 && H2[0]) return q || H2[0];
+    }
     if (!cls || !MODS.test(sbJs.ARROW[cls]) || r !== "proc") return c;
     var A = bx(a), dx = A[0] + A[2] / 2 - c[0], dy = A[1] + A[3] / 2 - c[1];
     var vert = H2 && H2[0] ? Math.abs(H2[0][0] - c[0]) >= Math.abs(H2[0][1] - c[1]) : Math.abs(dy) > Math.abs(dx);
     return vert ? [c[0], c[1] + (dy >= 0 ? 1 : -1) * B[3] / 2] : [c[0] + (dx >= 0 ? 1 : -1) * B[2] / 2, c[1]];
   }
+  function barePort(i, toward) {
+    var r = roleOf(i);
+    if (!r || !/^(proc|gate)$/.test(r) || sbAnts()[nodes2[i].id] != null || edges2.some(function(q) {
+      return q.s === i || q.t === i;
+    })) return null;
+    var B = bx(i), c = [B[0] + B[2] / 2, B[1] + B[3] / 2], dx = toward[0] - c[0], dy = toward[1] - c[1], hz = Math.abs(dx) >= Math.abs(dy);
+    var an = antNow()[r === "gate" ? "gate" : "process"], d = (hz ? B[2] : B[3]) / 2 + (an >= 1 ? an : sbJs.ANT);
+    return hz ? [c[0] + (dx >= 0 ? d : -d), c[1]] : [c[0], c[1] + (dy >= 0 ? d : -d)];
+  }
   function linkPaint(out) {
     cdGateMarks(out);
     cdOverMarks(out);
     if (!link || !link.moved || link.at !== shared.text) return;
-    var A = bx(link.from), C = [A[0] + A[2] / 2, A[1] + A[3] / 2], no2 = !!(link.how && link.how.no);
-    var P = link.P, inFrom = inRim(rimOf(link.from, A), [P[0] - C[0], P[1] - C[1]]), S = inFrom ? null : cutShape(link.from, C, P, A);
-    if (S && link.to >= 0 && link.to !== link.from) P = cutShape(link.to, P, S, bx(link.to));
-    var L = shared.F.line, E = L && S ? L.liveEnds(S, P, C) : null;
+    var A = bx(link.from), C = [A[0] + A[2] / 2, A[1] + A[3] / 2], no2 = !!(link.how && link.how.no), L = shared.F.line;
+    var H2 = !L && nodes2[link.from].hub && window.yrender && hubPorts()[nodes2[link.from].id], cls = link.how && link.how.cls;
+    var To = link.to >= 0 && link.to !== link.from ? bx(link.to) : null, Q = !L && cls !== "consumption" ? barePort(link.from, To ? [To[0] + To[2] / 2, To[1] + To[3] / 2] : link.P) || H2 && H2[1] || null : null;
+    var P = link.P, inFrom = !Q && inRim(rimOf(link.from, A), [P[0] - C[0], P[1] - C[1]]), S = Q || (inFrom ? null : cutShape(link.from, C, P, A));
+    var T = !L && link.how && !no2 && To ? linkLand(link.from, link.to, cls) : null;
+    var tip = T && nodes2[link.to].hub && (cls === "consumption" || cls === "logic arc") && (T[0] !== To[0] + To[2] / 2 || T[1] !== To[1] + To[3] / 2) ? T : null, sticks = [];
+    if (S && link.to >= 0 && link.to !== link.from) P = tip || cutShape(link.to, P, S, bx(link.to));
+    if (Q) sticks.push([cutShape(link.from, C, Q, A), Q]);
+    if (S && tip) {
+      var B = bx(link.to);
+      sticks.push([cutShape(link.to, [B[0] + B[2] / 2, B[1] + B[3] / 2], tip, B), tip]);
+    }
+    var E = L && S ? L.liveEnds(S, P, C) : null;
     if (E) {
       S = E[0];
       P = E[1];
     }
     if (L) L.marks(out);
     else if (link.how && !no2 && link.to >= 0) out.push(landMarks([], linkLand(link.from, link.to, link.how.cls)));
+    sticks.forEach(function(q) {
+      out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, V.z)) + '" d="M' + f1(sx(q[0][0])) + " " + f1(sy(q[0][1])) + "L" + f1(sx(q[1][0])) + " " + f1(sy(q[1][1])) + '"/>');
+    });
     if (S) out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, V.z)) + '"' + (no2 ? ' stroke-dasharray="4 3"' : "") + ' d="M' + f1(sx(S[0])) + " " + f1(sy(S[1])) + "L" + f1(sx(P[0])) + " " + f1(sy(P[1])) + '"/>');
   }
   function __run422() {
@@ -21419,8 +21443,8 @@
         shared.tap = { h, shift: e.shiftKey, x: e.clientX, y: e.clientY };
         V.view.focus({ preventScroll: true });
       };
-      if (!h) return tapped();
       if (!alone && linkDown(e, P, h)) return;
+      if (!h) return tapped();
       if (h.glyph) return tapped();
       var list2 = h.p != null ? shared.selP : h.e != null ? shared.selE : shared.selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list2.indexOf(k) >= 0;
       var keepE = null;
