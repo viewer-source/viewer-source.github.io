@@ -138,6 +138,13 @@ var gates = {};
   var d = { Operator: 1, line: q[1].length }; d[RED[q[3]]] = 1;
   gates['r' + q[0]] = step('gate ' + q[0] + ' between entities', function (x) { return mk.gate(x, { kind: q[0], inputs: q[1], target: q[2], output: q[3] }); }, d).gate;
 });
+(function () {   // a gate made with no output named: between entities a stimulation in the file's way, on a reaction CellDesigner's catalysis
+  var same = function (x, o, want) { var p = {}; Object.keys(o).forEach(function (k) { p[k] = o[k]; }); p.output = want; return mk.gate(x, o).text === mk.gate(x, p).text; };
+  var y = t.replace(/(["'>])REDUCED_PHYSICAL_STIMULATION(?=["'<])/g, '$1POSITIVE_INFLUENCE'), o = { kind: 'OR', inputs: [A.a, A.b], target: A.PHENOTYPE };
+  if (!same(t, o, 'REDUCED_PHYSICAL_STIMULATION')) fault('a gate between entities with no output named: not REDUCED_PHYSICAL_STIMULATION');
+  if (!same(y, o, 'POSITIVE_INFLUENCE')) fault('a gate between entities with no output named, in a positive influence file: not POSITIVE_INFLUENCE');
+  if (!same(t, { kind: 'AND', inputs: [A.c, A.d], target: R1 }, 'CATALYSIS')) fault('a gate on a reaction with no output named: not CATALYSIS');
+})();
 (function () {   // a file with open arrowheads (reduced and a gate's output): read by cdrender and cd_edit, drawn as the open triangle, the text kept
   var y = t.replace(/(["'>])REDUCED_PHYSICAL_STIMULATION(?=["'<])/g, '$1POSITIVE_INFLUENCE'), errs = [], a, b;
   try { a = cdr.render(y, { DOMParser: DP, log: function (s) { errs.push(s); } }); b = cdr.render(t, { DOMParser: DP }); ed.graphml(y, null, opt); } catch (e) { errs.push(e.message); }

@@ -650,7 +650,7 @@
     }
     // between entities: a BOOLEAN_LOGIC_GATE reaction, the inputs its base reactants, the target its base product
     var T = end(t, o.target);
-    out = out || 'REDUCED_TRIGGER';   // as in CellDesigner's save of the gate cases
+    out = out || stimStyle(t);   // a stimulation, in the file's way (stimStyle); a trigger is among the rarest outputs in the maps
     if (REDUCED.indexOf(out) < 0) refuse('A gate\'s output ' + out + ' is not a reduced notation type.');
     G = mean(C.concat([centre(T)])); pt = num(G[0]) + ',' + num(G[1]);
     var r2 = newReaction(t, 'BOOLEAN_LOGIC_GATE', ins, T, '<celldesigner:connectScheme connectPolicy="direct"/>\n<celldesigner:editPoints>' + pt + '</celldesigner:editPoints>',
