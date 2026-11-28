@@ -44,7 +44,10 @@ function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   var size = await page.evaluate(function () { return fetch('/index.json').then(function (r) { return r.json(); }).then(function (l) { return l.filter(function (m) { return m.size > 0; }).length + ' of ' + l.length; }); });
   ok('A sizes in the index', !/^0 of/.test(size), size);
 
-  // D first part: the Edit tab opened online, the drawing code fetched ahead
+  // D first part: the Edit tab opened online, the drawing code fetched ahead (a page with no editor: D skipped)
+  var hasEd = await page.evaluate(function () { return getComputedStyle(document.documentElement).getPropertyValue('--m2-edit').trim() === '1'; });
+  if (!hasEd) console.log('skip  D: no editor on this page (--m2-edit 0)');
+  if (hasEd) {
   await page.keyboard.press('e').catch(function () {});
   await page.waitForFunction(function () { return !!window.m2Editor; }, null, { timeout: 30000 }).catch(function () {});
   var code = ['/editor/editor.js', '/renderers/converter/cdrender.js', '/renderers/converter/sbgn_edit.js', '/renderers/yrender/yrender.js'];
@@ -54,6 +57,7 @@ function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   });
   await page.keyboard.press('e').catch(function () {});
   await wait(1000);
+  }
 
   // B: a reload offline
   await ctx.setOffline(true);
@@ -87,12 +91,14 @@ function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   ok('C the note goes with a kept map', !(await page.$('#m2-offnote')));
 
   // D: the editor offline on the kept map
+  if (hasEd) {
   await page.keyboard.press('e');
   await page.waitForFunction(function () { return document.querySelector('.m2-editing'); }, null, { timeout: 20000 }).catch(function () {});
   ok('D editing starts offline', !!(await page.$('.m2-editing')));
   var red = await page.evaluate(function () { var s = document.getElementById('m2-ed-status'); return s ? s.textContent : ''; });
   ok('D no red line', !/did not load|not found/.test(red), red);
   await page.keyboard.press('e').catch(function () {});
+  }
 
   // E: online again, nothing grey
   await ctx.setOffline(false);
