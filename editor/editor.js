@@ -18205,7 +18205,7 @@
   function ghForm(show) {
     var f = box2.querySelector("#m2-ed-gh");
     f.hidden = !show;
-    box2.querySelector("#m2-ed-gh-off").hidden = show || !token() || !repo();
+    box2.querySelector("#m2-ed-gh-off").hidden = show || !repo();
   }
   function warn(t) {
     status.textContent = t;
@@ -19961,82 +19961,86 @@
     box2.querySelector("#m2-ed-gh-go").addEventListener("click", function() {
       var v = box2.querySelector("#m2-ed-gh-token").value.trim();
       if (!v) return;
-      try {
-        localStorage.setItem(TOKEN_KEY, v);
-      } catch (e) {
-        warn("This browser does not keep the token.");
-        return;
-      }
-      quiet();
-      api("").then(function(r) {
-        return r.ok ? r.json() : Promise.reject(r.status);
-      }).then(function(d) {
-        if (!d.permissions || !d.permissions.push) throw "it cannot write to " + repo();
-        box2.querySelector("#m2-ed-gh-token").value = "";
-        offSay = null;
-        upAll();
-        waitFail = false;
-        sendWaiting();
-        if (on && site && site.mine) {
-          buttons();
-          quiet();
-          if (site.pending) toGh(site);
-          return;
-        }
-        var moved = shared.dirty || !!(site && site.pending && src() !== site.pub);
-        if (on && site) {
-          var keep = shared.text;
-          var s0 = site, copy = !!shared.F.ahead.path;
-          Promise.resolve(saving).catch(function() {
-          }).then(function() {
-            return Promise.all([
-              api("/contents/" + s0.path + "?ref=main").then(function(r) {
-                return r.status === 404 && copy ? {} : r.json();
-              }),
-              // a map edited as a copy of its own (SBGN-ML) with no copy yet: the first save makes it
-              api("/contents/" + s0.path + "?ref=main", { headers: { Accept: "application/vnd.github.raw" } }).then(function(r) {
-                return r.status === 404 && copy ? s0.base : r.text();
-              })
-            ]).then(function(f) {
-              if (!on || site !== s0) return;
-              s0.pending = false;
-              buttons();
-              if (f[1] !== (s0.saved != null ? s0.saved : s0.base)) {
-                if (moved) return conflict(s0, keep);
-                s0.sha = f[0].sha || null;
-                stuck = true;
-                warn("Connected, but the map on GitHub was changed elsewhere since you opened it; you made no move, so nothing is lost. Stop editing and open the map again.");
-                return;
-              }
-              s0.sha = f[0].sha || null;
-              if (s0.id) Promise.resolve(unkeep(s0.id)).then(function() {
-                s0.known = null;
-              }, function() {
-              });
-              if (moved) {
-                setText(keep);
-                shared.dirty = true;
-                push();
-              } else quiet();
-            });
-          });
-        } else {
-          buttons();
-          quiet();
-        }
-      }).catch(function(e) {
-        try {
-          localStorage.removeItem(TOKEN_KEY);
-        } catch (x) {
-        }
-        warn("The token was not accepted (" + e + ").");
+      connect(v).catch(function(e) {
+        warn(e === "keep" ? "This browser does not keep the token." : "The token was not accepted (" + e + ").");
         ghForm(true);
       });
     });
-    offSay = null;
-    box2.querySelector("#m2-ed-gh-off").addEventListener("click", function() {
-      askOff(disconnect);
+  }
+  function connect(v) {
+    try {
+      localStorage.setItem(TOKEN_KEY, v);
+    } catch (e) {
+      return Promise.reject("keep");
+    }
+    quiet();
+    return api("").then(function(r) {
+      return r.ok ? r.json() : Promise.reject(r.status);
+    }).then(function(d) {
+      if (!d.permissions || !d.permissions.push) throw "it cannot write to " + repo();
+      box2.querySelector("#m2-ed-gh-token").value = "";
+      offSay = null;
+      upAll();
+      waitFail = false;
+      sendWaiting();
+      if (on && site && site.mine) {
+        buttons();
+        quiet();
+        if (site.pending) toGh(site);
+        return;
+      }
+      var moved = shared.dirty || !!(site && site.pending && src() !== site.pub);
+      if (on && site) {
+        var keep = shared.text;
+        var s0 = site, copy = !!shared.F.ahead.path;
+        Promise.resolve(saving).catch(function() {
+        }).then(function() {
+          return Promise.all([
+            api("/contents/" + s0.path + "?ref=main").then(function(r) {
+              return r.status === 404 && copy ? {} : r.json();
+            }),
+            // a map edited as a copy of its own (SBGN-ML) with no copy yet: the first save makes it
+            api("/contents/" + s0.path + "?ref=main", { headers: { Accept: "application/vnd.github.raw" } }).then(function(r) {
+              return r.status === 404 && copy ? s0.base : r.text();
+            })
+          ]).then(function(f) {
+            if (!on || site !== s0) return;
+            s0.pending = false;
+            buttons();
+            if (f[1] !== (s0.saved != null ? s0.saved : s0.base)) {
+              if (moved) return conflict(s0, keep);
+              s0.sha = f[0].sha || null;
+              stuck = true;
+              warn("Connected, but the map on GitHub was changed elsewhere since you opened it; you made no move, so nothing is lost. Stop editing and open the map again.");
+              return;
+            }
+            s0.sha = f[0].sha || null;
+            if (s0.id) Promise.resolve(unkeep(s0.id)).then(function() {
+              s0.known = null;
+            }, function() {
+            });
+            if (moved) {
+              setText(keep);
+              shared.dirty = true;
+              push();
+            } else quiet();
+          });
+        });
+      } else {
+        buttons();
+        quiet();
+      }
+    }).catch(function(e) {
+      try {
+        localStorage.removeItem(TOKEN_KEY);
+      } catch (x) {
+      }
+      throw e;
     });
+  }
+  function __run24b() {
+    offSay = null;
+    box2.querySelector("#m2-ed-gh-off").addEventListener("click", askSwitch);
     box2.querySelector("#m2-ed-this").addEventListener("click", editShown);
   }
   var offSay;
@@ -20059,7 +20063,7 @@
     buttons();
     quiet();
   }
-  function askOff(go) {
+  function askSwitch() {
     var veil = document.createElement("div"), w = document.createElement("div"), back2 = document.activeElement;
     veil.className = "m2-me-veil";
     w.className = "m2-ask m2-ask-switch m2-ipop-beside";
@@ -20073,34 +20077,33 @@
     var card = function(cls, name2, line2, text, off) {
       return '<div class="m2-ask-opt m2-ipop-row"><button type="button" class="' + cls + '"' + (off ? " disabled" : "") + "><b>" + name2 + "</b><span>" + line2 + '</span></button><button type="button" class="m2-ask-i m2-itip" aria-label="About ' + name2 + '" data-info="' + esc(text) + '" aria-expanded="false">' + info + "</button></div>";
     };
-    var keep = "GitHub is left as it is: connect again and what you changed goes back to it.";
-    w.innerHTML = '<div class="m2-ask-pick"><h3 id="m2-ask-h">Switch where maps are saved</h3><p class="m2-ask-now">Now: GitHub' + (repo() ? " (" + esc(repo()) + ")" : "") + "</p>" + (canFolder && !n ? "" : card(
-      "m2-ask-copy",
-      "Work from a folder" + (canFolder ? " (recommended)" : ""),
-      canFolder ? "Saved to a folder on your computer" : "Chrome or Edge only",
-      (n ? "Your " + n + " maps, with their colours and images, are copied into a folder you choose. " : "The maps are copied into a folder you choose. ") + "From then on every change is saved there automatically, and yEd or CellDesigner can open the same files. " + keep + (canFolder ? " Recommended, as the files stay on your computer whatever happens to the browser's data." : "") + " Chrome and Edge only: other browsers cannot save into a folder.",
-      !canFolder
-    )) + card(
-      "m2-ask-yes",
-      "Work in this browser",
-      "Saved in this browser only",
-      "Every change is kept in this browser only, and lost if the browser's site data is cleared. " + keep + " The token is removed from this browser; to save to GitHub again, paste it again."
-    ) + '<p class="m2-ask-say" hidden></p><button type="button" class="m2-ask-no">Cancel</button></div><div class="m2-ask-busy" hidden><h3></h3><div class="m2-ask-bar"><i></i></div><p class="m2-ask-say"></p></div><div class="m2-ask-done" hidden><h3></h3><p>Every change is saved in this folder.<br>GitHub is left as it was.</p><button type="button" class="m2-ask-ok">OK</button></div>';
+    var from = repo() && token() ? "gh" : canFolder && V.folderName() ? "folder" : "browser";
+    var about = {
+      gh: "Every change is saved to this site's data repository on GitHub, with a token that can write there; the token stays in this browser only. GitHub keeps every version of each map automatically, so a change can be reversed if needed: not in this editor, but from GitHub's history, by hand or with an AI assistant. Switching to another place leaves the maps on GitHub as they are.",
+      folder: "Every change is saved automatically to a folder on your computer, as files yEd or CellDesigner can open. The files stay whatever happens to the browser's data. Recommended for most work. Chrome and Edge only: other browsers cannot save into a folder.",
+      browser: "Every change is kept in this browser only, and lost if the browser's site data is cleared. Nothing is saved outside it."
+    };
+    var cFolder = card("m2-ask-copy", "Work from a folder" + (canFolder ? " (recommended)" : ""), canFolder ? "Saved to a folder on your computer" : "Chrome or Edge only", about.folder, !canFolder);
+    var cGh = card("m2-ask-gh", "Work on GitHub", "Saved to GitHub", about.gh);
+    var cBrowser = card("m2-ask-yes", "Work in this browser", "Saved in this browser only", about.browser);
+    var now = (from === "gh" ? "GitHub" + (repo() ? " (" + esc(repo()) + ")" : "") : from === "folder" ? "Folder (" + esc(V.folderName()) + ")" : "This browser") + '<button type="button" class="m2-ask-i m2-ask-nowi m2-itip" aria-label="About where maps are saved now" data-info="' + esc(about[from]) + '" aria-expanded="false">' + info + "</button>";
+    var cards = from === "gh" ? (canFolder && !n ? "" : cFolder) + cBrowser : from === "folder" ? cGh + cBrowser : cFolder + cGh;
+    w.innerHTML = '<div class="m2-ask-pick"><h3 id="m2-ask-h">Switch where maps are saved</h3><p class="m2-ask-now">Now: ' + now + "</p>" + cards + '<p class="m2-ask-say" hidden></p><button type="button" class="m2-ask-no">Cancel</button></div><div class="m2-ask-tok" hidden><h3>Switch where maps are saved</h3><p class="m2-ask-now">Now: ' + now + `</p><p class="m2-ask-tline">Paste a GitHub token that can write to this site's data repository. It stays in this browser only.</p><input type="password" class="m2-ask-tin" placeholder="GitHub token" autocomplete="off" aria-label="GitHub token"><button type="button" class="m2-ask-go">Connect</button><p class="m2-ask-say" hidden></p><button type="button" class="m2-ask-no">Cancel</button></div><div class="m2-ask-busy" hidden><h3></h3><div class="m2-ask-bar"><i></i></div><p class="m2-ask-say"></p></div><div class="m2-ask-done" hidden><h3></h3><p>Every change is saved in this folder.<br>GitHub is left as it was.</p><button type="button" class="m2-ask-ok">OK</button></div>`;
     veil.appendChild(w);
     document.body.appendChild(veil);
     var busy = false, cardOpen = false;
-    var close = function(yes2) {
+    var close = function(then) {
       if (busy) return;
       veil.remove();
       window.removeEventListener("keydown", key, true);
       document.removeEventListener("pointerdown", seen, true);
       if (back2 && back2.isConnected && back2.focus) back2.focus();
-      if (yes2) go();
+      if (then) then();
     };
     var pick = w.querySelector(".m2-ask-pick"), wait = w.querySelector(".m2-ask-busy"), done = w.querySelector(".m2-ask-done");
-    var no2 = w.querySelector(".m2-ask-no"), yes = w.querySelector(".m2-ask-yes"), cp = w.querySelector(".m2-ask-copy"), say = pick.querySelector(".m2-ask-say");
+    var no2 = pick.querySelector(".m2-ask-no"), yes = w.querySelector(".m2-ask-yes"), gh2 = w.querySelector(".m2-ask-gh"), tok = w.querySelector(".m2-ask-tok"), cp = w.querySelector(".m2-ask-copy"), say = pick.querySelector(".m2-ask-say");
     var order = function() {
-      return Array.prototype.filter.call(w.querySelectorAll("button"), function(b) {
+      return Array.prototype.filter.call(w.querySelectorAll("button, input"), function(b) {
         return b.offsetParent && !b.disabled;
       });
     };
@@ -20117,6 +20120,9 @@
       if (e.key === "Escape") {
         e.preventDefault();
         close(false);
+      } else if (e.key === "Enter" && document.activeElement === tin) {
+        e.preventDefault();
+        go();
       } else if (e.key === "Tab") {
         e.preventDefault();
         var o = order();
@@ -20126,13 +20132,60 @@
     no2.addEventListener("click", function() {
       close(false);
     });
-    yes.addEventListener("click", function() {
-      close(true);
+    if (yes) yes.addEventListener("click", function() {
+      if (from === "gh") return close(disconnect);
+      close(from === "folder" ? function() {
+        folderForget().then(function() {
+          folderOk = null;
+          buttons();
+          localBox();
+          V.refreshMine();
+        });
+      } : null);
     });
+    tok.querySelector(".m2-ask-no").addEventListener("click", function() {
+      close(false);
+    });
+    if (gh2) gh2.addEventListener("click", function() {
+      pick.hidden = true;
+      tok.hidden = false;
+      tok.querySelector(".m2-ask-tin").focus();
+    });
+    var tsay = tok.querySelector(".m2-ask-say"), tin = tok.querySelector(".m2-ask-tin"), tgo = tok.querySelector(".m2-ask-go");
+    var go = function() {
+      var v = tin.value.trim();
+      if (!v || busy) return;
+      busy = true;
+      tgo.disabled = true;
+      tsay.hidden = true;
+      connect(v).then(function() {
+        busy = false;
+        offSay = null;
+        buttons();
+        quiet();
+        localBox();
+        close(false);
+      }, function(e) {
+        busy = false;
+        tgo.disabled = false;
+        tsay.hidden = false;
+        tsay.classList.add("m2-ask-bad");
+        tsay.textContent = e === "keep" ? "This browser does not keep the token." : "The token was not accepted (" + e + ").";
+      });
+    };
+    tgo.addEventListener("click", go);
     w.querySelector(".m2-ask-ok").addEventListener("click", function() {
       close(false);
     });
-    if (cp && canFolder) cp.addEventListener("click", function() {
+    if (cp && canFolder && from !== "gh") cp.addEventListener("click", function() {
+      close(false);
+      chooseFolder().then(function() {
+        buttons();
+        localBox();
+      }, function() {
+      });
+    });
+    if (cp && canFolder && from === "gh") cp.addEventListener("click", function() {
       window.showDirectoryPicker({ id: "atlas-maps", mode: "readwrite" }).then(function(dir) {
         busy = true;
         say.hidden = true;
@@ -22412,6 +22465,7 @@
     __run225();
     __run235();
     __run245();
+    __run24b();
     __run254();
     __run264();
     __run274();

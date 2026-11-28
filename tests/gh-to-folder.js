@@ -70,6 +70,17 @@ var KEEP = ['colour-test', 'glycolysis-graphml', 'colour-glycolysis-sbgn', 'tag-
   var token = function () { return page.evaluate(function () { return localStorage.getItem('atlas-edit-token'); }); };
   var open = async function () { await page.reload({ waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 }); await page.waitForTimeout(3000); };
   var list = async function () { if (!(await page.$('#m2-list .m2-map:visible'))) await page.click('.m2-ri[data-win="list"]'); await page.waitForSelector('#m2-list .m2-map', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(500); };
+  // connected again as a person would: Switch where maps are saved, from the folder, Work on GitHub, the token, Connect
+  var byWindow = async function (tag) {
+    await list(); await page.click('#m2-list .m2-map'); await page.waitForTimeout(1500);   // a map of the list open, as a person would
+    await page.click('.m2-ri[data-win="edit"]'); await page.waitForSelector('#m2-ed-gh-off', { state: 'visible', timeout: 30000 }); await page.click('#m2-ed-gh-off');
+    await page.waitForSelector('.m2-ask', { timeout: 10000 });
+    var w = await page.$eval('.m2-ask-pick', function (e) { return { now: e.querySelector('.m2-ask-now').textContent, cards: Array.prototype.map.call(e.querySelectorAll('.m2-ask-opt b'), function (b) { return b.textContent; }) }; });
+    ok(tag + ' from the folder: Now Folder, GitHub, then this browser', /^Now: Folder \(/.test(w.now) && w.cards.join('|') === 'Work on GitHub|Work in this browser', JSON.stringify(w));
+    await page.click('.m2-ask-gh'); await page.fill('.m2-ask-tin', 'test-token'); await page.keyboard.press('Enter');
+    await page.waitForSelector('.m2-ask-switch', { state: 'detached', timeout: 15000 });
+    ok(tag + ' the token kept by Connect', (await token()) === 'test-token');
+  };
   var askOff = async function () { await page.click('.m2-ri[data-win="edit"]'); await page.waitForSelector('#m2-ed-gh-off', { state: 'visible', timeout: 30000 }); await page.click('#m2-ed-gh-off'); await page.waitForSelector('.m2-ask', { timeout: 10000 }); };
 
   await page.goto(base + '#colour-test', { waitUntil: 'load' });
@@ -130,8 +141,7 @@ var KEEP = ['colour-test', 'glycolysis-graphml', 'colour-glycolysis-sbgn', 'tag-
 
   // connected again
   puts = [];
-  await page.evaluate(function () { localStorage.setItem('atlas-edit-token', 'test-token'); });
-  await open(); await page.waitForTimeout(3000); await list();
+  await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3000); await byWindow('4.'); await page.waitForTimeout(3000); await list();
   var mapPuts = puts.filter(function (p) { return !/\.md$/.test(p); });
   ok('4. all back cleanly: no window', !(await page.$('.m2-back')));
   ok('4. connected again: only the changed map saved to GitHub', mapPuts.length === 1 && mapPuts[0] === changed.from.path && /changed in the folder/.test(files[changed.from.path]), String(puts));
@@ -161,8 +171,7 @@ var KEEP = ['colour-test', 'glycolysis-graphml', 'colour-glycolysis-sbgn', 'tag-
     await open();
     files[bothC.from.path] = files[bothC.from.path] + '\n<!-- changed on GitHub meanwhile -->\n';
     refusePut = failC.from.path;
-    await page.evaluate(function () { localStorage.setItem('atlas-edit-token', 'test-token'); });
-    await open();
+    await byWindow('7.');
     await page.waitForSelector('.m2-back', { timeout: 30000 }).catch(function () {});
     var said2 = await page.$eval('.m2-back', function (e) { return e.textContent; }).catch(function () { return ''; });
     ok('7. connected again: a window says it', /Connected to GitHub again/.test(said2), said2);
@@ -174,6 +183,20 @@ var KEEP = ['colour-test', 'glycolysis-graphml', 'colour-glycolysis-sbgn', 'tag-
     await list(); var tt7 = await titles();
     ok('7. the map changed in both places listed twice, as the window says', tt7.filter(function (x) { return x.indexOf(bothC.title) === 0; }).length === 2, tt7.join(' / '));
     refusePut = null;
+    // 8. from GitHub to this browser (the folder still remembered: now Folder), then to this browser alone
+    var cards = function () { return page.$eval('.m2-ask-pick', function (e) { return e.querySelector('.m2-ask-now').textContent + ' | ' + Array.prototype.map.call(e.querySelectorAll('.m2-ask-opt b'), function (b) { return b.textContent; }).join('|'); }); };
+    await askOff(); await page.click('.m2-ask-yes'); await page.waitForTimeout(1000);
+    ok('8. Work in this browser from GitHub: the token removed', (await token()) === null);
+    await page.click('#m2-ed-gh-off'); await page.waitForSelector('.m2-ask', { timeout: 10000 });
+    var c8 = await cards();
+    ok('8. now the folder', /^Now: Folder \(.*\) \| Work on GitHub\|Work in this browser$/.test(c8), c8);
+    await page.click('.m2-ask-yes'); await page.waitForTimeout(1000);
+    ok('8. Work in this browser from the folder: the folder let go', (await page.evaluate(function () { return localStorage.getItem('atlas-edit-folder'); })) === null);
+    await page.click('#m2-ed-gh-off'); await page.waitForSelector('.m2-ask', { timeout: 10000 });
+    var c8b = await cards();
+    ok('8. now this browser: the folder recommended, then GitHub', c8b === 'Now: This browser | Work from a folder (recommended)|Work on GitHub', c8b);
+    await page.keyboard.press('Escape');
+    ok('8. Esc closes it', !(await page.$('.m2-ask')));
   }
   ok('no script errors', !errs.length, errs.slice(0, 3).join(' | '));
   await b.close();

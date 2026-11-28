@@ -889,6 +889,12 @@ page, so its styles keep the base they were made on).
   .m2-ask-switch .m2-ask-say { margin: 2px 0 8px; font-size: 13px; text-align: left; }
   .m2-ask-switch .m2-ask-no, .m2-ask-switch .m2-ask-no:hover { display: block; margin: 2px auto 0; padding: 5px 14px; border: 0; border-radius: 4px; background: none; color: var(--m2-muted); font: inherit; cursor: pointer; }
   .m2-ask-switch .m2-ask-no:focus-visible { background: var(--m2-soft); }
+  .m2-ask-switch .m2-ask-nowi, .m2-ask-switch .m2-ask-nowi:hover { position: static; transform: none; display: inline-flex; vertical-align: -2px; margin-left: 6px; }   /* the circled i beside Now: the place's own text */
+  .m2-ask-switch .m2-ask-tline { margin: 0 0 10px; font-size: 13px; text-align: left; color: var(--m2-muted); }   /* Work on GitHub's token step */
+  .m2-ask-switch .m2-ask-tin { display: block; width: 100%; box-sizing: border-box; margin: 0 0 8px; padding: 6px 8px; font: inherit; font-size: 13px; border: 1px solid var(--m2-line); border-radius: 4px; background: var(--m2-bg); color: var(--m2-text); }
+  .m2-ask-switch .m2-ask-go { display: block; width: 100%; margin: 0 0 8px; padding: 7px 14px; font: inherit; border: 1px solid var(--m2-line); border-radius: 6px; background: var(--m2-bg); color: var(--m2-text); cursor: pointer; }
+  .m2-ask-switch .m2-ask-go:hover:not(:disabled), .m2-ask-switch .m2-ask-go:focus-visible { background: var(--m2-soft); }
+  .m2-ask-switch .m2-ask-go:disabled { opacity: .55; cursor: default; }
   .m2-ask-bar { height: 6px; margin: 14px 0 6px; overflow: hidden; border-radius: 3px; background: var(--m2-soft); }
   .m2-ask-bar i { display: block; height: 100%; width: 0; background: #71777c; transition: width .2s; }
   .m2-ask-busy .m2-ask-say { text-align: center; margin: 0 0 4px; }

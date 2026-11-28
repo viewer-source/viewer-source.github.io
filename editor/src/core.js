@@ -856,7 +856,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function ghForm(show) {   // the token field: shown while editing a map of this site with no token
       var f = box.querySelector('#m2-ed-gh');
       f.hidden = !show;
-      box.querySelector('#m2-ed-gh-off').hidden = show || !token() || !repo();
+      box.querySelector('#m2-ed-gh-off').hidden = show || !repo();   // from every place (GitHub, a folder, this browser), but not beside the token field, the way to GitHub there
     }
 
     // the status line says only what went wrong, in red: nothing while things work (no save messages, no save time or
@@ -2013,9 +2013,15 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     box.querySelector('#m2-ed-gh-go').addEventListener('click', function () {
       var v = box.querySelector('#m2-ed-gh-token').value.trim();
       if (!v) return;
-      try { localStorage.setItem(TOKEN_KEY, v); } catch (e) { warn('This browser does not keep the token.'); return; }
+      connect(v).catch(function (e) { warn(e === 'keep' ? 'This browser does not keep the token.' : 'The token was not accepted (' + e + ').'); ghForm(true); });
+    });
+    }
+    // the token checked against the repository and kept; the maps kept elsewhere go to GitHub. Refused: the token
+    // removed, the reason given to the caller (the Edit window's field, or the switch window)
+    function connect(v) {
+      try { localStorage.setItem(TOKEN_KEY, v); } catch (e) { return Promise.reject('keep'); }
       quiet();
-      api('').then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); }).then(function (d) {
+      return api('').then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); }).then(function (d) {
         if (!d.permissions || !d.permissions.push) throw 'it cannot write to ' + repo();
         box.querySelector('#m2-ed-gh-token').value = '';
         offSay = null;
@@ -2044,13 +2050,14 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         } else { buttons(); quiet(); }
       }).catch(function (e) {
         try { localStorage.removeItem(TOKEN_KEY); } catch (x) {}
-        warn('The token was not accepted (' + e + ').'); ghForm(true);
+        throw e;
       });
-    });
-    // Switch where maps are saved (from GitHub): a change of setup, not of the map, so never one click: a window offers
-    // a folder or this browser and Cancel is the default (Enter, Esc, a click beside it); once done, the red line says it until the token is pasted again
+    }
+    function __run24b() {   // run at start, in order (__start), after __run24
+    // Switch where maps are saved: a change of setup, not of the map, so never one click: a window offers the two
+    // places it is not now and Cancel is the default (Enter, Esc, a click beside it); from GitHub, once done, the red line says it until the token is pasted again
     offSay = null;
-    box.querySelector('#m2-ed-gh-off').addEventListener('click', function () { askOff(disconnect); });
+    box.querySelector('#m2-ed-gh-off').addEventListener('click', askSwitch);
     box.querySelector('#m2-ed-this').addEventListener('click', editShown);
     }
     var offSay;   // the red line said while disconnected (null: connected, or never disconnected on this page)
@@ -2064,40 +2071,53 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       offSay = 'Disconnected from GitHub: moves are no longer saved to the site, only kept in this browser. Paste a token below to save them there again.';
       buttons(); quiet();
     }
-    function askOff(go) {
+    function askSwitch() {
       var veil = document.createElement('div'), w = document.createElement('div'), back = document.activeElement;
       veil.className = 'm2-me-veil'; w.className = 'm2-ask m2-ask-switch m2-ipop-beside';
       w.setAttribute('role', 'alertdialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-labelledby', 'm2-ask-h');
-      // two choices of where the maps are saved from now on, each a card with one line and a circled i (its text in the
-      // shared info window, set beside this window by .m2-ipop-beside): a folder (own.js moveOut copies the maps there,
-      // then the token goes) or this browser; GitHub left as it is either way. Cancel stays the default
+      // two choices of where the maps are saved from now on, the places they are not saved now, each a card with one
+      // line and a circled i (its text in the shared info window, set beside this window by .m2-ipop-beside). From
+      // GitHub: a folder (own.js moveOut copies the maps there, then the token goes) or this browser, GitHub left as it
+      // is. From a folder: GitHub (the token step, then own.js upAll and moveBack) or this browser (the folder let go).
+      // From this browser: a folder (chooseFolder) or GitHub. "(recommended)" on a place nothing is lost from, never on
+      // this browser. Cancel stays the default
       var n = canFolder ? toMove().length : 0, esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); };
       var info = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="7.2" stroke-width="1.1"/><path d="M8 7.3v4.2" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="4.6" r="1.2" fill="currentColor" stroke="none"/></svg>';
       var card = function (cls, name, line, text, off) {
         return '<div class="m2-ask-opt m2-ipop-row"><button type="button" class="' + cls + '"' + (off ? ' disabled' : '') + '><b>' + name + '</b><span>' + line + '</span></button>' +
           '<button type="button" class="m2-ask-i m2-itip" aria-label="About ' + name + '" data-info="' + esc(text) + '" aria-expanded="false">' + info + '</button></div>';
       };
-      var keep = 'GitHub is left as it is: connect again and what you changed goes back to it.';
-      w.innerHTML = '<div class="m2-ask-pick"><h3 id="m2-ask-h">Switch where maps are saved</h3><p class="m2-ask-now">Now: GitHub' + (repo() ? ' (' + esc(repo()) + ')' : '') + '</p>' +
-        (canFolder && !n ? '' : card('m2-ask-copy', 'Work from a folder' + (canFolder ? ' (recommended)' : ''), canFolder ? 'Saved to a folder on your computer' : 'Chrome or Edge only',
-          (n ? 'Your ' + n + ' maps, with their colours and images, are copied into a folder you choose. ' : 'The maps are copied into a folder you choose. ') +
-          'From then on every change is saved there automatically, and yEd or CellDesigner can open the same files. ' + keep + (canFolder ? ' Recommended, as the files stay on your computer whatever happens to the browser\'s data.' : '') + ' Chrome and Edge only: other browsers cannot save into a folder.', !canFolder)) +
-        card('m2-ask-yes', 'Work in this browser', 'Saved in this browser only',
-          'Every change is kept in this browser only, and lost if the browser\'s site data is cleared. ' + keep + ' The token is removed from this browser; to save to GitHub again, paste it again.') +
+      var from = repo() && token() ? 'gh' : canFolder && V.folderName() ? 'folder' : 'browser';
+      // one text per place, the same on its card and beside Now; the folder the one marked recommended (GitHub is for
+      // those who work with it, its versions the advantage), this browser never
+      var about = {
+        gh: 'Every change is saved to this site\'s data repository on GitHub, with a token that can write there; the token stays in this browser only. GitHub keeps every version of each map automatically, so a change can be reversed if needed: not in this editor, but from GitHub\'s history, by hand or with an AI assistant. Switching to another place leaves the maps on GitHub as they are.',
+        folder: 'Every change is saved automatically to a folder on your computer, as files yEd or CellDesigner can open. The files stay whatever happens to the browser\'s data. Recommended for most work. Chrome and Edge only: other browsers cannot save into a folder.',
+        browser: 'Every change is kept in this browser only, and lost if the browser\'s site data is cleared. Nothing is saved outside it.'
+      };
+      var cFolder = card('m2-ask-copy', 'Work from a folder' + (canFolder ? ' (recommended)' : ''), canFolder ? 'Saved to a folder on your computer' : 'Chrome or Edge only', about.folder, !canFolder);
+      var cGh = card('m2-ask-gh', 'Work on GitHub', 'Saved to GitHub', about.gh);
+      var cBrowser = card('m2-ask-yes', 'Work in this browser', 'Saved in this browser only', about.browser);
+      var now = (from === 'gh' ? 'GitHub' + (repo() ? ' (' + esc(repo()) + ')' : '') : from === 'folder' ? 'Folder (' + esc(V.folderName()) + ')' : 'This browser') +
+        '<button type="button" class="m2-ask-i m2-ask-nowi m2-itip" aria-label="About where maps are saved now" data-info="' + esc(about[from]) + '" aria-expanded="false">' + info + '</button>';
+      var cards = from === 'gh' ? (canFolder && !n ? '' : cFolder) + cBrowser : from === 'folder' ? cGh + cBrowser : cFolder + cGh;
+      w.innerHTML = '<div class="m2-ask-pick"><h3 id="m2-ask-h">Switch where maps are saved</h3><p class="m2-ask-now">Now: ' + now + '</p>' + cards +
         '<p class="m2-ask-say" hidden></p><button type="button" class="m2-ask-no">Cancel</button></div>' +
+        '<div class="m2-ask-tok" hidden><h3>Switch where maps are saved</h3><p class="m2-ask-now">Now: ' + now + '</p><p class="m2-ask-tline">Paste a GitHub token that can write to this site\'s data repository. It stays in this browser only.</p>' +
+        '<input type="password" class="m2-ask-tin" placeholder="GitHub token" autocomplete="off" aria-label="GitHub token"><button type="button" class="m2-ask-go">Connect</button><p class="m2-ask-say" hidden></p><button type="button" class="m2-ask-no">Cancel</button></div>' +
         '<div class="m2-ask-busy" hidden><h3></h3><div class="m2-ask-bar"><i></i></div><p class="m2-ask-say"></p></div>' +
         '<div class="m2-ask-done" hidden><h3></h3><p>Every change is saved in this folder.<br>GitHub is left as it was.</p><button type="button" class="m2-ask-ok">OK</button></div>';
       veil.appendChild(w); document.body.appendChild(veil);
       var busy = false, cardOpen = false;
-      var close = function (yes) {
+      var close = function (then) {   // then: what follows the window, if anything
         if (busy) return;   // copying: the window stays until it is done or refused
         veil.remove(); window.removeEventListener('keydown', key, true); document.removeEventListener('pointerdown', seen, true);
         if (back && back.isConnected && back.focus) back.focus();
-        if (yes) go();
+        if (then) then();
       };
       var pick = w.querySelector('.m2-ask-pick'), wait = w.querySelector('.m2-ask-busy'), done = w.querySelector('.m2-ask-done');
-      var no = w.querySelector('.m2-ask-no'), yes = w.querySelector('.m2-ask-yes'), cp = w.querySelector('.m2-ask-copy'), say = pick.querySelector('.m2-ask-say');
-      var order = function () { return Array.prototype.filter.call(w.querySelectorAll('button'), function (b) { return b.offsetParent && !b.disabled; }); };
+      var no = pick.querySelector('.m2-ask-no'), yes = w.querySelector('.m2-ask-yes'), gh = w.querySelector('.m2-ask-gh'), tok = w.querySelector('.m2-ask-tok'), cp = w.querySelector('.m2-ask-copy'), say = pick.querySelector('.m2-ask-say');
+      var order = function () { return Array.prototype.filter.call(w.querySelectorAll('button, input'), function (b) { return b.offsetParent && !b.disabled; }); };
       var popped = function () { return !!document.querySelector('.m2-ipop'); };
       // a press while a circled i's window is open closes that window only (its own listener); registered before it, so
       // the window is still there when this reads it
@@ -2107,12 +2127,29 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         if (e.key === 'Escape' && popped()) return;
         e.stopImmediatePropagation();
         if (e.key === 'Escape') { e.preventDefault(); close(false); }
+        else if (e.key === 'Enter' && document.activeElement === tin) { e.preventDefault(); go(); }   // the field's Enter connects (keys stop here, so not by the field's own listener)
         else if (e.key === 'Tab') { e.preventDefault(); var o = order(); if (o.length) o[(o.indexOf(document.activeElement) + (e.shiftKey ? o.length - 1 : 1)) % o.length].focus(); }
       };
       no.addEventListener('click', function () { close(false); });
-      yes.addEventListener('click', function () { close(true); });
+      if (yes) yes.addEventListener('click', function () {
+        if (from === 'gh') return close(disconnect);
+        close(from === 'folder' ? function () { folderForget().then(function () { folderOk = null; buttons(); localBox(); V.refreshMine(); }); } : null);
+      });
+      tok.querySelector('.m2-ask-no').addEventListener('click', function () { close(false); });
+      if (gh) gh.addEventListener('click', function () { pick.hidden = true; tok.hidden = false; tok.querySelector('.m2-ask-tin').focus(); });
+      var tsay = tok.querySelector('.m2-ask-say'), tin = tok.querySelector('.m2-ask-tin'), tgo = tok.querySelector('.m2-ask-go');
+      var go = function () {   // the Edit window's own connect; refused, said here and the window stays
+        var v = tin.value.trim(); if (!v || busy) return;
+        busy = true; tgo.disabled = true; tsay.hidden = true;
+        connect(v).then(function () { busy = false; offSay = null; buttons(); quiet(); localBox(); close(false); }, function (e) {
+          busy = false; tgo.disabled = false; tsay.hidden = false; tsay.classList.add('m2-ask-bad');
+          tsay.textContent = e === 'keep' ? 'This browser does not keep the token.' : 'The token was not accepted (' + e + ').';
+        });
+      };
+      tgo.addEventListener('click', go);
       w.querySelector('.m2-ask-ok').addEventListener('click', function () { close(false); });
-      if (cp && canFolder) cp.addEventListener('click', function () {
+      if (cp && canFolder && from !== 'gh') cp.addEventListener('click', function () { close(false); chooseFolder().then(function () { buttons(); localBox(); }, function () {}); });   // from this browser: the folder chosen, the maps written there
+      if (cp && canFolder && from === 'gh') cp.addEventListener('click', function () {
         window.showDirectoryPicker({ id: 'atlas-maps', mode: 'readwrite' }).then(function (dir) {
           busy = true; say.hidden = true; say.classList.remove('m2-ask-bad');
           pick.hidden = true; wait.hidden = false; wait.querySelector('h3').textContent = 'Copying to “' + dir.name + '”';
@@ -3674,5 +3711,5 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }, true);
     }
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); __run47(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run24b(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); __run47(); }   // the part's statements, in their order
     export { cloudOn, sendFailed, sendWaiting, waitText, whyFailed, asSpace, G, GE, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubEnd, hubPorts, inComplex, landBox, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownCursors, ownMenus, paint, parse, parseFix, picWait, placed, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, takes, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };
